@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#5AAEE0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -18,12 +18,14 @@
     --sun:#FFC94A; --sun-light:#FFEFC7; --text:#2E3A42; --muted:#7C8A92; --danger:#E08A5A; --border:#EFE6CF;
     --font-display:'Baloo 2','Nunito',sans-serif; --font-body:'Nunito','Baloo 2',sans-serif;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background:linear-gradient(180deg,var(--sky-light) 0%, var(--bg) 340px);font-family:var(--font-body);color:var(--text);}
-  #app{max-width:480px;margin:0 auto;padding:24px 18px 60px;position:relative;min-height:100vh;}
-  .tap:active{transform:scale(0.94);}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;background:linear-gradient(180deg,var(--sky-light) 0%, var(--bg) 340px);font-family:var(--font-body);color:var(--text);font-size:16px;line-height:1.55;overflow-x:hidden;}
+  #app{max-width:480px;margin:0 auto;padding:22px 18px 60px;position:relative;min-height:100vh;}
+  input, select, textarea, button{font-size:16px;}
+  .tap:active{transform:scale(0.96);}
   .tap{transition:transform .12s ease;}
-  .fade-in{animation:fadeIn .25s ease;}
+  .fade-in{animation:fadeIn .2s ease;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
   ::-webkit-scrollbar{width:6px;height:6px;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
@@ -32,20 +34,20 @@
   .avatar.ring{border:3px dashed rgba(255,255,255,0.85);}
   .avatar.rotate{transform:rotate(-6deg);}
 
-  .btn-primary{background:var(--sky);color:#fff;border:none;border-radius:18px;padding:14px 22px;font-family:var(--font-display);font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 6px 14px rgba(90,174,224,.35);display:flex;align-items:center;justify-content:center;gap:6px;width:100%;}
+  .btn-primary{background:var(--sky);color:#fff;border:none;border-radius:18px;padding:16px 22px;font-family:var(--font-display);font-weight:700;font-size:17px;cursor:pointer;box-shadow:0 6px 14px rgba(90,174,224,.35);display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:52px;}
   .btn-primary:disabled{background:#CBD5DA;box-shadow:none;cursor:not-allowed;}
-  .btn-ghost{background:transparent;color:var(--sky-dark);border:2px solid var(--sky-light);border-radius:18px;padding:12px 20px;font-family:var(--font-display);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;}
-  .btn-danger{background:var(--danger);color:#fff;border:none;border-radius:18px;padding:14px 22px;font-family:var(--font-display);font-weight:700;font-size:15px;cursor:pointer;width:100%;}
+  .btn-ghost{background:transparent;color:var(--sky-dark);border:2px solid var(--sky-light);border-radius:18px;padding:14px 20px;font-family:var(--font-display);font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:52px;}
+  .btn-danger{background:var(--danger);color:#fff;border:none;border-radius:18px;padding:14px 22px;font-family:var(--font-display);font-weight:700;font-size:16px;cursor:pointer;width:100%;min-height:52px;}
 
-  .field{margin-bottom:16px;}
-  .field label{display:block;font-family:var(--font-body);font-weight:700;font-size:14px;color:var(--text);margin-bottom:6px;}
-  .field input{width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--border);background:#FFFEFB;font-family:var(--font-body);font-size:15px;color:var(--text);outline:none;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-family:var(--font-body);font-weight:700;font-size:15px;color:var(--text);margin-bottom:7px;}
+  .field input{width:100%;padding:14px 16px;border-radius:14px;border:2px solid var(--border);background:#FFFEFB;font-family:var(--font-body);font-size:16px;color:var(--text);outline:none;min-height:50px;}
 
-  .segmented{display:flex;background:var(--sky-light);border-radius:14px;padding:4px;margin-bottom:16px;}
-  .segmented button{flex:1;border:none;border-radius:11px;padding:10px 8px;font-family:var(--font-body);font-weight:700;font-size:14px;cursor:pointer;background:transparent;color:var(--muted);}
+  .segmented{display:flex;background:var(--sky-light);border-radius:14px;padding:4px;margin-bottom:18px;}
+  .segmented button{flex:1;border:none;border-radius:11px;padding:12px 8px;font-family:var(--font-body);font-weight:700;font-size:15px;cursor:pointer;background:transparent;color:var(--muted);min-height:44px;}
   .segmented button.active{background:#fff;color:var(--sky-dark);box-shadow:0 2px 6px rgba(43,108,147,.15);}
 
-  .avatar-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;}
+  .avatar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
   .avatar-pick{position:relative;background:none;border:none;padding:0;cursor:pointer;}
   .avatar-pick .sel-ring{position:absolute;inset:-4px;border-radius:50%;border:3px solid var(--sky-dark);display:none;}
   .avatar-pick.selected .sel-ring{display:block;}
@@ -54,58 +56,64 @@
   .step-dots span{height:8px;border-radius:6px;background:var(--border);transition:all .2s ease;display:inline-block;width:8px;}
   .step-dots span.active{width:22px;background:var(--sun);}
 
-  .card-box{background:var(--card);border-radius:20px;padding:16px;margin-bottom:14px;border:2px solid var(--border);}
-  .dashed-btn{width:100%;border:2px dashed var(--sky);background:transparent;border-radius:18px;padding:14px;color:var(--sky-dark);font-family:var(--font-display);font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px;}
+  .card-box{background:var(--card);border-radius:20px;padding:18px;margin-bottom:16px;border:2px solid var(--border);}
+  .dashed-btn{width:100%;border:2px dashed var(--sky);background:transparent;border-radius:18px;padding:16px;color:var(--sky-dark);font-family:var(--font-display);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px;min-height:52px;}
 
-  .modal-mask{position:fixed;inset:0;background:rgba(46,58,66,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
-  .modal-box{background:var(--bg);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:20px 20px 28px;}
-  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-  .modal-title{font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--text);}
-  .modal-close{background:var(--sky-light);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--sky-dark);}
+  /* ---- 整页视图（取代原先的底部弹窗），带返回箭头的页头 ---- */
+  .screen-header{display:flex;align-items:center;gap:10px;margin-bottom:22px;position:sticky;top:0;background:var(--bg);padding:4px 0 8px;z-index:5;}
+  .screen-back{background:var(--sky-light);border:none;border-radius:50%;width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--sky-dark);}
+  .screen-title{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--text);flex:1;}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sky-dark);color:#fff;padding:10px 20px;border-radius:20px;font-family:var(--font-body);font-weight:700;font-size:14px;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:60;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sky-dark);color:#fff;padding:12px 22px;border-radius:20px;font-family:var(--font-body);font-weight:700;font-size:15px;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:60;max-width:90vw;text-align:center;}
 
-  .child-card{background:var(--card);border:2px solid var(--border);border-radius:22px;padding:16px;text-align:left;cursor:pointer;}
+  .child-card{background:var(--card);border:2px solid var(--border);border-radius:22px;padding:18px;text-align:left;cursor:pointer;min-height:52px;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;}
   .row3{display:flex;gap:10px;}
   .row3>div{flex:1;}
 
-  .point-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;font-family:var(--font-display);font-weight:700;font-size:13px;}
+  .point-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:12px;font-family:var(--font-display);font-weight:700;font-size:15px;}
   .point-pill.pos{background:var(--sky-light);color:var(--sky-dark);}
   .point-pill.neg{background:#FBE4D6;color:var(--danger);}
-  .alert-banner{background:#FBE4D6;border:2px solid #F3C4A6;border-radius:18px;padding:14px 16px;margin-bottom:12px;}
-  .alert-banner .t{font-family:var(--font-display);font-weight:700;font-size:14px;color:#B5502A;margin-bottom:4px;}
-  .alert-banner .d{font-size:13px;color:#8A5230;margin-bottom:10px;line-height:1.5;}
-  .chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
-  .chip{border:none;border-radius:14px;padding:9px 12px;font-family:var(--font-body);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .alert-banner{background:#FBE4D6;border:2px solid #F3C4A6;border-radius:18px;padding:16px;margin-bottom:14px;}
+  .alert-banner .t{font-family:var(--font-display);font-weight:700;font-size:16px;color:#B5502A;margin-bottom:5px;}
+  .alert-banner .d{font-size:14px;color:#8A5230;margin-bottom:12px;line-height:1.5;}
+  .chip-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
+  .chip{border:none;border-radius:16px;padding:13px 16px;font-family:var(--font-body);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:7px;min-height:48px;}
   .chip.reward{background:var(--sky-light);color:var(--sky-dark);}
   .chip.penalty{background:#FBE4D6;color:var(--danger);}
-  .log-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
-  .log-row .left{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);}
-  .log-row .meta{font-size:11px;color:var(--muted);}
-  .icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:16px;}
-  .icon-pick{background:var(--sky-light);border:none;border-radius:10px;font-size:18px;padding:8px 0;cursor:pointer;}
+  .log-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+  .log-row .left{display:flex;align-items:center;gap:9px;font-size:15px;color:var(--text);}
+  .log-row .meta{font-size:12px;color:var(--muted);}
+  .icon-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px;}
+  .icon-pick{background:var(--sky-light);border:none;border-radius:12px;font-size:22px;padding:12px 0;cursor:pointer;min-height:48px;}
   .icon-pick.selected{background:var(--sky);}
-  .behavior-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
-  .behavior-row .name{flex:1;font-size:14px;font-weight:700;color:var(--text);}
-  .small-icon-btn{background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);}
-  .cat-tag{font-size:11px;color:var(--muted);background:var(--sky-light);border-radius:8px;padding:2px 7px;}
+  .behavior-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
+  .behavior-row .name{flex:1;font-size:15px;font-weight:700;color:var(--text);}
+  .small-icon-btn{background:var(--sky-light);border:none;cursor:pointer;width:42px;height:42px;min-width:42px;border-radius:50%;color:var(--sky-dark);font-size:18px;display:flex;align-items:center;justify-content:center;}
+  .cat-tag{font-size:12px;color:var(--muted);background:var(--sky-light);border-radius:8px;padding:3px 8px;}
 
-  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
-  .settings-row .label{font-size:14px;font-weight:700;color:var(--text);}
-  .settings-row .sub{font-size:12px;color:var(--muted);margin-top:2px;}
-  .icon-btn-round{width:40px;height:40px;border-radius:50%;border:none;background:var(--sky-light);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--sky-dark);}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+  .settings-row .label{font-size:16px;font-weight:700;color:var(--text);}
+  .settings-row .sub{font-size:13px;color:var(--muted);margin-top:2px;}
+  .icon-btn-round{width:44px;height:44px;min-width:44px;border-radius:50%;border:none;background:var(--sky-light);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:19px;color:var(--sky-dark);}
   .sync-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;}
   .sync-dot.on{background:#5FAE7C;}
   .sync-dot.off{background:#C8C0AE;}
   .sync-dot.err{background:var(--danger);}
-  .room-code-box{font-family:var(--font-display);font-weight:800;font-size:24px;letter-spacing:4px;text-align:center;background:var(--sky-light);border-radius:14px;padding:14px;color:var(--sky-dark);margin:10px 0;}
-  .lang-toggle{display:flex;gap:6px;}
-  .lang-toggle button{flex:1;border:2px solid var(--border);background:#fff;border-radius:12px;padding:8px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);}
+  .room-code-box{font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:4px;text-align:center;background:var(--sky-light);border-radius:14px;padding:16px;color:var(--sky-dark);margin:10px 0;}
+  .lang-toggle{display:flex;gap:8px;}
+  .lang-toggle button{flex:1;border:2px solid var(--border);background:#fff;border-radius:12px;padding:11px;font-family:var(--font-display);font-weight:700;font-size:15px;cursor:pointer;color:var(--muted);min-height:46px;}
   .lang-toggle button.active{border-color:var(--sky);color:var(--sky-dark);background:var(--sky-light);}
-  .role-card{border:2px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;text-align:center;}
+  .role-card{border:2px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;cursor:pointer;text-align:center;}
   .role-card.active{border-color:var(--sky);background:var(--sky-light);}
+
+  /* ---- 孩子端整页主视图 ---- */
+  .child-home-header{text-align:center;padding:10px 0 20px;}
+  .child-home-balance{font-family:var(--font-display);font-weight:800;font-size:52px;margin-top:6px;}
+  .section-title{font-family:var(--font-display);font-weight:700;font-size:18px;margin:22px 0 12px;}
+  .version-tag{text-align:center;color:var(--muted);font-size:12px;margin-top:22px;}
 </style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -217,7 +225,11 @@ zh: {
   roomCreatedToast:'房间码已生成，同步已开启', roomJoinedToast:'加入成功，正在同步数据',
   roomDisconnectedToast:'已断开同步（数据仍保存在本机）', syncConnectFailedToast:'连接失败，请检查网络后重试',
   needRoomCodeToast:'请先输入房间码', invalidRoomCodeToast:'房间码格式不对，应该是 8 位',
-  parentOnlyHint:'这部分仅家长模式可见'
+  parentOnlyHint:'这部分仅家长模式可见',
+  pickYourselfTitle:'你是哪位小朋友？', pickYourselfSub:'选好之后，这台设备就是你的专属打卡屏啦',
+  switchChild:'不是我，重新选', myProfile:'我的资料', versionLabel:'版本号',
+  todayLabel:'今天', backToHome:'返回', addPoints:'加分', minusPoints:'扣分',
+  editMyProfile:'编辑我的资料'
 },
 en: {
   appName:'U-Points', appTagline1:'Track good habits, collect little stars', appTagline2:'Make everyday brighter, together as a family',
@@ -284,7 +296,11 @@ en: {
   roomCreatedToast:'Room code created, sync is on', roomJoinedToast:'Joined — syncing data now',
   roomDisconnectedToast:'Sync disconnected (data stays on this device)', syncConnectFailedToast:'Connection failed, check your network and retry',
   needRoomCodeToast:'Please enter a room code first', invalidRoomCodeToast:'Room code should be 8 characters',
-  parentOnlyHint:'Visible in Parent mode only'
+  parentOnlyHint:'Visible in Parent mode only',
+  pickYourselfTitle:'Which one are you?', pickYourselfSub:"Once picked, this device becomes your own points screen",
+  switchChild:"That's not me, pick again", myProfile:'My profile', versionLabel:'Version',
+  todayLabel:'Today', backToHome:'Back', addPoints:'Earn points', minusPoints:'Deductions',
+  editMyProfile:'Edit my profile'
 }
 };
 function t(key, vars){
@@ -298,18 +314,28 @@ function t(key, vars){
   return str;
 }
 
+/* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
+var APP_VERSION = '3.1.0';
+var APP_BUILD_DATE = '2026-08-28';
+
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
   lang: storageGet('lang', 'zh'),
   deviceRole: storageGet('deviceRole', null), // 'parent' | 'child' | null(未选)
+  boundChildId: storageGet('boundChildId', null), // 孩子模式下，这台设备绑定的是哪个孩子
   cloudSync: storageGet('cloudSync', {enabled:false, roomCode:''})
 };
 function saveState(){
   storageSet('lang', state.lang);
   storageSet('deviceRole', state.deviceRole);
+  storageSet('boundChildId', state.boundChildId);
   storageSet('cloudSync', state.cloudSync);
 }
 function isParentMode(){ return state.deviceRole !== 'child'; } // 默认（未选择时）按家长权限处理，更安全的做法是先走角色选择步骤
+function boundChild(){
+  if(!state.boundChildId) return null;
+  return data.children.find(function(c){ return c.id === state.boundChildId; }) || null;
+}
 
 /* ---------------- 头像 ---------------- */
 var AVATARS = [
@@ -637,8 +663,14 @@ function copyRoomCode(){
 }
 
 /* =====================================================================
-   界面渲染与交互
+   界面渲染与交互 (v3.1: 整页导航 + 孩子端专属主页 + 版本号)
    ===================================================================== */
+var screenStack = [];
+function pushScreen(s){ screenStack.push(s); scrollAppTop(); render(); }
+function popScreen(){ screenStack.pop(); scrollAppTop(); render(); }
+function currentScreen(){ return screenStack.length ? screenStack[screenStack.length-1] : null; }
+function scrollAppTop(){ window.scrollTo(0,0); }
+
 var step = !data.setupDone ? 'welcome' : (state.deviceRole===null ? 'roleSelect' : 'dashboard');
 var draft = {
   familyName: '',
@@ -647,13 +679,15 @@ var draft = {
 };
 var joinRoomDraft = '';
 var roleDraft = null;
-var modal = null;
 var toastMsg = ''; var toastTimer = null;
 var behaviorForm = null;
 var confirmDeleteBehaviorId = null;
 var thresholdForm = null;
 var settingsJoinInput = false;
 var settingsRoomCodeDraft = '';
+var editChildTab = 'points';
+var confirmDeleteChild = false;
+var screenForm = null; // addParent / addChild 屏幕的表单草稿
 
 function toast(msg){
   toastMsg = msg; render();
@@ -675,30 +709,37 @@ function segmentedHtml(actName, id, value, options){
   return s + '</div>';
 }
 function avatarPickerHtml(actName, ownerId, selected){
-  var s = '<div style="font-family:var(--font-body);font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px;">'+t('avatarLabel')+'</div><div class="avatar-grid">';
+  var s = '<div style="font-family:var(--font-body);font-weight:700;font-size:15px;color:var(--text);margin-bottom:10px;">'+t('avatarLabel')+'</div><div class="avatar-grid">';
   AVATARS.forEach(function(a){
     s += '<button type="button" class="avatar-pick tap'+(selected===a.id?' selected':'')+'" data-act="'+actName+'" data-id="'+ownerId+'" data-value="'+a.id+'">'+
-      avatarHtml(a.id, 44, {ring:false}) + '<span class="sel-ring"></span></button>';
+      avatarHtml(a.id, 52, {ring:false}) + '<span class="sel-ring"></span></button>';
   });
   return s + '</div>';
 }
 function genderOptions(){ return [['男',t('genderBoy')],['女',t('genderGirl')],['保密',t('genderPrivate')]]; }
 function categoryOptions(){ return [['学习',t('catStudy')],['生活',t('catLife')],['礼貌',t('catManner')],['家务',t('catChore')],['其他',t('catOther')]]; }
+function screenHeader(title, backAct){
+  return '<div class="screen-header"><button class="screen-back tap" data-act="'+(backAct||'nav-back')+'">‹</button><div class="screen-title">'+title+'</div></div>';
+}
 
 /* ---------------- 顶层渲染 ---------------- */
 function render(){
   var app = document.getElementById('app');
   var html = '';
-  if(step === 'welcome') html = renderWelcome();
+  var scr = currentScreen();
+  if(scr){
+    html = renderScreen(scr);
+  } else if(step === 'welcome') html = renderWelcome();
   else if(step === 'joinRoom') html = renderJoinRoom();
   else if(step === 'family') html = renderFamilyStep();
   else if(step === 'parents') html = renderParentsStep();
   else if(step === 'children') html = renderChildrenStep();
   else if(step === 'roleSelect') html = renderRoleSelect();
+  else if(step === 'pickYourself') html = renderPickYourself();
+  else if(!isParentMode() && boundChild()) html = renderChildHome();
   else html = renderDashboard();
 
   if(toastMsg) html += '<div class="toast fade-in">'+esc(toastMsg)+'</div>';
-  if(modal) html += renderModal();
 
   app.innerHTML = html;
   bindEvents();
@@ -711,7 +752,7 @@ function renderWelcome(){
       '<img src="'+WELCOME_LOGO_SRC+'" alt="U-Points" style="width:96px;height:96px;border-radius:50%;box-shadow:0 8px 20px rgba(43,108,147,.25);">'+
     '</div>'+
     '<div style="font-family:var(--font-display);font-weight:800;font-size:30px;letter-spacing:0.5px;">'+t('appName')+'</div>'+
-    '<div style="color:var(--muted);font-size:15px;margin-top:8px;line-height:1.6;">'+t('appTagline1')+'<br>'+t('appTagline2')+'</div>'+
+    '<div style="color:var(--muted);font-size:16px;margin-top:8px;line-height:1.6;">'+t('appTagline1')+'<br>'+t('appTagline2')+'</div>'+
   '</div>'+
   '<div style="margin-top:40px;">'+
     '<button class="btn-primary tap" data-act="go-family">'+t('startBuildingFamily')+' →</button>'+
@@ -722,7 +763,8 @@ function renderWelcome(){
     '<input type="file" id="importFile" accept=".json" style="display:none;">'+
   '</div>'+
   '<div style="margin-top:24px;">'+langToggleHtml()+'</div>'+
-  '<div style="margin-top:20px;background:var(--sun-light);border-radius:16px;padding:14px 16px;font-size:13px;color:#8A6A2C;line-height:1.6;">'+t('welcomeTip')+'</div>';
+  '<div style="margin-top:20px;background:var(--sun-light);border-radius:16px;padding:16px;font-size:14px;color:#8A6A2C;line-height:1.6;">'+t('welcomeTip')+'</div>'+
+  '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
 }
 
 function langToggleHtml(){
@@ -735,11 +777,11 @@ function langToggleHtml(){
 function renderJoinRoom(){
   return ''+
   '<div style="padding-top:20px;">'+
-  '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-bottom:6px;">'+t('joinRoomTitle')+'</div>'+
-  '<div style="color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.6;">'+t('joinRoomDesc')+'</div>'+
+  '<div style="font-family:var(--font-display);font-weight:800;font-size:23px;margin-bottom:6px;">'+t('joinRoomTitle')+'</div>'+
+  '<div style="color:var(--muted);font-size:15px;margin-bottom:22px;line-height:1.6;">'+t('joinRoomDesc')+'</div>'+
   '<div class="field"><input id="joinRoomInput" value="'+esc(joinRoomDraft)+'" placeholder="'+t('roomCodePlaceholder')+'" style="text-align:center;font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:3px;text-transform:uppercase;"></div>'+
   '<div style="display:flex;gap:10px;margin-top:8px;">'+
-    '<button class="btn-ghost tap" style="flex:0 0 90px;" data-act="go-welcome">← '+t('back')+'</button>'+
+    '<button class="btn-ghost tap" style="flex:0 0 96px;" data-act="go-welcome">← '+t('back')+'</button>'+
     '<button class="btn-primary tap" data-act="do-join-room">'+t('joinBtn')+'</button>'+
   '</div></div>';
 }
@@ -747,24 +789,24 @@ function renderJoinRoom(){
 function renderFamilyStep(){
   return ''+
   stepDots(3,0)+
-  '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-bottom:6px;">'+t('familyStepTitle')+'</div>'+
-  '<div style="color:var(--muted);font-size:14px;margin-bottom:22px;">'+t('familyStepSub')+'</div>'+
+  '<div style="font-family:var(--font-display);font-weight:800;font-size:23px;margin-bottom:6px;">'+t('familyStepTitle')+'</div>'+
+  '<div style="color:var(--muted);font-size:15px;margin-bottom:22px;">'+t('familyStepSub')+'</div>'+
   '<div class="field"><label>'+t('familyNameLabel')+'</label><input id="familyNameInput" value="'+esc(draft.familyName)+'" placeholder="'+t('familyNamePlaceholder')+'"></div>'+
   '<div style="display:flex;gap:10px;margin-top:8px;">'+
-    '<button class="btn-ghost tap" style="flex:0 0 90px;" data-act="go-welcome">← '+t('back')+'</button>'+
+    '<button class="btn-ghost tap" style="flex:0 0 96px;" data-act="go-welcome">← '+t('back')+'</button>'+
     '<button class="btn-primary tap" data-act="go-parents">'+t('next')+'</button>'+
   '</div>';
 }
 
 function renderParentsStep(){
   var html = stepDots(3,1)+
-    '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-bottom:6px;">'+t('parentsStepTitle')+'</div>'+
-    '<div style="color:var(--muted);font-size:14px;margin-bottom:22px;">'+t('parentsStepSub')+'</div>';
+    '<div style="font-family:var(--font-display);font-weight:800;font-size:23px;margin-bottom:6px;">'+t('parentsStepTitle')+'</div>'+
+    '<div style="color:var(--muted);font-size:15px;margin-bottom:22px;">'+t('parentsStepSub')+'</div>';
   draft.parents.forEach(function(p, idx){
     html += '<div class="card-box">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
-        '<div style="font-family:var(--font-display);font-weight:700;font-size:15px;">'+t('parentLabel')+' '+(idx+1)+'</div>'+
-        (draft.parents.length>1 ? '<button data-act="remove-draft-parent" data-id="'+p.id+'" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;">🗑</button>' : '')+
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:16px;">'+t('parentLabel')+' '+(idx+1)+'</div>'+
+        (draft.parents.length>1 ? '<button data-act="remove-draft-parent" data-id="'+p.id+'" class="small-icon-btn">🗑</button>' : '')+
       '</div>'+
       '<div class="field"><input data-act="draft-parent-name" data-id="'+p.id+'" value="'+esc(p.name)+'" placeholder="'+t('parentNamePlaceholder')+'"></div>'+
       avatarPickerHtml('draft-parent-avatar', p.id, p.avatar)+
@@ -772,7 +814,7 @@ function renderParentsStep(){
   });
   if(draft.parents.length < 2) html += '<button class="dashed-btn tap" data-act="add-draft-parent">'+t('addSecondParent')+'</button>';
   html += '<div style="display:flex;gap:10px;">'+
-    '<button class="btn-ghost tap" style="flex:0 0 90px;" data-act="go-family">← '+t('back')+'</button>'+
+    '<button class="btn-ghost tap" style="flex:0 0 96px;" data-act="go-family">← '+t('back')+'</button>'+
     '<button class="btn-primary tap" data-act="go-children">'+t('next')+'</button>'+
   '</div>';
   return html;
@@ -780,17 +822,17 @@ function renderParentsStep(){
 
 function renderChildrenStep(){
   var html = stepDots(3,2)+
-    '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-bottom:6px;">'+t('childrenStepTitle')+'</div>'+
-    '<div style="color:var(--muted);font-size:14px;margin-bottom:22px;">'+t('childrenStepSub')+'</div>';
+    '<div style="font-family:var(--font-display);font-weight:800;font-size:23px;margin-bottom:6px;">'+t('childrenStepTitle')+'</div>'+
+    '<div style="color:var(--muted);font-size:15px;margin-bottom:22px;">'+t('childrenStepSub')+'</div>';
   draft.children.forEach(function(c, idx){
     html += '<div class="card-box">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
-        '<div style="font-family:var(--font-display);font-weight:700;font-size:15px;">'+t('childLabel')+' '+(idx+1)+'</div>'+
-        (draft.children.length>1 ? '<button data-act="remove-draft-child" data-id="'+c.id+'" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;">🗑</button>' : '')+
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:16px;">'+t('childLabel')+' '+(idx+1)+'</div>'+
+        (draft.children.length>1 ? '<button data-act="remove-draft-child" data-id="'+c.id+'" class="small-icon-btn">🗑</button>' : '')+
       '</div>'+
       '<div class="field"><label>'+t('nicknameLabel')+'</label><input data-act="draft-child-name" data-id="'+c.id+'" value="'+esc(c.name)+'" placeholder="'+t('nicknamePlaceholder')+'"></div>'+
       '<div class="field"><label>'+t('genderLabel')+'</label>'+segmentedHtml('draft-child-gender', c.id, c.gender, genderOptions())+'</div>'+
-      '<div class="row3" style="margin-bottom:16px;">'+
+      '<div class="row3" style="margin-bottom:18px;">'+
         '<div class="field" style="margin-bottom:0;"><label>'+t('ageLabel')+'</label><input type="number" data-act="draft-child-age" data-id="'+c.id+'" value="'+esc(c.age)+'"></div>'+
         '<div class="field" style="margin-bottom:0;"><label>'+t('heightLabel')+'</label><input type="number" data-act="draft-child-height" data-id="'+c.id+'" value="'+esc(c.height)+'" placeholder="cm"></div>'+
         '<div class="field" style="margin-bottom:0;"><label>'+t('weightLabel')+'</label><input type="number" data-act="draft-child-weight" data-id="'+c.id+'" value="'+esc(c.weight)+'" placeholder="kg"></div>'+
@@ -801,7 +843,7 @@ function renderChildrenStep(){
   html += '<button class="dashed-btn tap" data-act="add-draft-child">'+t('addAnotherChild')+'</button>';
   var canFinish = draft.children.some(function(c){ return c.name.trim(); });
   html += '<div style="display:flex;gap:10px;">'+
-    '<button class="btn-ghost tap" style="flex:0 0 90px;" data-act="go-parents">← '+t('back')+'</button>'+
+    '<button class="btn-ghost tap" style="flex:0 0 96px;" data-act="go-parents">← '+t('back')+'</button>'+
     '<button class="btn-primary tap" data-act="finish-setup" '+(canFinish?'':'disabled')+'>'+t('finishSetup')+' ✓</button>'+
   '</div>';
   return html;
@@ -811,31 +853,43 @@ function renderRoleSelect(){
   var sel = roleDraft;
   return ''+
   '<div style="padding-top:30px;text-align:center;">'+
-  '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-bottom:6px;">'+t('roleStepTitle')+'</div>'+
-  '<div style="color:var(--muted);font-size:14px;margin-bottom:24px;">'+t('roleStepSub')+'</div>'+
+  '<div style="font-family:var(--font-display);font-weight:800;font-size:23px;margin-bottom:6px;">'+t('roleStepTitle')+'</div>'+
+  '<div style="color:var(--muted);font-size:15px;margin-bottom:24px;">'+t('roleStepSub')+'</div>'+
   '</div>'+
   '<div class="role-card tap'+(sel==='parent'?' active':'')+'" data-act="pick-role" data-value="parent">'+
-    '<div style="font-size:28px;">🧑‍🤝‍🧑</div>'+
-    '<div style="font-family:var(--font-display);font-weight:700;font-size:16px;margin-top:6px;">'+t('roleParent')+'</div>'+
-    '<div style="font-size:12px;color:var(--muted);margin-top:4px;">'+t('roleParentDesc')+'</div>'+
+    '<div style="font-size:30px;">🧑‍🤝‍🧑</div>'+
+    '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:6px;">'+t('roleParent')+'</div>'+
+    '<div style="font-size:13px;color:var(--muted);margin-top:4px;">'+t('roleParentDesc')+'</div>'+
   '</div>'+
   '<div class="role-card tap'+(sel==='child'?' active':'')+'" data-act="pick-role" data-value="child">'+
-    '<div style="font-size:28px;">🧒</div>'+
-    '<div style="font-family:var(--font-display);font-weight:700;font-size:16px;margin-top:6px;">'+t('roleChild')+'</div>'+
-    '<div style="font-size:12px;color:var(--muted);margin-top:4px;">'+t('roleChildDesc')+'</div>'+
+    '<div style="font-size:30px;">🧒</div>'+
+    '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:6px;">'+t('roleChild')+'</div>'+
+    '<div style="font-size:13px;color:var(--muted);margin-top:4px;">'+t('roleChildDesc')+'</div>'+
   '</div>'+
   '<button class="btn-primary tap" style="margin-top:10px;" data-act="confirm-role" '+(sel?'':'disabled')+'>'+t('confirmRole')+'</button>';
 }
 
-/* ---------------- 首页仪表盘 ---------------- */
+function renderPickYourself(){
+  var html = '<div style="padding-top:20px;text-align:center;">'+
+    '<div style="font-family:var(--font-display);font-weight:800;font-size:23px;margin-bottom:6px;">'+t('pickYourselfTitle')+'</div>'+
+    '<div style="color:var(--muted);font-size:15px;margin-bottom:24px;">'+t('pickYourselfSub')+'</div></div>';
+  data.children.forEach(function(c){
+    html += '<button class="role-card tap" style="display:flex;align-items:center;gap:14px;text-align:left;" data-act="pick-yourself" data-id="'+c.id+'">'+
+      avatarHtml(c.avatar, 56) +
+      '<div style="font-family:var(--font-display);font-weight:700;font-size:18px;">'+esc(c.name)+'</div>'+
+    '</button>';
+  });
+  return html;
+}
+
+/* ---------------- 首页仪表盘（家长模式） ---------------- */
 function renderDashboard(){
-  var parentMode = isParentMode();
   var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'+
-    '<div><div style="color:var(--muted);font-size:13px;font-weight:700;">'+t('helloWave')+'</div>'+
-    '<div style="font-family:var(--font-display);font-weight:800;font-size:23px;">'+esc(data.family?data.family.name:'…')+'</div></div>'+
+    '<div><div style="color:var(--muted);font-size:14px;font-weight:700;">'+t('helloWave')+'</div>'+
+    '<div style="font-family:var(--font-display);font-weight:800;font-size:24px;">'+esc(data.family?data.family.name:'…')+'</div></div>'+
     '<div style="display:flex;align-items:center;gap:8px;">';
   data.parents.forEach(function(p, i){
-    html += '<div style="margin-left:'+(i===0?0:-12)+'px;">'+avatarHtml(p.avatar,40,{ring:false})+'</div>';
+    html += '<div style="margin-left:'+(i===0?0:-12)+'px;">'+avatarHtml(p.avatar,42,{ring:false})+'</div>';
   });
   html += '<button class="icon-btn-round tap" data-act="open-settings" style="margin-left:4px;">⚙️</button>';
   html += '</div></div>';
@@ -846,241 +900,281 @@ function renderDashboard(){
       '<div class="t">⚠️ '+t('alertTitle',{name:esc(a.child.name)})+'</div>'+
       '<div class="d">'+t('alertDesc',{balance:a.balance, label:esc(a.threshold.label || (a.threshold.value+' '))})+'</div>'+
       '<div style="display:flex;gap:10px;">'+
-        '<button class="btn-ghost tap" style="padding:9px 14px;font-size:13px;" data-act="dismiss-alert" data-id="'+a.threshold.id+'">'+t('gotIt')+'</button>'+
-        '<button class="btn-primary tap" style="padding:9px 14px;font-size:13px;" data-act="open-child-points" data-id="'+a.child.id+'">'+t('goCheck')+'</button>'+
+        '<button class="btn-ghost tap" style="padding:10px 14px;font-size:14px;min-height:44px;" data-act="dismiss-alert" data-id="'+a.threshold.id+'">'+t('gotIt')+'</button>'+
+        '<button class="btn-primary tap" style="padding:10px 14px;font-size:14px;min-height:44px;" data-act="open-child-points" data-id="'+a.child.id+'">'+t('goCheck')+'</button>'+
       '</div>'+
     '</div>';
   });
 
-  html += '<div style="font-family:var(--font-display);font-weight:700;font-size:16px;margin-bottom:12px;">'+t('kidsInHouse')+'</div>';
+  html += '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-bottom:12px;">'+t('kidsInHouse')+'</div>';
   html += '<div class="grid2">';
   data.children.forEach(function(c){
     var bal = pointBalance(c.id);
     html += '<button class="child-card tap" data-act="open-child" data-id="'+c.id+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
-        avatarHtml(c.avatar,52)+
+        avatarHtml(c.avatar,54)+
         '<span class="point-pill '+(bal>=0?'pos':'neg')+'">⭐ '+bal+'</span>'+
       '</div>'+
-      '<div style="font-family:var(--font-display);font-weight:700;font-size:16px;margin-top:10px;">'+esc(c.name)+'</div>'+
-      '<div style="color:var(--muted);font-size:12px;margin-top:2px;">'+esc(t(c.gender==='男'?'genderBoy':(c.gender==='女'?'genderGirl':'genderPrivate')))+' · '+esc(c.age||'?')+' '+(state.lang==='en'?'yrs':'岁')+'</div>'+
-      '<div style="display:flex;gap:10px;margin-top:8px;font-size:12px;color:var(--sky-dark);">'+
+      '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:10px;">'+esc(c.name)+'</div>'+
+      '<div style="color:var(--muted);font-size:13px;margin-top:2px;">'+esc(t(c.gender==='男'?'genderBoy':(c.gender==='女'?'genderGirl':'genderPrivate')))+' · '+esc(c.age||'?')+' '+(state.lang==='en'?'yrs':'岁')+'</div>'+
+      '<div style="display:flex;gap:10px;margin-top:8px;font-size:13px;color:var(--sky-dark);">'+
         '<span>📏 '+esc(c.height||'-')+'cm</span><span>⚖️ '+esc(c.weight||'-')+'kg</span>'+
       '</div>'+
     '</button>';
   });
-  if(parentMode){
-    html += '<button class="tap" data-act="open-add-child" style="border:2px dashed var(--sky);background:transparent;border-radius:22px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--sky-dark);cursor:pointer;">'+
-      '<span style="font-size:22px;">+</span><span style="font-size:13px;font-weight:700;">'+t('addChild')+'</span></button>';
-  }
+  html += '<button class="tap" data-act="open-add-child" style="border:2px dashed var(--sky);background:transparent;border-radius:22px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--sky-dark);cursor:pointer;">'+
+    '<span style="font-size:24px;">+</span><span style="font-size:14px;font-weight:700;">'+t('addChild')+'</span></button>';
   html += '</div>';
 
-  if(parentMode){
-    html += '<button class="tap" data-act="open-manage-behaviors" style="width:100%;text-align:left;background:var(--sun-light);border:none;border-radius:20px;padding:16px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">'+
-      '<div>'+
-        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:#8A6A2C;margin-bottom:4px;">'+t('behaviorRuleEntryTitle')+'</div>'+
-        '<div style="font-size:13px;color:#8A6A2C;line-height:1.5;">'+t('behaviorRuleEntryDesc',{count:data.behaviors.length})+'</div>'+
-      '</div>'+
-      '<span style="color:#8A6A2C;font-size:18px;">›</span>'+
-    '</button>';
+  html += '<button class="tap" data-act="open-manage-behaviors" style="width:100%;text-align:left;background:var(--sun-light);border:none;border-radius:20px;padding:18px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">'+
+    '<div>'+
+      '<div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#8A6A2C;margin-bottom:4px;">'+t('behaviorRuleEntryTitle')+'</div>'+
+      '<div style="font-size:14px;color:#8A6A2C;line-height:1.5;">'+t('behaviorRuleEntryDesc',{count:data.behaviors.length})+'</div>'+
+    '</div>'+
+    '<span style="color:#8A6A2C;font-size:20px;">›</span>'+
+  '</button>';
 
-    html += '<div style="display:flex;gap:10px;">'+
-      '<button class="btn-ghost tap" data-act="export-backup">⬇ '+t('exportBackup')+'</button>'+
-      '<button class="btn-ghost tap" data-act="import-click">⬆ '+t('importBackup')+'</button>'+
-      '<input type="file" id="importFile" accept=".json" style="display:none;">'+
-    '</div>';
-  }
+  html += '<div style="display:flex;gap:10px;">'+
+    '<button class="btn-ghost tap" data-act="export-backup">⬇ '+t('exportBackup')+'</button>'+
+    '<button class="btn-ghost tap" data-act="import-click">⬆ '+t('importBackup')+'</button>'+
+    '<input type="file" id="importFile" accept=".json" style="display:none;">'+
+  '</div>';
 
-  html += '<div style="text-align:center;color:var(--muted);font-size:12px;margin-top:18px;line-height:1.6;">'+t('footerNote1')+'<br>'+t('footerNote2')+'</div>';
+  html += '<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:18px;line-height:1.6;">'+t('footerNote1')+'<br>'+t('footerNote2')+'</div>';
+  html += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
   return html;
 }
 
-/* ---------------- 弹窗 ---------------- */
-function modalWrap(title, body){
-  return '<div class="modal-mask" data-act="close-modal-bg">'+
-    '<div class="modal-box fade-in" onclick="event.stopPropagation()">'+
-      '<div class="modal-head"><div class="modal-title">'+title+'</div>'+
-        '<button class="modal-close tap" data-act="close-modal">✕</button></div>'+
-      body+
-    '</div></div>';
+/* ---------------- 孩子端专属整页主视图 ---------------- */
+function renderChildHome(){
+  var c = boundChild();
+  if(!c) return renderPickYourself();
+  var bal = pointBalance(c.id);
+  var rewards = data.behaviors.filter(function(b){ return b.points > 0; });
+  var penalties = data.behaviors.filter(function(b){ return b.points < 0; });
+  var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,10);
+
+  var html = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px;">'+
+    '<button class="icon-btn-round tap" data-act="open-settings">⚙️</button>'+
+  '</div>';
+
+  html += '<div class="child-home-header">'+
+    avatarHtml(c.avatar, 88) +
+    '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-top:12px;">'+esc(c.name)+'</div>'+
+    '<div class="child-home-balance" style="color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+bal+'</div>'+
+    '<div style="color:var(--muted);font-size:14px;">'+t('currentPoints')+'</div>'+
+  '</div>';
+
+  var rewardChips = rewards.map(function(b){
+    return '<button class="chip reward tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' +'+b.points+'</button>';
+  }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
+  var penaltyChips = penalties.map(function(b){
+    return '<button class="chip penalty tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' '+b.points+'</button>';
+  }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
+
+  html += '<div class="section-title">'+t('rewardSection')+'</div><div class="chip-grid">'+rewardChips+'</div>';
+  html += '<div class="section-title">'+t('penaltySection')+'</div><div class="chip-grid">'+penaltyChips+'</div>';
+
+  var logRows = logs.map(function(l){
+    var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
+    return '<div class="log-row"><div class="left"><span style="font-size:20px;">'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
+      '<span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span></div>';
+  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noLogs')+'</div>';
+  html += '<div class="section-title">'+t('recentLogs')+'</div><div>'+logRows+'</div>';
+
+  html += '<div style="margin-top:22px;">'+
+    '<button class="btn-ghost tap" data-act="open-my-profile" data-id="'+c.id+'">✏️ '+t('editMyProfile')+'</button>'+
+  '</div>';
+  html += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
+  return html;
 }
 
-function renderModal(){
-  if(modal.type === 'settings') return renderSettingsModal();
-
-  if(modal.type === 'addParent'){
-    var f = modal.form || {name:'', avatar:'cloud'};
-    return modalWrap(t('addParentTitle'), ''+
-      '<div class="field"><label>'+t('parentTitle')+'</label><input id="mAddParentName" value="'+esc(f.name)+'" placeholder="'+t('parentNamePlaceholder')+'"></div>'+
-      avatarPickerHtml('modal-add-parent-avatar','_', f.avatar)+
-      '<button class="btn-primary tap" data-act="save-add-parent">'+t('save')+'</button>'
-    );
-  }
-  if(modal.type === 'addChild'){
-    var f = modal.form || {name:'',gender:'保密',age:'',height:'',weight:'',avatar:'star'};
-    return modalWrap(t('addChildTitle'), ''+
-      '<div class="field"><label>'+t('childTitle')+'</label><input id="mAddChildName" value="'+esc(f.name)+'" placeholder="'+t('nicknamePlaceholder')+'"></div>'+
-      '<div class="field"><label>'+t('genderLabel')+'</label>'+segmentedHtml('modal-add-child-gender','_', f.gender, genderOptions())+'</div>'+
-      '<div class="row3" style="margin-bottom:16px;">'+
-        '<div class="field" style="margin-bottom:0;"><label>'+t('ageLabel')+'</label><input type="number" id="mAddChildAge" value="'+esc(f.age)+'"></div>'+
-        '<div class="field" style="margin-bottom:0;"><label>'+t('heightLabel')+'</label><input type="number" id="mAddChildHeight" value="'+esc(f.height)+'" placeholder="cm"></div>'+
-        '<div class="field" style="margin-bottom:0;"><label>'+t('weightLabel')+'</label><input type="number" id="mAddChildWeight" value="'+esc(f.weight)+'" placeholder="kg"></div>'+
-      '</div>'+
-      avatarPickerHtml('modal-add-child-avatar','_', f.avatar)+
-      '<button class="btn-primary tap" data-act="save-add-child">'+t('save')+'</button>'
-    );
-  }
-
-  if(modal.type === 'editChild'){
-    var c = data.children.find(function(x){return x.id===modal.childId;});
-    if(!c) { modal = null; return ''; }
-    var parentMode = isParentMode();
-    var tab = parentMode ? (modal.tab || 'info') : 'points';
-    var body = '';
-
-    if(tab === 'info'){
-      body = avatarPickerHtml('edit-child-avatar', c.id, c.avatar)+
-        '<div class="field"><label>'+t('nicknameLabel')+'</label><input id="mEditChildName" value="'+esc(c.name)+'"></div>'+
-        '<div class="field"><label>'+t('genderLabel')+'</label>'+segmentedHtml('edit-child-gender', c.id, c.gender, genderOptions())+'</div>'+
-        '<div class="field"><label>'+t('ageLabel')+'</label><input type="number" id="mEditChildAge" value="'+esc(c.age)+'"></div>'+
-        '<button class="btn-primary tap" data-act="save-edit-child-info" data-id="'+c.id+'">'+t('saveChanges')+'</button>'+
-        '<div style="height:10px;"></div>'+
-        (modal.confirmDelete ?
-          '<div style="text-align:center;">'+
-            '<div style="font-size:13px;color:var(--danger);margin-bottom:8px;">'+t('deleteConfirmText')+'</div>'+
-            '<div style="display:flex;gap:10px;">'+
-              '<button class="btn-ghost tap" data-act="cancel-delete-child">'+t('reallyThink')+'</button>'+
-              '<button class="btn-danger tap" data-act="confirm-delete-child" data-id="'+c.id+'">'+t('confirmDelete')+'</button>'+
-            '</div></div>'
-          : '<button class="btn-ghost tap" style="color:var(--danger);border-color:#F6DCC9;" data-act="ask-delete-child">'+t('deleteChildProfile')+'</button>'
-        );
-    } else if(tab === 'growth'){
-      var heightRows = (c.heightHistory||[]).slice().reverse().map(function(h){
-        return '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--border);"><span>'+esc(h.date)+'</span><span style="color:var(--text);font-weight:700;">'+h.value+' cm</span></div>';
-      }).join('') || '<div style="font-size:13px;color:var(--muted);">'+t('noHeightYet')+'</div>';
-      var weightRows = (c.weightHistory||[]).slice().reverse().map(function(w){
-        return '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--border);"><span>'+esc(w.date)+'</span><span style="color:var(--text);font-weight:700;">'+w.value+' kg</span></div>';
-      }).join('') || '<div style="font-size:13px;color:var(--muted);">'+t('noWeightYet')+'</div>';
-      body = ''+
-        '<div style="display:flex;gap:10px;margin-bottom:6px;">'+
-          '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addHeight')+'</label><input type="number" id="mNewHeight" placeholder="cm"></div>'+
-          '<div style="flex:0 0 90px;padding-top:26px;"><button class="btn-primary tap" data-act="add-height" data-id="'+c.id+'" style="padding:12px 10px;font-size:13px;">'+t('record')+'</button></div>'+
-        '</div>'+
-        '<div style="margin-bottom:16px;">'+heightRows+'</div>'+
-        '<div style="display:flex;gap:10px;margin-bottom:6px;">'+
-          '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addWeight')+'</label><input type="number" id="mNewWeight" placeholder="kg"></div>'+
-          '<div style="flex:0 0 90px;padding-top:26px;"><button class="btn-primary tap" data-act="add-weight" data-id="'+c.id+'" style="padding:12px 10px;font-size:13px;">'+t('record')+'</button></div>'+
-        '</div>'+
-        '<div>'+weightRows+'</div>';
-    } else if(tab === 'points'){
-      var bal = pointBalance(c.id);
-      var rewards = data.behaviors.filter(function(b){ return b.points > 0; });
-      var penalties = data.behaviors.filter(function(b){ return b.points < 0; });
-      var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,12);
-
-      var rewardChips = rewards.map(function(b){
-        return '<button class="chip reward tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' +'+b.points+'</button>';
-      }).join('') || '<div style="font-size:13px;color:var(--muted);">'+t('noRewards')+'</div>';
-      var penaltyChips = penalties.map(function(b){
-        return '<button class="chip penalty tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' '+b.points+'</button>';
-      }).join('') || '<div style="font-size:13px;color:var(--muted);">'+t('noPenalties')+'</div>';
-      var logRows = logs.map(function(l){
-        var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-        return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
-          '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span>'+
-          (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
-      }).join('') || '<div style="font-size:13px;color:var(--muted);padding:8px 0;">'+t('noLogs')+'</div>';
-
-      body = ''+
-        '<div style="text-align:center;background:var(--sky-light);border-radius:18px;padding:16px;margin-bottom:16px;">'+
-          '<div style="font-size:12px;color:var(--muted);font-weight:700;">'+t('currentPoints')+'</div>'+
-          '<div style="font-family:var(--font-display);font-weight:800;font-size:32px;color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+bal+'</div>'+
-          (parentMode ? '<button class="btn-ghost tap" style="width:auto;padding:6px 14px;font-size:12px;margin-top:6px;" data-act="open-manage-thresholds" data-id="'+c.id+'">'+t('thresholdSettings')+'</button>' : '')+
-        '</div>'+
-        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:8px;">'+t('rewardSection')+'</div>'+
-        '<div class="chip-grid" style="margin-bottom:16px;">'+rewardChips+'</div>'+
-        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:8px;">'+t('penaltySection')+'</div>'+
-        '<div class="chip-grid" style="margin-bottom:16px;">'+penaltyChips+'</div>'+
-        '<div style="font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:4px;">'+t('recentLogs')+'</div>'+
-        '<div>'+logRows+'</div>';
-    }
-
-    var tabs = parentMode
-      ? segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['growth',t('growthTab')],['points',t('pointsTab')]])
-      : '';
-    return modalWrap(esc(c.name), tabs + body);
-  }
-
-  if(modal.type === 'manageBehaviors'){
-    var rows = data.behaviors.map(function(b){
-      if(confirmDeleteBehaviorId === b.id){
-        return '<div class="behavior-row"><div class="name" style="color:var(--danger);font-size:13px;">'+t('deleteBehaviorConfirm',{name:esc(behaviorDisplayName(b))})+'</div>'+
-          '<button class="small-icon-btn" data-act="cancel-delete-behavior">'+t('reallyThink')+'</button>'+
-          '<button class="small-icon-btn" style="color:var(--danger);" data-act="confirm-delete-behavior" data-id="'+b.id+'">'+t('confirmDelete')+'</button></div>';
-      }
-      return '<div class="behavior-row">'+
-        '<span style="font-size:20px;">'+esc(b.icon)+'</span>'+
-        '<div class="name">'+esc(behaviorDisplayName(b))+' <span class="cat-tag">'+esc(t('cat'+({'学习':'Study','生活':'Life','礼貌':'Manner','家务':'Chore','其他':'Other'}[b.category]||'Other')))+'</span></div>'+
-        '<span class="point-pill '+(b.points>=0?'pos':'neg')+'">'+(b.points>=0?'+':'')+b.points+'</span>'+
-        '<button class="small-icon-btn" data-act="edit-behavior" data-id="'+b.id+'">✏️</button>'+
-        '<button class="small-icon-btn" data-act="ask-delete-behavior" data-id="'+b.id+'">🗑</button>'+
-      '</div>';
-    }).join('') || '<div style="font-size:13px;color:var(--muted);padding:8px 0;">'+t('noBehaviors')+'</div>';
-
-    var formHtml = '';
-    if(behaviorForm){
-      var f = behaviorForm;
-      formHtml = '<div class="card-box" style="margin-top:14px;">'+
-        '<div class="field"><label>'+t('behaviorNameLabel')+'</label><input id="mBehaviorName" value="'+esc(f.name)+'" placeholder="'+t('behaviorNamePlaceholder')+'"></div>'+
-        '<div class="field"><label>'+t('categoryLabel')+'</label>'+segmentedHtml('behavior-category', '_', f.category, categoryOptions())+'</div>'+
-        '<div class="field"><label>'+t('iconLabel')+'</label></div>'+
-        '<div class="icon-grid">'+BEHAVIOR_ICONS.map(function(ic){
-          return '<button type="button" class="icon-pick tap'+(f.icon===ic?' selected':'')+'" data-act="behavior-icon" data-value="'+ic+'">'+ic+'</button>';
-        }).join('')+'</div>'+
-        '<div class="field"><label>'+t('signLabel')+'</label>'+segmentedHtml('behavior-sign', '_', f.sign, [['reward',t('signReward')],['penalty',t('signPenalty')]])+'</div>'+
-        '<div class="field"><label>'+t('pointValueLabel')+'</label><input type="number" id="mBehaviorAbs" value="'+esc(f.abs)+'" placeholder="'+t('pointValuePlaceholder')+'"></div>'+
-        '<div style="display:flex;gap:10px;">'+
-          '<button class="btn-ghost tap" data-act="cancel-behavior-form">'+t('cancel')+'</button>'+
-          '<button class="btn-primary tap" data-act="save-behavior">'+t('save')+'</button>'+
-        '</div>'+
-      '</div>';
-    }
-    return modalWrap(t('behaviorsTitle'), ''+
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5;">'+t('behaviorsDesc')+'</div>'+
-      rows + (behaviorForm ? '' : '<button class="dashed-btn tap" style="margin-top:14px;" data-act="open-add-behavior-form">'+t('addBehaviorRule')+'</button>') + formHtml
-    );
-  }
-
-  if(modal.type === 'manageThresholds'){
-    var child = data.children.find(function(x){return x.id===modal.childId;});
-    if(!child){ modal=null; return ''; }
-    var tRows = childThresholds(child.id).map(function(th){
-      return '<div class="behavior-row">'+
-        '<div class="name">'+esc(th.label || t('thresholdSettings'))+'</div>'+
-        '<span class="point-pill neg">≤ '+th.value+'</span>'+
-        '<button class="small-icon-btn" data-act="delete-threshold" data-id="'+th.id+'">🗑</button>'+
-      '</div>';
-    }).join('') || '<div style="font-size:13px;color:var(--muted);padding:8px 0;">'+t('noThresholds')+'</div>';
-
-    var tForm = thresholdForm ? (''+
-      '<div class="card-box" style="margin-top:14px;">'+
-        '<div class="field"><label>'+t('thresholdLabelLabel')+'</label><input id="mThresholdLabel" value="'+esc(thresholdForm.label)+'" placeholder="'+t('thresholdLabelPlaceholder')+'"></div>'+
-        '<div class="field"><label>'+t('thresholdValueLabel')+'</label><input type="number" id="mThresholdValue" value="'+esc(thresholdForm.value)+'" placeholder="'+t('thresholdValuePlaceholder')+'"></div>'+
-        '<div style="display:flex;gap:10px;">'+
-          '<button class="btn-ghost tap" data-act="cancel-threshold-form">'+t('cancel')+'</button>'+
-          '<button class="btn-primary tap" data-act="save-threshold" data-id="'+child.id+'">'+t('save')+'</button>'+
-        '</div>'+
-      '</div>'
-    ) : '<button class="dashed-btn tap" style="margin-top:14px;" data-act="open-add-threshold-form">'+t('addThreshold')+'</button>';
-
-    return modalWrap(t('thresholdsTitle',{name:esc(child.name)}), ''+
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5;">'+t('thresholdsDesc')+'</div>'+
-      tRows + tForm
-    );
-  }
+/* ---------------- 整页视图（设置/孩子档案/行为规则/阈值/添加家长孩子）---------------- */
+function renderScreen(scr){
+  if(scr.type === 'settings') return renderSettingsScreen();
+  if(scr.type === 'addParent') return renderAddParentScreen();
+  if(scr.type === 'addChild') return renderAddChildScreen();
+  if(scr.type === 'editChild') return renderEditChildScreen(scr);
+  if(scr.type === 'manageBehaviors') return renderManageBehaviorsScreen();
+  if(scr.type === 'manageThresholds') return renderManageThresholdsScreen(scr);
   return '';
 }
 
-function renderSettingsModal(){
+function renderAddParentScreen(){
+  var f = screenForm || {name:'', avatar:'cloud'};
+  return screenHeader(t('addParentTitle')) +
+    '<div class="field"><label>'+t('parentTitle')+'</label><input id="mAddParentName" value="'+esc(f.name)+'" placeholder="'+t('parentNamePlaceholder')+'"></div>'+
+    avatarPickerHtml('modal-add-parent-avatar','_', f.avatar)+
+    '<button class="btn-primary tap" data-act="save-add-parent">'+t('save')+'</button>';
+}
+
+function renderAddChildScreen(){
+  var f = screenForm || {name:'',gender:'保密',age:'',height:'',weight:'',avatar:'star'};
+  return screenHeader(t('addChildTitle')) +
+    '<div class="field"><label>'+t('childTitle')+'</label><input id="mAddChildName" value="'+esc(f.name)+'" placeholder="'+t('nicknamePlaceholder')+'"></div>'+
+    '<div class="field"><label>'+t('genderLabel')+'</label>'+segmentedHtml('modal-add-child-gender','_', f.gender, genderOptions())+'</div>'+
+    '<div class="row3" style="margin-bottom:18px;">'+
+      '<div class="field" style="margin-bottom:0;"><label>'+t('ageLabel')+'</label><input type="number" id="mAddChildAge" value="'+esc(f.age)+'"></div>'+
+      '<div class="field" style="margin-bottom:0;"><label>'+t('heightLabel')+'</label><input type="number" id="mAddChildHeight" value="'+esc(f.height)+'" placeholder="cm"></div>'+
+      '<div class="field" style="margin-bottom:0;"><label>'+t('weightLabel')+'</label><input type="number" id="mAddChildWeight" value="'+esc(f.weight)+'" placeholder="kg"></div>'+
+    '</div>'+
+    avatarPickerHtml('modal-add-child-avatar','_', f.avatar)+
+    '<button class="btn-primary tap" data-act="save-add-child">'+t('save')+'</button>';
+}
+
+function renderEditChildScreen(scr){
+  var c = data.children.find(function(x){return x.id===scr.childId;});
+  if(!c){ popScreen(); return ''; }
+  var parentMode = isParentMode();
+  var tab = editChildTab;
+  var body = '';
+
+  if(tab === 'info'){
+    body = avatarPickerHtml('edit-child-avatar', c.id, c.avatar)+
+      '<div class="field"><label>'+t('nicknameLabel')+'</label><input id="mEditChildName" value="'+esc(c.name)+'"></div>';
+    if(parentMode){
+      body += '<div class="field"><label>'+t('genderLabel')+'</label>'+segmentedHtml('edit-child-gender', c.id, c.gender, genderOptions())+'</div>'+
+        '<div class="field"><label>'+t('ageLabel')+'</label><input type="number" id="mEditChildAge" value="'+esc(c.age)+'"></div>';
+    }
+    body += '<button class="btn-primary tap" data-act="save-edit-child-info" data-id="'+c.id+'">'+t('saveChanges')+'</button>';
+    if(parentMode){
+      body += '<div style="height:12px;"></div>'+
+      (confirmDeleteChild ?
+        '<div style="text-align:center;">'+
+          '<div style="font-size:14px;color:var(--danger);margin-bottom:10px;">'+t('deleteConfirmText')+'</div>'+
+          '<div style="display:flex;gap:10px;">'+
+            '<button class="btn-ghost tap" data-act="cancel-delete-child">'+t('reallyThink')+'</button>'+
+            '<button class="btn-danger tap" data-act="confirm-delete-child" data-id="'+c.id+'">'+t('confirmDelete')+'</button>'+
+          '</div></div>'
+        : '<button class="btn-ghost tap" style="color:var(--danger);border-color:#F6DCC9;" data-act="ask-delete-child">'+t('deleteChildProfile')+'</button>'
+      );
+    }
+  } else if(tab === 'growth'){
+    var heightRows = (c.heightHistory||[]).slice().reverse().map(function(h){
+      return '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);"><span>'+esc(h.date)+'</span><span style="color:var(--text);font-weight:700;">'+h.value+' cm</span></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noHeightYet')+'</div>';
+    var weightRows = (c.weightHistory||[]).slice().reverse().map(function(w){
+      return '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);"><span>'+esc(w.date)+'</span><span style="color:var(--text);font-weight:700;">'+w.value+' kg</span></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noWeightYet')+'</div>';
+    body = ''+
+      '<div style="display:flex;gap:10px;margin-bottom:8px;">'+
+        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addHeight')+'</label><input type="number" id="mNewHeight" placeholder="cm"></div>'+
+        '<div style="flex:0 0 96px;padding-top:29px;"><button class="btn-primary tap" data-act="add-height" data-id="'+c.id+'" style="padding:14px 10px;font-size:14px;">'+t('record')+'</button></div>'+
+      '</div>'+
+      '<div style="margin-bottom:20px;">'+heightRows+'</div>'+
+      '<div style="display:flex;gap:10px;margin-bottom:8px;">'+
+        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addWeight')+'</label><input type="number" id="mNewWeight" placeholder="kg"></div>'+
+        '<div style="flex:0 0 96px;padding-top:29px;"><button class="btn-primary tap" data-act="add-weight" data-id="'+c.id+'" style="padding:14px 10px;font-size:14px;">'+t('record')+'</button></div>'+
+      '</div>'+
+      '<div>'+weightRows+'</div>';
+  } else if(tab === 'points'){
+    var bal = pointBalance(c.id);
+    var rewards = data.behaviors.filter(function(b){ return b.points > 0; });
+    var penalties = data.behaviors.filter(function(b){ return b.points < 0; });
+    var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,12);
+
+    var rewardChips = rewards.map(function(b){
+      return '<button class="chip reward tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' +'+b.points+'</button>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
+    var penaltyChips = penalties.map(function(b){
+      return '<button class="chip penalty tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' '+b.points+'</button>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
+    var logRows = logs.map(function(l){
+      var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
+      return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span>'+
+        (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noLogs')+'</div>';
+
+    body = ''+
+      '<div style="text-align:center;background:var(--sky-light);border-radius:18px;padding:18px;margin-bottom:18px;">'+
+        '<div style="font-size:13px;color:var(--muted);font-weight:700;">'+t('currentPoints')+'</div>'+
+        '<div style="font-family:var(--font-display);font-weight:800;font-size:36px;color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+bal+'</div>'+
+        (parentMode ? '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;margin-top:6px;min-height:auto;" data-act="open-manage-thresholds" data-id="'+c.id+'">'+t('thresholdSettings')+'</button>' : '')+
+      '</div>'+
+      '<div class="section-title" style="margin-top:0;">'+t('rewardSection')+'</div>'+
+      '<div class="chip-grid" style="margin-bottom:18px;">'+rewardChips+'</div>'+
+      '<div class="section-title">'+t('penaltySection')+'</div>'+
+      '<div class="chip-grid" style="margin-bottom:18px;">'+penaltyChips+'</div>'+
+      '<div class="section-title">'+t('recentLogs')+'</div>'+
+      '<div>'+logRows+'</div>';
+  }
+
+  var tabs = parentMode
+    ? segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['growth',t('growthTab')],['points',t('pointsTab')]])
+    : segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['info',t('infoTab')],['growth',t('growthTab')]]);
+
+  return screenHeader(esc(c.name)) + tabs + body;
+}
+
+function renderManageBehaviorsScreen(){
+  var rows = data.behaviors.map(function(b){
+    if(confirmDeleteBehaviorId === b.id){
+      return '<div class="behavior-row"><div class="name" style="color:var(--danger);font-size:14px;">'+t('deleteBehaviorConfirm',{name:esc(behaviorDisplayName(b))})+'</div>'+
+        '<button class="btn-ghost tap" style="width:auto;padding:8px 12px;min-height:auto;" data-act="cancel-delete-behavior">'+t('reallyThink')+'</button>'+
+        '<button class="small-icon-btn" style="color:var(--danger);" data-act="confirm-delete-behavior" data-id="'+b.id+'">✓</button></div>';
+    }
+    var catKey = {'学习':'catStudy','生活':'catLife','礼貌':'catManner','家务':'catChore','其他':'catOther'}[b.category] || 'catOther';
+    return '<div class="behavior-row">'+
+      '<span style="font-size:22px;">'+esc(b.icon)+'</span>'+
+      '<div class="name">'+esc(behaviorDisplayName(b))+' <span class="cat-tag">'+esc(t(catKey))+'</span></div>'+
+      '<span class="point-pill '+(b.points>=0?'pos':'neg')+'">'+(b.points>=0?'+':'')+b.points+'</span>'+
+      '<button class="small-icon-btn" data-act="edit-behavior" data-id="'+b.id+'">✏️</button>'+
+      '<button class="small-icon-btn" data-act="ask-delete-behavior" data-id="'+b.id+'">🗑</button>'+
+    '</div>';
+  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noBehaviors')+'</div>';
+
+  var formHtml = '';
+  if(behaviorForm){
+    var f = behaviorForm;
+    formHtml = '<div class="card-box" style="margin-top:16px;">'+
+      '<div class="field"><label>'+t('behaviorNameLabel')+'</label><input id="mBehaviorName" value="'+esc(f.name)+'" placeholder="'+t('behaviorNamePlaceholder')+'"></div>'+
+      '<div class="field"><label>'+t('categoryLabel')+'</label>'+segmentedHtml('behavior-category', '_', f.category, categoryOptions())+'</div>'+
+      '<div class="field"><label>'+t('iconLabel')+'</label></div>'+
+      '<div class="icon-grid">'+BEHAVIOR_ICONS.map(function(ic){
+        return '<button type="button" class="icon-pick tap'+(f.icon===ic?' selected':'')+'" data-act="behavior-icon" data-value="'+ic+'">'+ic+'</button>';
+      }).join('')+'</div>'+
+      '<div class="field"><label>'+t('signLabel')+'</label>'+segmentedHtml('behavior-sign', '_', f.sign, [['reward',t('signReward')],['penalty',t('signPenalty')]])+'</div>'+
+      '<div class="field"><label>'+t('pointValueLabel')+'</label><input type="number" id="mBehaviorAbs" value="'+esc(f.abs)+'" placeholder="'+t('pointValuePlaceholder')+'"></div>'+
+      '<div style="display:flex;gap:10px;">'+
+        '<button class="btn-ghost tap" data-act="cancel-behavior-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-behavior">'+t('save')+'</button>'+
+      '</div>'+
+    '</div>';
+  }
+  return screenHeader(t('behaviorsTitle')) +
+    '<div style="font-size:14px;color:var(--muted);margin-bottom:14px;line-height:1.5;">'+t('behaviorsDesc')+'</div>'+
+    rows + (behaviorForm ? '' : '<button class="dashed-btn tap" style="margin-top:16px;" data-act="open-add-behavior-form">'+t('addBehaviorRule')+'</button>') + formHtml;
+}
+
+function renderManageThresholdsScreen(scr){
+  var child = data.children.find(function(x){return x.id===scr.childId;});
+  if(!child){ popScreen(); return ''; }
+  var tRows = childThresholds(child.id).map(function(th){
+    return '<div class="behavior-row">'+
+      '<div class="name">'+esc(th.label || t('thresholdSettings'))+'</div>'+
+      '<span class="point-pill neg">≤ '+th.value+'</span>'+
+      '<button class="small-icon-btn" data-act="delete-threshold" data-id="'+th.id+'">🗑</button>'+
+    '</div>';
+  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noThresholds')+'</div>';
+
+  var tForm = thresholdForm ? (''+
+    '<div class="card-box" style="margin-top:16px;">'+
+      '<div class="field"><label>'+t('thresholdLabelLabel')+'</label><input id="mThresholdLabel" value="'+esc(thresholdForm.label)+'" placeholder="'+t('thresholdLabelPlaceholder')+'"></div>'+
+      '<div class="field"><label>'+t('thresholdValueLabel')+'</label><input type="number" id="mThresholdValue" value="'+esc(thresholdForm.value)+'" placeholder="'+t('thresholdValuePlaceholder')+'"></div>'+
+      '<div style="display:flex;gap:10px;">'+
+        '<button class="btn-ghost tap" data-act="cancel-threshold-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-threshold" data-id="'+child.id+'">'+t('save')+'</button>'+
+      '</div>'+
+    '</div>'
+  ) : '<button class="dashed-btn tap" style="margin-top:16px;" data-act="open-add-threshold-form">'+t('addThreshold')+'</button>';
+
+  return screenHeader(t('thresholdsTitle',{name:esc(child.name)})) +
+    '<div style="font-size:14px;color:var(--muted);margin-bottom:14px;line-height:1.5;">'+t('thresholdsDesc')+'</div>'+
+    tRows + tForm;
+}
+
+function renderSettingsScreen(){
   var parentMode = isParentMode();
   var dot = state.cloudSyncStatus==='connected' ? 'on' : (state.cloudSyncStatus==='error' ? 'err' : 'off');
   var statusText = state.cloudSync.enabled
@@ -1089,27 +1183,31 @@ function renderSettingsModal(){
 
   var body = '<div class="settings-row"><div class="label">'+t('languageLabel')+'</div></div>'+
     langToggleHtml()+
-    '<div class="settings-row" style="margin-top:18px;"><div class="label">'+t('deviceRoleLabel')+'</div></div>'+
+    '<div class="settings-row" style="margin-top:20px;"><div class="label">'+t('deviceRoleLabel')+'</div></div>'+
     segmentedHtml('set-device-role', '_', state.deviceRole||'parent', [['parent',t('roleParent')],['child',t('roleChild')]]);
 
+  if(!parentMode && boundChild()){
+    body += '<div style="margin-top:10px;"><button class="btn-ghost tap" data-act="switch-child">🔄 '+t('switchChild')+'</button></div>';
+  }
+
   if(parentMode){
-    body += '<div class="settings-row" style="margin-top:18px;"><div class="label">'+t('syncSectionTitle')+'</div></div>'+
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:10px;"><span class="sync-dot '+dot+'"></span>'+statusText+(state.cloudSync.enabled && state.cloudSync.roomCode ? ' '+state.cloudSync.roomCode : '')+'</div>';
+    body += '<div class="settings-row" style="margin-top:20px;"><div class="label">'+t('syncSectionTitle')+'</div></div>'+
+      '<div style="font-size:14px;color:var(--muted);margin-bottom:10px;"><span class="sync-dot '+dot+'"></span>'+statusText+(state.cloudSync.enabled && state.cloudSync.roomCode ? ' '+state.cloudSync.roomCode : '')+'</div>';
 
     if(state.cloudSync.enabled && state.cloudSync.roomCode){
       body += '<div class="room-code-box">'+state.cloudSync.roomCode+'</div>'+
-        '<div style="display:flex;gap:10px;margin-bottom:16px;">'+
+        '<div style="display:flex;gap:10px;margin-bottom:18px;">'+
           '<button class="btn-ghost tap" data-act="copy-room-code">📋 '+t('copyRoomCode')+'</button>'+
           '<button class="btn-ghost tap" style="color:var(--danger);border-color:#F6DCC9;" data-act="disconnect-room">'+t('disconnectRoomBtn')+'</button>'+
         '</div>';
     } else if(settingsJoinInput){
       body += '<div class="field"><input id="settingsRoomCodeInput" value="'+esc(settingsRoomCodeDraft)+'" placeholder="'+t('roomCodePlaceholder')+'" style="text-align:center;font-family:var(--font-display);font-weight:800;letter-spacing:3px;text-transform:uppercase;"></div>'+
-        '<div style="display:flex;gap:10px;margin-bottom:16px;">'+
+        '<div style="display:flex;gap:10px;margin-bottom:18px;">'+
           '<button class="btn-ghost tap" data-act="cancel-settings-join">'+t('cancel')+'</button>'+
           '<button class="btn-primary tap" data-act="do-settings-join">'+t('joinBtn')+'</button>'+
         '</div>';
     } else {
-      body += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">'+
+      body += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">'+
         '<button class="btn-primary tap" data-act="create-room">🔗 '+t('createRoomBtn')+'</button>'+
         '<button class="btn-ghost tap" data-act="open-settings-join">'+t('joinRoomBtn')+'</button>'+
       '</div>';
@@ -1123,7 +1221,8 @@ function renderSettingsModal(){
       '</div>';
   }
 
-  return modalWrap(t('settingsTitle'), body);
+  body += '<div class="version-tag" style="margin-top:26px;">'+t('versionLabel')+' '+APP_VERSION+' · '+APP_BUILD_DATE+'</div>';
+  return screenHeader(t('settingsTitle')) + body;
 }
 
 /* ---------------- 事件绑定 ---------------- */
@@ -1156,11 +1255,10 @@ function bindEvents(){
       var c = draft.children.find(function(x){return x.id===inp.getAttribute('data-id');});
       if(!c) return;
       var act = inp.getAttribute('data-act');
-      if(act==='draft-child-name') c.name = inp.value;
+      if(act==='draft-child-name'){ c.name = inp.value; updateFinishButtonState(); }
       if(act==='draft-child-age') c.age = inp.value;
       if(act==='draft-child-height') c.height = inp.value;
       if(act==='draft-child-weight') c.weight = inp.value;
-      if(act==='draft-child-name') updateFinishButtonState();
     });
   });
 }
@@ -1175,6 +1273,7 @@ function updateFinishButtonState(){
 
 /* ---------------- 动作处理 ---------------- */
 function handleAction(act, id, value, el){
+  if(act==='nav-back'){ popScreen(); return; }
   if(act==='go-welcome'){ step='welcome'; render(); }
   else if(act==='go-family'){ step='family'; render(); }
   else if(act==='go-parents'){ step='parents'; render(); }
@@ -1196,10 +1295,23 @@ function handleAction(act, id, value, el){
 
   else if(act==='finish-setup'){ finishSetup(); }
   else if(act==='pick-role'){ roleDraft = value; render(); }
-  else if(act==='confirm-role'){ if(roleDraft){ state.deviceRole = roleDraft; saveState(); step='dashboard'; render(); } }
+  else if(act==='confirm-role'){
+    if(roleDraft){
+      state.deviceRole = roleDraft; saveState();
+      if(roleDraft==='child'){ step='pickYourself'; } else { step='dashboard'; }
+      render();
+    }
+  }
+  else if(act==='pick-yourself'){ state.boundChildId = id; saveState(); step='dashboard'; render(); }
+  else if(act==='switch-child'){ state.boundChildId = null; saveState(); screenStack=[]; step='pickYourself'; render(); }
+  else if(act==='open-my-profile'){ editChildTab='info'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
-  else if(act==='open-settings'){ settingsJoinInput=false; settingsRoomCodeDraft=''; modal={type:'settings'}; render(); }
-  else if(act==='set-device-role'){ state.deviceRole = value; saveState(); render(); }
+  else if(act==='open-settings'){ settingsJoinInput=false; settingsRoomCodeDraft=''; pushScreen({type:'settings'}); }
+  else if(act==='set-device-role'){
+    state.deviceRole = value; saveState();
+    if(value==='child' && !state.boundChildId){ screenStack=[]; step='pickYourself'; }
+    render();
+  }
   else if(act==='create-room'){ connectCloudSync(genRoomCode(), true); }
   else if(act==='open-settings-join'){ settingsJoinInput=true; settingsRoomCodeDraft=''; render(); }
   else if(act==='cancel-settings-join'){ settingsJoinInput=false; render(); }
@@ -1213,37 +1325,35 @@ function handleAction(act, id, value, el){
   else if(act==='copy-room-code'){ copyRoomCode(); }
 
   else if(!isParentMode() && ['open-add-parent','open-add-child','ask-delete-child','open-manage-behaviors','open-manage-thresholds','open-add-behavior-form','edit-behavior','save-behavior','confirm-delete-behavior','open-add-threshold-form','save-threshold','delete-threshold'].indexOf(act)>=0){
-    // 孩子模式下这些管理类操作一律忽略（入口本来也是隐藏的，这里是双保险）
-    return;
+    return; // 孩子模式下这些管理类操作一律忽略（入口本来也是隐藏的，这里是双保险）
   }
 
-  else if(act==='open-add-parent'){ modal = {type:'addParent', form:{name:'', avatar:'cloud'}}; render(); }
-  else if(act==='open-add-child'){ modal = {type:'addChild', form:{name:'',gender:'保密',age:'',height:'',weight:'',avatar:'star'}}; render(); }
-  else if(act==='open-child'){ modal = {type:'editChild', childId:id, tab:'info'}; render(); }
-  else if(act==='close-modal' || act==='close-modal-bg'){ modal=null; render(); }
+  else if(act==='open-add-parent'){ screenForm = {name:'', avatar:'cloud'}; pushScreen({type:'addParent'}); }
+  else if(act==='open-add-child'){ screenForm = {name:'',gender:'保密',age:'',height:'',weight:'',avatar:'star'}; pushScreen({type:'addChild'}); }
+  else if(act==='open-child'){ editChildTab='info'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
-  else if(act==='modal-add-parent-avatar'){ modal.form.avatar = value; render(); }
+  else if(act==='modal-add-parent-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-parent'){ saveAddParent(); }
 
-  else if(act==='modal-add-child-gender'){ modal.form.gender = value; render(); }
-  else if(act==='modal-add-child-avatar'){ modal.form.avatar = value; render(); }
+  else if(act==='modal-add-child-gender'){ screenForm.gender = value; render(); }
+  else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ modal.tab = value; modal.confirmDelete=false; render(); }
-  else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ persistEntity('children', c); c.avatar=value; persistEntity('children', c);} render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; render(); }
+  else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
-  else if(act==='ask-delete-child'){ modal.confirmDelete = true; render(); }
-  else if(act==='cancel-delete-child'){ modal.confirmDelete = false; render(); }
-  else if(act==='confirm-delete-child'){ persistDelete('children', id); modal = null; toast(t('deletedProfileToast')); }
+  else if(act==='ask-delete-child'){ confirmDeleteChild = true; render(); }
+  else if(act==='cancel-delete-child'){ confirmDeleteChild = false; render(); }
+  else if(act==='confirm-delete-child'){ persistDelete('children', id); popScreen(); toast(t('deletedProfileToast')); }
   else if(act==='add-height'){ addGrowthRecord(id, 'height'); }
   else if(act==='add-weight'){ addGrowthRecord(id, 'weight'); }
 
   else if(act==='log-point'){ addPointLog(id, value); var b=behaviorById(value); toast(b?((b.points>=0?'+':'')+b.points+' '+t('pointsRecordedToast')):''); }
   else if(act==='delete-log'){ deletePointLog(id); render(); }
-  else if(act==='open-child-points'){ modal = {type:'editChild', childId:id, tab:'points'}; render(); }
+  else if(act==='open-child-points'){ editChildTab='points'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
-  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; modal = {type:'manageBehaviors'}; render(); }
+  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; pushScreen({type:'manageBehaviors'}); }
   else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', abs:''}; render(); }
   else if(act==='edit-behavior'){
     var b = behaviorById(id);
@@ -1259,7 +1369,7 @@ function handleAction(act, id, value, el){
   else if(act==='cancel-delete-behavior'){ confirmDeleteBehaviorId = null; render(); }
   else if(act==='confirm-delete-behavior'){ persistDelete('behaviors', id); confirmDeleteBehaviorId = null; toast(t('behaviorDeletedToast')); }
 
-  else if(act==='open-manage-thresholds'){ thresholdForm=null; modal = {type:'manageThresholds', childId:id}; render(); }
+  else if(act==='open-manage-thresholds'){ thresholdForm=null; pushScreen({type:'manageThresholds', childId:id}); }
   else if(act==='open-add-threshold-form'){ thresholdForm = {value:'', label:''}; render(); }
   else if(act==='cancel-threshold-form'){ thresholdForm=null; render(); }
   else if(act==='save-threshold'){ saveThreshold(id); }
@@ -1313,8 +1423,8 @@ function saveAddParent(){
   var n = document.getElementById('mAddParentName');
   var name = n ? n.value.trim() : '';
   if(!name) { toast(t('fillBehaviorFieldsToast')); return; }
-  persistEntity('parents', {id:uid(), name:name, avatar:modal.form.avatar});
-  modal = null;
+  persistEntity('parents', {id:uid(), name:name, avatar:screenForm.avatar});
+  popScreen();
   toast(t('parentAddedToast'));
 }
 
@@ -1325,7 +1435,7 @@ function saveAddChild(){
   var w = document.getElementById('mAddChildWeight');
   var name = n ? n.value.trim() : '';
   if(!name) return;
-  var f = modal.form;
+  var f = screenForm;
   var age = a?a.value:'', height=h?h.value:'', weight=w?w.value:'';
   var heightHistory = height ? [{date:todayStr(), value:Number(height)}] : [];
   var weightHistory = weight ? [{date:todayStr(), value:Number(weight)}] : [];
@@ -1333,7 +1443,7 @@ function saveAddChild(){
     id:uid(), name:name, gender:f.gender, age:age, height:height, weight:weight,
     avatar:f.avatar, heightHistory:heightHistory, weightHistory:weightHistory
   });
-  modal = null;
+  popScreen();
   toast(t('childAddedToast'));
 }
 
@@ -1423,8 +1533,8 @@ function handleImportFile(e){
       if(!data.pointLogs) data.pointLogs = [];
       if(!data.thresholds) data.thresholds = [];
       saveData();
+      screenStack = [];
       step = parsed.setupDone ? (state.deviceRole===null?'roleSelect':'dashboard') : 'welcome';
-      modal = null;
       toast(t('dataRestoredToast'));
       render();
       if(cloudSyncActive()) pushAllLocal();
