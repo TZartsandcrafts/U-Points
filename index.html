@@ -21,7 +21,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html{-webkit-text-size-adjust:100%;}
   body{margin:0;background:linear-gradient(180deg,var(--sky-light) 0%, var(--bg) 340px);font-family:var(--font-body);color:var(--text);font-size:16px;line-height:1.55;overflow-x:hidden;}
-  #app{max-width:480px;margin:0 auto;padding:22px 18px 60px;position:relative;min-height:100vh;}
+  #app{max-width:480px;margin:0 auto;padding:max(22px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));position:relative;}
   input, select, textarea, button{font-size:16px;}
   .tap:active{transform:scale(0.96);}
   .tap{transition:transform .12s ease;}
@@ -60,7 +60,7 @@
   .dashed-btn{width:100%;border:2px dashed var(--sky);background:transparent;border-radius:18px;padding:16px;color:var(--sky-dark);font-family:var(--font-display);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px;min-height:52px;}
 
   /* ---- 整页视图（取代原先的底部弹窗），带返回箭头的页头 ---- */
-  .screen-header{display:flex;align-items:center;gap:10px;margin-bottom:22px;position:sticky;top:0;background:var(--bg);padding:4px 0 8px;z-index:5;}
+  .screen-header{display:flex;align-items:center;gap:10px;margin-bottom:22px;position:sticky;top:env(safe-area-inset-top);background:var(--bg);padding:4px 0 8px;z-index:5;margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px;}
   .screen-back{background:var(--sky-light);border:none;border-radius:50%;width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--sky-dark);}
   .screen-title{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--text);flex:1;}
 
@@ -201,7 +201,7 @@ zh: {
   rewardSection:'加分 ✨', penaltySection:'扣分 ⚠️',
   noRewards:'还没有加分项，去"行为规则"里添加吧', noPenalties:'还没有扣分项',
   recentLogs:'最近记录', noLogs:'还没有积分记录',
-  behaviorsTitle:'行为规则与积分', behaviorsDesc:'这里的加减分项，会出现在每个孩子的"积分记录"页面里，方便随手打分。',
+  behaviorsTitle:'行为规则与积分', behaviorsTitleForChild:'{{name}} 的行为规则', behaviorsDesc:'这里的加减分项，会出现在这个孩子的"积分记录"页面里，方便随手打分。每个孩子的规则可以各不相同。',
   noBehaviors:'还没有行为规则，点下面添加一条吧', addBehaviorRule:'+ 添加行为规则',
   behaviorNameLabel:'行为名称', behaviorNamePlaceholder:'例如：主动分享玩具',
   categoryLabel:'分类', catStudy:'学习', catLife:'生活', catManner:'礼貌', catChore:'家务', catOther:'其他',
@@ -272,7 +272,7 @@ en: {
   rewardSection:'Reward points ✨', penaltySection:'Deductions ⚠️',
   noRewards:'No reward items yet — add some in "Behavior rules"', noPenalties:'No deduction items yet',
   recentLogs:'Recent activity', noLogs:'No points logged yet',
-  behaviorsTitle:"Behavior rules & points", behaviorsDesc:"These items show up on each child's Points tab for quick tapping.",
+  behaviorsTitle:"Behavior rules & points", behaviorsTitleForChild:"{{name}}'s behavior rules", behaviorsDesc:"These items show up on this child's Points tab for quick tapping. Each child can have their own set of rules.",
   noBehaviors:'No rules yet — add one below', addBehaviorRule:'+ Add a behavior rule',
   behaviorNameLabel:'Behavior name', behaviorNamePlaceholder:'e.g. Shared toys nicely',
   categoryLabel:'Category', catStudy:'Study', catLife:'Life', catManner:'Manners', catChore:'Chores', catOther:'Other',
@@ -315,8 +315,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.1.0';
-var APP_BUILD_DATE = '2026-08-28';
+var APP_VERSION = '3.2.0';
+var APP_BUILD_DATE = '2026-08-29';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -386,12 +386,18 @@ function behaviorDisplayName(b){
 function loadData(){
   var d = storageGet('data', null);
   if(d){
-    if(!d.behaviors) d.behaviors = defaultBehaviors();
     if(!d.pointLogs) d.pointLogs = [];
     if(!d.thresholds) d.thresholds = [];
+    // 迁移：行为规则从"全家共享一份"改成"每个孩子各自一份"。
+    // 老数据里孩子还没有 behaviors 字段的，用原来的全局规则（或默认规则）复制一份给它。
+    (d.children||[]).forEach(function(c){
+      if(!c.behaviors || !c.behaviors.length){
+        c.behaviors = (d.behaviors && d.behaviors.length) ? JSON.parse(JSON.stringify(d.behaviors)) : defaultBehaviors();
+      }
+    });
     return d;
   }
-  return { family:null, parents:[], children:[], behaviors:[], pointLogs:[], thresholds:[], setupDone:false };
+  return { family:null, parents:[], children:[], pointLogs:[], thresholds:[], setupDone:false };
 }
 var data = loadData();
 function saveData(){ storageSet('data', data); }
@@ -400,8 +406,13 @@ function saveData(){ storageSet('data', data); }
 function pointBalance(childId){
   return data.pointLogs.reduce(function(sum, log){ return log.childId === childId ? sum + log.points : sum; }, 0);
 }
-function behaviorById(id){
-  for(var i=0;i<data.behaviors.length;i++) if(data.behaviors[i].id===id) return data.behaviors[i];
+function childById(childId){
+  return data.children.find(function(c){ return c.id===childId; }) || null;
+}
+function behaviorById(childId, id){
+  var c = childById(childId);
+  if(!c || !c.behaviors) return null;
+  for(var i=0;i<c.behaviors.length;i++) if(c.behaviors[i].id===id) return c.behaviors[i];
   return null;
 }
 function childThresholds(childId){
@@ -429,8 +440,10 @@ function activeAlerts(){
 }
 
 /* ---------------- 统一的"写入 + 保存 + 同步"封装 ----------------
-   任何一条 parents/children/behaviors/pointLogs/thresholds 记录被增/改，
-   都过这几个函数：本地立刻保存，若已连接云同步则顺带推送这一条。 */
+   任何一条 parents/children/pointLogs/thresholds 记录被增/改，
+   都过这几个函数：本地立刻保存，若已连接云同步则顺带推送这一条。
+   行为规则现在存在 child.behaviors 数组里，跟着 children 集合一起同步，
+   所以改行为规则时调用 persistEntity('children', child) 即可，不需要单独的 collection。 */
 function touch(entity){ entity.updatedAt = nowIso(); return entity; }
 
 function upsertLocal(collectionName, entity){
@@ -456,7 +469,7 @@ function persistFamily(){
 }
 
 function addPointLog(childId, behaviorId){
-  var b = behaviorById(behaviorId);
+  var b = behaviorById(childId, behaviorId);
   if(!b) return;
   var log = {
     id: uid(), childId: childId, behaviorId: behaviorId,
@@ -485,7 +498,7 @@ var FIREBASE_CONFIG = {
 };
 var FIREBASE_SDK_VERSION = '10.13.0';
 var CLOUD = { app:null, auth:null, db:null, uid:null, sdkLoadPromise:null, unsubs:{}, pushMap: storageGet('cloudSyncPushMap', {}) };
-var SYNC_COLLECTIONS = ['parents','children','behaviors','pointLogs','thresholds'];
+var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds'];
 
 function cloudSyncActive(){ return state.cloudSync.enabled && !!state.cloudSync.roomCode && CLOUD.db; }
 function savePushMap(){ storageSet('cloudSyncPushMap', CLOUD.pushMap); }
@@ -725,6 +738,11 @@ function screenHeader(title, backAct){
 /* ---------------- 顶层渲染 ---------------- */
 function render(){
   var app = document.getElementById('app');
+  // 重绘前先把当前所有输入框的值记下来，重绘后原样恢复——
+  // 避免"点了下头像/性别，刚打的字就被清空"这种数据丢失问题
+  var preserved = {};
+  app.querySelectorAll('input[id]').forEach(function(inp){ preserved[inp.id] = inp.value; });
+
   var html = '';
   var scr = currentScreen();
   if(scr){
@@ -742,6 +760,13 @@ function render(){
   if(toastMsg) html += '<div class="toast fade-in">'+esc(toastMsg)+'</div>';
 
   app.innerHTML = html;
+
+  // 恢复重绘前记下的输入内容（只在对应 id 的输入框仍然存在时才恢复）
+  Object.keys(preserved).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && preserved[id] !== '') el.value = preserved[id];
+  });
+
   bindEvents();
 }
 
@@ -926,21 +951,12 @@ function renderDashboard(){
     '<span style="font-size:24px;">+</span><span style="font-size:14px;font-weight:700;">'+t('addChild')+'</span></button>';
   html += '</div>';
 
-  html += '<button class="tap" data-act="open-manage-behaviors" style="width:100%;text-align:left;background:var(--sun-light);border:none;border-radius:20px;padding:18px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">'+
-    '<div>'+
-      '<div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:#8A6A2C;margin-bottom:4px;">'+t('behaviorRuleEntryTitle')+'</div>'+
-      '<div style="font-size:14px;color:#8A6A2C;line-height:1.5;">'+t('behaviorRuleEntryDesc',{count:data.behaviors.length})+'</div>'+
-    '</div>'+
-    '<span style="color:#8A6A2C;font-size:20px;">›</span>'+
-  '</button>';
-
   html += '<div style="display:flex;gap:10px;">'+
     '<button class="btn-ghost tap" data-act="export-backup">⬇ '+t('exportBackup')+'</button>'+
     '<button class="btn-ghost tap" data-act="import-click">⬆ '+t('importBackup')+'</button>'+
     '<input type="file" id="importFile" accept=".json" style="display:none;">'+
   '</div>';
 
-  html += '<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:18px;line-height:1.6;">'+t('footerNote1')+'<br>'+t('footerNote2')+'</div>';
   html += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
   return html;
 }
@@ -950,8 +966,9 @@ function renderChildHome(){
   var c = boundChild();
   if(!c) return renderPickYourself();
   var bal = pointBalance(c.id);
-  var rewards = data.behaviors.filter(function(b){ return b.points > 0; });
-  var penalties = data.behaviors.filter(function(b){ return b.points < 0; });
+  var childBehaviors = c.behaviors || [];
+  var rewards = childBehaviors.filter(function(b){ return b.points > 0; });
+  var penalties = childBehaviors.filter(function(b){ return b.points < 0; });
   var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,10);
 
   var html = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px;">'+
@@ -995,7 +1012,7 @@ function renderScreen(scr){
   if(scr.type === 'addParent') return renderAddParentScreen();
   if(scr.type === 'addChild') return renderAddChildScreen();
   if(scr.type === 'editChild') return renderEditChildScreen(scr);
-  if(scr.type === 'manageBehaviors') return renderManageBehaviorsScreen();
+  if(scr.type === 'manageBehaviors') return renderManageBehaviorsScreen(scr);
   if(scr.type === 'manageThresholds') return renderManageThresholdsScreen(scr);
   return '';
 }
@@ -1069,8 +1086,9 @@ function renderEditChildScreen(scr){
       '<div>'+weightRows+'</div>';
   } else if(tab === 'points'){
     var bal = pointBalance(c.id);
-    var rewards = data.behaviors.filter(function(b){ return b.points > 0; });
-    var penalties = data.behaviors.filter(function(b){ return b.points < 0; });
+    var childBehaviors = c.behaviors || [];
+    var rewards = childBehaviors.filter(function(b){ return b.points > 0; });
+    var penalties = childBehaviors.filter(function(b){ return b.points < 0; });
     var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,12);
 
     var rewardChips = rewards.map(function(b){
@@ -1090,7 +1108,10 @@ function renderEditChildScreen(scr){
       '<div style="text-align:center;background:var(--sky-light);border-radius:18px;padding:18px;margin-bottom:18px;">'+
         '<div style="font-size:13px;color:var(--muted);font-weight:700;">'+t('currentPoints')+'</div>'+
         '<div style="font-family:var(--font-display);font-weight:800;font-size:36px;color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+bal+'</div>'+
-        (parentMode ? '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;margin-top:6px;min-height:auto;" data-act="open-manage-thresholds" data-id="'+c.id+'">'+t('thresholdSettings')+'</button>' : '')+
+        (parentMode ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;">'+
+          '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;min-height:auto;" data-act="open-manage-behaviors" data-id="'+c.id+'">'+t('behaviorRuleEntryTitle')+'</button>'+
+          '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;min-height:auto;" data-act="open-manage-thresholds" data-id="'+c.id+'">'+t('thresholdSettings')+'</button>'+
+        '</div>' : '')+
       '</div>'+
       '<div class="section-title" style="margin-top:0;">'+t('rewardSection')+'</div>'+
       '<div class="chip-grid" style="margin-bottom:18px;">'+rewardChips+'</div>'+
@@ -1107,8 +1128,11 @@ function renderEditChildScreen(scr){
   return screenHeader(esc(c.name)) + tabs + body;
 }
 
-function renderManageBehaviorsScreen(){
-  var rows = data.behaviors.map(function(b){
+function renderManageBehaviorsScreen(scr){
+  var child = childById(scr.childId);
+  if(!child){ popScreen(); return ''; }
+  var list = child.behaviors || [];
+  var rows = list.map(function(b){
     if(confirmDeleteBehaviorId === b.id){
       return '<div class="behavior-row"><div class="name" style="color:var(--danger);font-size:14px;">'+t('deleteBehaviorConfirm',{name:esc(behaviorDisplayName(b))})+'</div>'+
         '<button class="btn-ghost tap" style="width:auto;padding:8px 12px;min-height:auto;" data-act="cancel-delete-behavior">'+t('reallyThink')+'</button>'+
@@ -1138,11 +1162,11 @@ function renderManageBehaviorsScreen(){
       '<div class="field"><label>'+t('pointValueLabel')+'</label><input type="number" id="mBehaviorAbs" value="'+esc(f.abs)+'" placeholder="'+t('pointValuePlaceholder')+'"></div>'+
       '<div style="display:flex;gap:10px;">'+
         '<button class="btn-ghost tap" data-act="cancel-behavior-form">'+t('cancel')+'</button>'+
-        '<button class="btn-primary tap" data-act="save-behavior">'+t('save')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-behavior" data-id="'+child.id+'">'+t('save')+'</button>'+
       '</div>'+
     '</div>';
   }
-  return screenHeader(t('behaviorsTitle')) +
+  return screenHeader(t('behaviorsTitleForChild',{name:esc(child.name)})) +
     '<div style="font-size:14px;color:var(--muted);margin-bottom:14px;line-height:1.5;">'+t('behaviorsDesc')+'</div>'+
     rows + (behaviorForm ? '' : '<button class="dashed-btn tap" style="margin-top:16px;" data-act="open-add-behavior-form">'+t('addBehaviorRule')+'</button>') + formHtml;
 }
@@ -1222,6 +1246,7 @@ function renderSettingsScreen(){
   }
 
   body += '<div class="version-tag" style="margin-top:26px;">'+t('versionLabel')+' '+APP_VERSION+' · '+APP_BUILD_DATE+'</div>';
+  body += '<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:14px;line-height:1.6;">'+t('footerNote1')+'<br>'+t('footerNote2')+'</div>';
   return screenHeader(t('settingsTitle')) + body;
 }
 
@@ -1353,10 +1378,11 @@ function handleAction(act, id, value, el){
   else if(act==='delete-log'){ deletePointLog(id); render(); }
   else if(act==='open-child-points'){ editChildTab='points'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
-  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; pushScreen({type:'manageBehaviors'}); }
+  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; pushScreen({type:'manageBehaviors', childId:id}); }
   else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', abs:''}; render(); }
   else if(act==='edit-behavior'){
-    var b = behaviorById(id);
+    var scrB = currentScreen();
+    var b = scrB ? behaviorById(scrB.childId, id) : null;
     if(b) behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.points>=0?'reward':'penalty', abs: Math.abs(b.points)};
     render();
   }
@@ -1364,10 +1390,16 @@ function handleAction(act, id, value, el){
   else if(act==='behavior-category'){ if(behaviorForm) behaviorForm.category=value; render(); }
   else if(act==='behavior-icon'){ if(behaviorForm) behaviorForm.icon=value; render(); }
   else if(act==='behavior-sign'){ if(behaviorForm) behaviorForm.sign=value; render(); }
-  else if(act==='save-behavior'){ saveBehavior(); }
+  else if(act==='save-behavior'){ saveBehavior(id); }
   else if(act==='ask-delete-behavior'){ confirmDeleteBehaviorId = id; render(); }
   else if(act==='cancel-delete-behavior'){ confirmDeleteBehaviorId = null; render(); }
-  else if(act==='confirm-delete-behavior'){ persistDelete('behaviors', id); confirmDeleteBehaviorId = null; toast(t('behaviorDeletedToast')); }
+  else if(act==='confirm-delete-behavior'){
+    var scrD = currentScreen();
+    var childD = scrD ? childById(scrD.childId) : null;
+    if(childD){ childD.behaviors = (childD.behaviors||[]).filter(function(b){ return b.id!==id; }); persistEntity('children', childD); }
+    confirmDeleteBehaviorId = null;
+    toast(t('behaviorDeletedToast'));
+  }
 
   else if(act==='open-manage-thresholds'){ thresholdForm=null; pushScreen({type:'manageThresholds', childId:id}); }
   else if(act==='open-add-threshold-form'){ thresholdForm = {value:'', label:''}; render(); }
@@ -1387,14 +1419,13 @@ function finishSetup(){
   var cleanChildren = draft.children.filter(function(c){ return c.name.trim(); }).map(function(c){
     var heightHistory = c.height ? [{date:todayStr(), value:Number(c.height)}] : [];
     var weightHistory = c.weight ? [{date:todayStr(), value:Number(c.weight)}] : [];
-    return Object.assign({}, c, {heightHistory:heightHistory, weightHistory:weightHistory, updatedAt:ts});
+    return Object.assign({}, c, {heightHistory:heightHistory, weightHistory:weightHistory, behaviors:defaultBehaviors(), updatedAt:ts});
   });
   cleanParents.forEach(function(p){ p.updatedAt = ts; });
   data = {
     family: {name: draft.familyName || t('appName'), createdAt: todayStr(), updatedAt: ts},
     parents: cleanParents,
     children: cleanChildren,
-    behaviors: defaultBehaviors(),
     pointLogs: [],
     thresholds: [],
     setupDone: true
@@ -1441,7 +1472,7 @@ function saveAddChild(){
   var weightHistory = weight ? [{date:todayStr(), value:Number(weight)}] : [];
   persistEntity('children', {
     id:uid(), name:name, gender:f.gender, age:age, height:height, weight:weight,
-    avatar:f.avatar, heightHistory:heightHistory, weightHistory:weightHistory
+    avatar:f.avatar, heightHistory:heightHistory, weightHistory:weightHistory, behaviors:defaultBehaviors()
   });
   popScreen();
   toast(t('childAddedToast'));
@@ -1477,7 +1508,10 @@ function addGrowthRecord(childId, kind){
   render();
 }
 
-function saveBehavior(){
+function saveBehavior(childId){
+  var child = childById(childId);
+  if(!child) return;
+  if(!child.behaviors) child.behaviors = [];
   var n = document.getElementById('mBehaviorName');
   var a = document.getElementById('mBehaviorAbs');
   var name = n ? n.value.trim() : '';
@@ -1485,13 +1519,14 @@ function saveBehavior(){
   if(!name || !absVal){ toast(t('fillBehaviorFieldsToast')); return; }
   var points = behaviorForm.sign === 'penalty' ? -Math.abs(absVal) : Math.abs(absVal);
   if(behaviorForm.id){
-    var b = behaviorById(behaviorForm.id);
-    if(b){ b.name=name; b.icon=behaviorForm.icon; b.category=behaviorForm.category; b.points=points; persistEntity('behaviors', b); }
+    var b = child.behaviors.find(function(x){ return x.id===behaviorForm.id; });
+    if(b){ b.name=name; b.icon=behaviorForm.icon; b.category=behaviorForm.category; b.points=points; }
     toast(t('behaviorSavedToast'));
   } else {
-    persistEntity('behaviors', {id:uid(), name:name, icon:behaviorForm.icon, category:behaviorForm.category, points:points});
+    child.behaviors.push({id:uid(), name:name, icon:behaviorForm.icon, category:behaviorForm.category, points:points});
     toast(t('behaviorAddedToast'));
   }
+  persistEntity('children', child);
   behaviorForm = null;
   render();
 }
@@ -1529,9 +1564,13 @@ function handleImportFile(e){
       var parsed = JSON.parse(ev.target.result);
       if(!parsed.children) throw new Error('bad format');
       data = parsed;
-      if(!data.behaviors) data.behaviors = defaultBehaviors();
       if(!data.pointLogs) data.pointLogs = [];
       if(!data.thresholds) data.thresholds = [];
+      (data.children||[]).forEach(function(c){
+        if(!c.behaviors || !c.behaviors.length){
+          c.behaviors = (data.behaviors && data.behaviors.length) ? JSON.parse(JSON.stringify(data.behaviors)) : defaultBehaviors();
+        }
+      });
       saveData();
       screenStack = [];
       step = parsed.setupDone ? (state.deviceRole===null?'roleSelect':'dashboard') : 'welcome';
