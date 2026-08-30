@@ -78,8 +78,12 @@
   .alert-banner{background:#FBE4D6;border:2px solid #F3C4A6;border-radius:18px;padding:16px;margin-bottom:14px;}
   .alert-banner .t{font-family:var(--font-display);font-weight:700;font-size:16px;color:#B5502A;margin-bottom:5px;}
   .alert-banner .d{font-size:14px;color:#8A5230;margin-bottom:12px;line-height:1.5;}
-  .chip-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
-  .chip{border:none;border-radius:16px;padding:13px 16px;font-family:var(--font-body);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:7px;min-height:48px;}
+  .chip-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:8px;}
+  .chip{border:none;border-radius:16px;padding:14px 18px;font-family:var(--font-body);font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;width:100%;text-align:left;}
+  .chip .chip-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .chip .chip-icon{font-size:21px;flex-shrink:0;}
+  .chip .chip-name{overflow-wrap:anywhere;}
+  .chip .chip-value{font-family:var(--font-display);font-weight:800;font-size:17px;flex-shrink:0;}
   .chip.reward{background:var(--sky-light);color:var(--sky-dark);}
   .chip.penalty{background:#FBE4D6;color:var(--danger);}
   .log-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
@@ -206,6 +210,10 @@ zh: {
   categoryLabel:'分类', catStudy:'学习', catLife:'生活', catManner:'礼貌', catChore:'家务', catOther:'其他',
   iconLabel:'图标', signLabel:'加分还是扣分', signReward:'加分 ✨', signPenalty:'扣分 ⚠️',
   pointValueLabel:'分值（正数即可）', pointValuePlaceholder:'例如：3', save:'保存', cancel:'取消',
+  escalateModeLabel:'扣分方式', escalateModeFixed:'固定分值', escalateModeStep:'阶梯翻倍',
+  growthPeriodLabel:'成长期天数', growthPeriodPlaceholder:'例如 14',
+  growthPeriodHint:'成长期内再犯同样的错误，这次扣分会翻倍；成长期内没有再犯，说明孩子学到了教训，下次再犯会先退一级，一直退到清零、从基准分重新开始。',
+  nextDeductionHint:'下次将扣',
   deleteBehaviorConfirm:'删除「{{name}}」？',
   thresholdsTitle:'{{name}} 的预警阈值',
   thresholdsDesc:'达到阈值时，只会在首页提醒家长，不会自动执行任何惩罚——要不要处理由你们决定。',
@@ -279,6 +287,10 @@ en: {
   categoryLabel:'Category', catStudy:'Study', catLife:'Life', catManner:'Manners', catChore:'Chores', catOther:'Other',
   iconLabel:'Icon', signLabel:'Reward or deduction', signReward:'Reward ✨', signPenalty:'Deduction ⚠️',
   pointValueLabel:'Points (positive number)', pointValuePlaceholder:'e.g. 3', save:'Save', cancel:'Cancel',
+  escalateModeLabel:'Deduction style', escalateModeFixed:'Fixed amount', escalateModeStep:'Step-up (doubling)',
+  growthPeriodLabel:'Growth period (days)', growthPeriodPlaceholder:'e.g. 14',
+  growthPeriodHint:"Repeat the same slip within the growth period and the deduction doubles. Stay clear through it and it means they learned the lesson — next time steps back down one level, all the way back to the base amount if the good streak continues.",
+  nextDeductionHint:'Next time:',
   deleteBehaviorConfirm:'Delete "{{name}}"?',
   thresholdsTitle:"{{name}}'s alert thresholds",
   thresholdsDesc:"Reaching a threshold only notifies parents — nothing is auto-enforced. It's up to you.",
@@ -318,7 +330,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.2.1';
+var APP_VERSION = '3.3.0';
 var APP_BUILD_DATE = '2026-08-29';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -471,16 +483,51 @@ function persistFamily(){
   if(cloudSyncActive()) pushFamily();
 }
 
+/* ---------------- 扣分"阶梯翻倍 + 成长期"逻辑 ----------------
+   只对扣分类规则(points<0)且开启了 escalate 的规则生效。
+   规则：成长期内再犯 = 上次扣分 ×2；成长期外每过一个完整周期就退一级(减半)，
+   退到基准分以下就清零，清零后再犯从基准分重新开始（不翻倍）。
+   不需要额外存状态——直接用"上一条同规则的记录实际扣了多少分"倒推。 */
+function parseLogDT(log){ return new Date(log.date + 'T' + (log.time||'00:00') + ':00'); }
+
+function nextEscalatedPoints(child, behavior){
+  var base = Math.abs(behavior.points);
+  if(!behavior.escalate) return behavior.points;
+  var growthDays = behavior.growthDays || 14;
+  var logs = data.pointLogs.filter(function(l){ return l.childId===child.id && l.behaviorId===behavior.id; });
+  if(!logs.length) return -base; // 从没触发过，首次按基准分
+  logs.sort(function(a,b){ return parseLogDT(a) - parseLogDT(b); });
+  var last = logs[logs.length-1];
+  var lastR = Math.abs(last.points);
+  var gapDays = (new Date() - parseLogDT(last)) / 86400000;
+  var windowsElapsed = Math.floor(gapDays / growthDays);
+  var R = lastR;
+  if(windowsElapsed <= 0){
+    R = R * 2; // 成长期内再犯：翻倍
+  } else {
+    var cleared = false;
+    for(var i=0;i<windowsElapsed;i++){
+      if(R <= base){ cleared = true; break; }
+      R = R / 2;
+    }
+    R = cleared ? base : R * 2; // 退回后，这次触发仍然是在退回后的基准上翻倍；清零则从基准重新开始
+  }
+  return -R;
+}
+
 function addPointLog(childId, behaviorId){
+  var child = childById(childId);
   var b = behaviorById(childId, behaviorId);
-  if(!b) return;
+  if(!b || !child) return null;
+  var pts = (b.points < 0 && b.escalate) ? nextEscalatedPoints(child, b) : b.points;
   var log = {
     id: uid(), childId: childId, behaviorId: behaviorId,
-    name: b.name, name_en: b.name_en || '', icon: b.icon, points: b.points,
+    name: b.name, name_en: b.name_en || '', icon: b.icon, points: pts,
     date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
   };
   persistEntity('pointLogs', log);
   rearmThresholds(childId);
+  return log;
 }
 function deletePointLog(logId){
   var log = data.pointLogs.find(function(l){ return l.id===logId; });
@@ -747,6 +794,14 @@ function categoryOptions(){ return [['学习',t('catStudy')],['生活',t('catLif
 function screenHeader(title, backAct){
   return '<div class="screen-header"><button class="screen-back tap" data-act="'+(backAct||'nav-back')+'">‹</button><div class="screen-title">'+title+'</div></div>';
 }
+function renderPointChip(child, b){
+  var pts = (b.points < 0 && b.escalate) ? nextEscalatedPoints(child, b) : b.points;
+  var cls = b.points >= 0 ? 'reward' : 'penalty';
+  return '<button class="chip '+cls+' tap" data-act="log-point" data-id="'+child.id+'" data-value="'+b.id+'">'+
+    '<span class="chip-left"><span class="chip-icon">'+esc(b.icon)+'</span><span class="chip-name">'+esc(behaviorDisplayName(b))+(b.escalate?' 🌱':'')+'</span></span>'+
+    '<span class="chip-value">'+(pts>=0?'+':'')+pts+'</span>'+
+  '</button>';
+}
 
 /* ---------------- 顶层渲染 ---------------- */
 function render(){
@@ -991,12 +1046,8 @@ function renderChildHome(){
     '<div style="color:var(--muted);font-size:14px;">'+t('currentPoints')+'</div>'+
   '</div>';
 
-  var rewardChips = rewards.map(function(b){
-    return '<button class="chip reward tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' +'+b.points+'</button>';
-  }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
-  var penaltyChips = penalties.map(function(b){
-    return '<button class="chip penalty tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' '+b.points+'</button>';
-  }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
+  var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
+  var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
 
   html += '<div class="section-title">'+t('rewardSection')+'</div><div class="chip-grid">'+rewardChips+'</div>';
   html += '<div class="section-title">'+t('penaltySection')+'</div><div class="chip-grid">'+penaltyChips+'</div>';
@@ -1100,12 +1151,8 @@ function renderEditChildScreen(scr){
     var penalties = childBehaviors.filter(function(b){ return b.points < 0; });
     var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,12);
 
-    var rewardChips = rewards.map(function(b){
-      return '<button class="chip reward tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' +'+b.points+'</button>';
-    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
-    var penaltyChips = penalties.map(function(b){
-      return '<button class="chip penalty tap" data-act="log-point" data-id="'+c.id+'" data-value="'+b.id+'">'+esc(b.icon)+' '+esc(behaviorDisplayName(b))+' '+b.points+'</button>';
-    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
+    var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
+    var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
     var logRows = logs.map(function(l){
       var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
       return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
@@ -1150,7 +1197,7 @@ function renderManageBehaviorsScreen(scr){
     var catKey = {'学习':'catStudy','生活':'catLife','礼貌':'catManner','家务':'catChore','其他':'catOther'}[b.category] || 'catOther';
     return '<div class="behavior-row">'+
       '<span style="font-size:22px;">'+esc(b.icon)+'</span>'+
-      '<div class="name">'+esc(behaviorDisplayName(b))+' <span class="cat-tag">'+esc(t(catKey))+'</span></div>'+
+      '<div class="name">'+esc(behaviorDisplayName(b))+' <span class="cat-tag">'+esc(t(catKey))+'</span>'+(b.escalate?' <span class="cat-tag" style="background:var(--sun-light);color:#8A6A2C;">🌱 '+esc(t('escalateModeStep'))+'</span>':'')+'</div>'+
       '<span class="point-pill '+(b.points>=0?'pos':'neg')+'">'+(b.points>=0?'+':'')+b.points+'</span>'+
       '<button class="small-icon-btn" data-act="edit-behavior" data-id="'+b.id+'">✏️</button>'+
       '<button class="small-icon-btn" data-act="ask-delete-behavior" data-id="'+b.id+'">🗑</button>'+
@@ -1169,6 +1216,13 @@ function renderManageBehaviorsScreen(scr){
       }).join('')+'</div>'+
       '<div class="field"><label>'+t('signLabel')+'</label>'+segmentedHtml('behavior-sign', '_', f.sign, [['reward',t('signReward')],['penalty',t('signPenalty')]])+'</div>'+
       '<div class="field"><label>'+t('pointValueLabel')+'</label><input type="number" id="mBehaviorAbs" value="'+esc(f.abs)+'" placeholder="'+t('pointValuePlaceholder')+'"></div>'+
+      (f.sign==='penalty' ? (''+
+        '<div class="field"><label>'+t('escalateModeLabel')+'</label>'+segmentedHtml('behavior-escalate-mode', '_', f.escalate?'step':'fixed', [['fixed',t('escalateModeFixed')],['step',t('escalateModeStep')]])+'</div>'+
+        (f.escalate ? (''+
+          '<div class="field"><label>'+t('growthPeriodLabel')+'</label><input type="number" id="mGrowthDays" value="'+esc(f.growthDays)+'" placeholder="'+t('growthPeriodPlaceholder')+'"></div>'+
+          '<div style="font-size:13px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">🌱 '+t('growthPeriodHint')+'</div>'
+        ) : '')
+      ) : '')+
       '<div style="display:flex;gap:10px;">'+
         '<button class="btn-ghost tap" data-act="cancel-behavior-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-behavior" data-id="'+child.id+'">'+t('save')+'</button>'+
@@ -1401,22 +1455,27 @@ function handleAction(act, id, value, el){
   else if(act==='add-height'){ addGrowthRecord(id, 'height'); }
   else if(act==='add-weight'){ addGrowthRecord(id, 'weight'); }
 
-  else if(act==='log-point'){ addPointLog(id, value); var b=behaviorById(value); toast(b?((b.points>=0?'+':'')+b.points+' '+t('pointsRecordedToast')):''); }
+  else if(act==='log-point'){
+    var loggedEntry = addPointLog(id, value);
+    toast(loggedEntry ? ((loggedEntry.points>=0?'+':'')+loggedEntry.points+' '+t('pointsRecordedToast')) : '');
+    render();
+  }
   else if(act==='delete-log'){ deletePointLog(id); render(); }
   else if(act==='open-child-points'){ editChildTab='points'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
   else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; pushScreen({type:'manageBehaviors', childId:id}); }
-  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', abs:''}; render(); }
+  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', abs:'', escalate:false, growthDays:14}; render(); }
   else if(act==='edit-behavior'){
     var scrB = currentScreen();
     var b = scrB ? behaviorById(scrB.childId, id) : null;
-    if(b) behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.points>=0?'reward':'penalty', abs: Math.abs(b.points)};
+    if(b) behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.points>=0?'reward':'penalty', abs: Math.abs(b.points), escalate: !!b.escalate, growthDays: b.growthDays || 14};
     render();
   }
   else if(act==='cancel-behavior-form'){ behaviorForm=null; render(); }
   else if(act==='behavior-category'){ if(behaviorForm) behaviorForm.category=value; render(); }
   else if(act==='behavior-icon'){ if(behaviorForm) behaviorForm.icon=value; render(); }
   else if(act==='behavior-sign'){ if(behaviorForm) behaviorForm.sign=value; render(); }
+  else if(act==='behavior-escalate-mode'){ if(behaviorForm) behaviorForm.escalate = (value==='step'); render(); }
   else if(act==='save-behavior'){ saveBehavior(id); }
   else if(act==='ask-delete-behavior'){ confirmDeleteBehaviorId = id; render(); }
   else if(act==='cancel-delete-behavior'){ confirmDeleteBehaviorId = null; render(); }
@@ -1541,16 +1600,24 @@ function saveBehavior(childId){
   if(!child.behaviors) child.behaviors = [];
   var n = document.getElementById('mBehaviorName');
   var a = document.getElementById('mBehaviorAbs');
+  var gEl = document.getElementById('mGrowthDays');
   var name = n ? n.value.trim() : '';
   var absVal = a ? Number(a.value) : 0;
   if(!name || !absVal){ toast(t('fillBehaviorFieldsToast')); return; }
   var points = behaviorForm.sign === 'penalty' ? -Math.abs(absVal) : Math.abs(absVal);
+  var escalate = behaviorForm.sign === 'penalty' && !!behaviorForm.escalate;
+  var growthDays = escalate ? (Number(gEl && gEl.value) || 14) : undefined;
   if(behaviorForm.id){
     var b = child.behaviors.find(function(x){ return x.id===behaviorForm.id; });
-    if(b){ b.name=name; b.icon=behaviorForm.icon; b.category=behaviorForm.category; b.points=points; }
+    if(b){
+      b.name=name; b.icon=behaviorForm.icon; b.category=behaviorForm.category; b.points=points;
+      b.escalate=escalate; if(escalate) b.growthDays=growthDays; else delete b.growthDays;
+    }
     toast(t('behaviorSavedToast'));
   } else {
-    child.behaviors.push({id:uid(), name:name, icon:behaviorForm.icon, category:behaviorForm.category, points:points});
+    var newB = {id:uid(), name:name, icon:behaviorForm.icon, category:behaviorForm.category, points:points, escalate:escalate};
+    if(escalate) newB.growthDays = growthDays;
+    child.behaviors.push(newB);
     toast(t('behaviorAddedToast'));
   }
   persistEntity('children', child);
