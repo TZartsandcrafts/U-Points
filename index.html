@@ -21,7 +21,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html{-webkit-text-size-adjust:100%;}
   body{margin:0;background:linear-gradient(180deg,var(--sky-light) 0%, var(--bg) 340px);font-family:var(--font-body);color:var(--text);font-size:16px;line-height:1.55;overflow-x:hidden;}
-  #app{max-width:480px;margin:0 auto;padding:max(22px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));position:relative;}
+  #app{max-width:480px;margin:0 auto;padding:max(22px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;}
   input, select, textarea, button{font-size:16px;}
   .tap:active{transform:scale(0.96);}
   .tap{transition:transform .12s ease;}
@@ -64,7 +64,8 @@
   .screen-back{background:var(--sky-light);border:none;border-radius:50%;width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--sky-dark);}
   .screen-title{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--text);flex:1;}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sky-dark);color:#fff;padding:12px 22px;border-radius:20px;font-family:var(--font-body);font-weight:700;font-size:15px;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:60;max-width:90vw;text-align:center;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sky-dark);color:#fff;padding:12px 22px;border-radius:20px;font-family:var(--font-body);font-weight:700;font-size:15px;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:60;max-width:90vw;text-align:center;opacity:0;transition:opacity .2s ease;pointer-events:none;}
+  .toast.show{opacity:1;}
 
   .child-card{background:var(--card);border:2px solid var(--border);border-radius:22px;padding:18px;text-align:left;cursor:pointer;min-height:52px;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;}
@@ -111,12 +112,10 @@
   .child-home-header{text-align:center;padding:10px 0 20px;}
   .child-home-balance{font-family:var(--font-display);font-weight:800;font-size:52px;margin-top:6px;}
   .section-title{font-family:var(--font-display);font-weight:700;font-size:18px;margin:22px 0 12px;}
-  .version-tag{text-align:center;color:var(--muted);font-size:12px;margin-top:22px;}
+  .version-tag{text-align:center;color:var(--muted);font-size:12px;margin-top:auto;padding-top:22px;}
 </style>
 
 </head>
-<body>
-<div id="app"></div>
 
 
 <body>
@@ -229,7 +228,9 @@ zh: {
   pickYourselfTitle:'你是哪位小朋友？', pickYourselfSub:'选好之后，这台设备就是你的专属打卡屏啦',
   switchChild:'不是我，重新选', myProfile:'我的资料', versionLabel:'版本号',
   todayLabel:'今天', backToHome:'返回', addPoints:'加分', minusPoints:'扣分',
-  editMyProfile:'编辑我的资料'
+  editMyProfile:'编辑我的资料',
+  noChildrenYetHint:'还没有添加孩子，去设置页添加一个吧', familyMembersTitle:'家庭成员',
+  addParentBtn:'+ 添加家长', addChildBtn:'+ 添加孩子'
 },
 en: {
   appName:'U-Points', appTagline1:'Track good habits, collect little stars', appTagline2:'Make everyday brighter, together as a family',
@@ -300,7 +301,9 @@ en: {
   pickYourselfTitle:'Which one are you?', pickYourselfSub:"Once picked, this device becomes your own points screen",
   switchChild:"That's not me, pick again", myProfile:'My profile', versionLabel:'Version',
   todayLabel:'Today', backToHome:'Back', addPoints:'Earn points', minusPoints:'Deductions',
-  editMyProfile:'Edit my profile'
+  editMyProfile:'Edit my profile',
+  noChildrenYetHint:'No children added yet — add one from Settings', familyMembersTitle:'Family members',
+  addParentBtn:'+ Add a parent', addChildBtn:'+ Add a child'
 }
 };
 function t(key, vars){
@@ -315,7 +318,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.2.0';
+var APP_VERSION = '3.2.1';
 var APP_BUILD_DATE = '2026-08-29';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -692,7 +695,7 @@ var draft = {
 };
 var joinRoomDraft = '';
 var roleDraft = null;
-var toastMsg = ''; var toastTimer = null;
+var toastTimer = null;
 var behaviorForm = null;
 var confirmDeleteBehaviorId = null;
 var thresholdForm = null;
@@ -703,9 +706,19 @@ var confirmDeleteChild = false;
 var screenForm = null; // addParent / addChild 屏幕的表单草稿
 
 function toast(msg){
-  toastMsg = msg; render();
+  // toast 用独立的常驻 DOM 节点，不参与 render() 的整页重绘——
+  // 避免云同步频繁触发重绘时，toast 反复被销毁重建导致的"左右跳动"
+  var el = document.getElementById('toastEl');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toastEl';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function(){ toastMsg=''; render(); }, 2200);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
 }
 
 /* ---------------- 小组件 html 片段 ---------------- */
@@ -757,7 +770,7 @@ function render(){
   else if(!isParentMode() && boundChild()) html = renderChildHome();
   else html = renderDashboard();
 
-  if(toastMsg) html += '<div class="toast fade-in">'+esc(toastMsg)+'</div>';
+  // toast 是独立管理的 DOM 节点，不再拼进这里的整页 HTML 里（见 toast() 函数）
 
   app.innerHTML = html;
 
@@ -907,7 +920,7 @@ function renderPickYourself(){
   return html;
 }
 
-/* ---------------- 首页仪表盘（家长模式） ---------------- */
+/* ---------------- 首页仪表盘（家长模式，只做展示，管理操作都在设置页） ---------------- */
 function renderDashboard(){
   var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'+
     '<div><div style="color:var(--muted);font-size:14px;font-weight:700;">'+t('helloWave')+'</div>'+
@@ -932,30 +945,26 @@ function renderDashboard(){
   });
 
   html += '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-bottom:12px;">'+t('kidsInHouse')+'</div>';
-  html += '<div class="grid2">';
-  data.children.forEach(function(c){
-    var bal = pointBalance(c.id);
-    html += '<button class="child-card tap" data-act="open-child" data-id="'+c.id+'">'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
-        avatarHtml(c.avatar,54)+
-        '<span class="point-pill '+(bal>=0?'pos':'neg')+'">⭐ '+bal+'</span>'+
-      '</div>'+
-      '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:10px;">'+esc(c.name)+'</div>'+
-      '<div style="color:var(--muted);font-size:13px;margin-top:2px;">'+esc(t(c.gender==='男'?'genderBoy':(c.gender==='女'?'genderGirl':'genderPrivate')))+' · '+esc(c.age||'?')+' '+(state.lang==='en'?'yrs':'岁')+'</div>'+
-      '<div style="display:flex;gap:10px;margin-top:8px;font-size:13px;color:var(--sky-dark);">'+
-        '<span>📏 '+esc(c.height||'-')+'cm</span><span>⚖️ '+esc(c.weight||'-')+'kg</span>'+
-      '</div>'+
-    '</button>';
-  });
-  html += '<button class="tap" data-act="open-add-child" style="border:2px dashed var(--sky);background:transparent;border-radius:22px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--sky-dark);cursor:pointer;">'+
-    '<span style="font-size:24px;">+</span><span style="font-size:14px;font-weight:700;">'+t('addChild')+'</span></button>';
-  html += '</div>';
-
-  html += '<div style="display:flex;gap:10px;">'+
-    '<button class="btn-ghost tap" data-act="export-backup">⬇ '+t('exportBackup')+'</button>'+
-    '<button class="btn-ghost tap" data-act="import-click">⬆ '+t('importBackup')+'</button>'+
-    '<input type="file" id="importFile" accept=".json" style="display:none;">'+
-  '</div>';
+  if(data.children.length){
+    html += '<div class="grid2">';
+    data.children.forEach(function(c){
+      var bal = pointBalance(c.id);
+      html += '<button class="child-card tap" data-act="open-child" data-id="'+c.id+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
+          avatarHtml(c.avatar,54)+
+          '<span class="point-pill '+(bal>=0?'pos':'neg')+'">⭐ '+bal+'</span>'+
+        '</div>'+
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:10px;">'+esc(c.name)+'</div>'+
+        '<div style="color:var(--muted);font-size:13px;margin-top:2px;">'+esc(t(c.gender==='男'?'genderBoy':(c.gender==='女'?'genderGirl':'genderPrivate')))+' · '+esc(c.age||'?')+' '+(state.lang==='en'?'yrs':'岁')+'</div>'+
+        '<div style="display:flex;gap:10px;margin-top:8px;font-size:13px;color:var(--sky-dark);">'+
+          '<span>📏 '+esc(c.height||'-')+'cm</span><span>⚖️ '+esc(c.weight||'-')+'kg</span>'+
+        '</div>'+
+      '</button>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div style="text-align:center;color:var(--muted);font-size:14px;background:var(--card);border:2px dashed var(--border);border-radius:22px;padding:28px 16px;margin-bottom:22px;">'+t('noChildrenYetHint')+'</div>';
+  }
 
   html += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
   return html;
@@ -1215,6 +1224,24 @@ function renderSettingsScreen(){
   }
 
   if(parentMode){
+    body += '<div class="settings-row" style="margin-top:20px;"><div class="label">'+t('familyMembersTitle')+'</div></div>';
+    body += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;">';
+    data.parents.forEach(function(p){
+      body += '<div style="display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--border);border-radius:14px;padding:7px 12px 7px 7px;">'+avatarHtml(p.avatar,32,{ring:false})+'<span style="font-size:14px;font-weight:700;">'+esc(p.name)+'</span></div>';
+    });
+    data.children.forEach(function(c){
+      body += '<button class="tap" data-act="open-child" data-id="'+c.id+'" style="display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--border);border-radius:14px;padding:7px 12px 7px 7px;cursor:pointer;">'+avatarHtml(c.avatar,32,{ring:false})+'<span style="font-size:14px;font-weight:700;color:var(--text);">'+esc(c.name)+'</span></button>';
+    });
+    body += '</div>';
+    body += '<div style="display:flex;gap:10px;margin-bottom:18px;">';
+    if(data.parents.length < 2){
+      body += '<button class="btn-ghost tap" data-act="open-add-parent">'+t('addParentBtn')+'</button>';
+    }
+    body += '<button class="btn-ghost tap" data-act="open-add-child">'+t('addChildBtn')+'</button>';
+    body += '</div>';
+  }
+
+  if(parentMode){
     body += '<div class="settings-row" style="margin-top:20px;"><div class="label">'+t('syncSectionTitle')+'</div></div>'+
       '<div style="font-size:14px;color:var(--muted);margin-bottom:10px;"><span class="sync-dot '+dot+'"></span>'+statusText+(state.cloudSync.enabled && state.cloudSync.roomCode ? ' '+state.cloudSync.roomCode : '')+'</div>';
 
@@ -1245,8 +1272,8 @@ function renderSettingsScreen(){
       '</div>';
   }
 
-  body += '<div class="version-tag" style="margin-top:26px;">'+t('versionLabel')+' '+APP_VERSION+' · '+APP_BUILD_DATE+'</div>';
-  body += '<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:14px;line-height:1.6;">'+t('footerNote1')+'<br>'+t('footerNote2')+'</div>';
+  body += '<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:20px;line-height:1.6;">'+t('footerNote1')+'<br>'+t('footerNote2')+'</div>';
+  body += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+' · '+APP_BUILD_DATE+'</div>';
   return screenHeader(t('settingsTitle')) + body;
 }
 
