@@ -16,6 +16,8 @@
   :root{
     --bg:#FFFCF5; --card:#FFFFFF; --sky:#5AAEE0; --sky-dark:#2B6C93; --sky-light:#E4F4FC;
     --sun:#FFC94A; --sun-light:#FFEFC7; --text:#2E3A42; --muted:#7C8A92; --danger:#E08A5A; --border:#EFE6CF;
+    --food:#F2A93B; --food-light:#FFF3D6; --food-text:#96731C;
+    --exercise:#4FAE8A; --exercise-light:#E1F3EC; --exercise-text:#2E7D53;
     --font-display:'Baloo 2','Nunito',sans-serif; --font-body:'Nunito','Baloo 2',sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -116,6 +118,22 @@
   .cal-day-detail{margin-top:14px;border-top:1px solid var(--border);padding-top:14px;}
   .cal-day-title{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
   .cal-day-sum{font-family:var(--font-display);font-weight:800;font-size:16px;}
+
+  /* ---- 健康打卡：三餐 + 运动 ---- */
+  .chip.food{background:var(--food-light);color:var(--food-text);}
+  .chip.exercise{background:var(--exercise-light);color:var(--exercise-text);}
+  .chip.exercise.selected{box-shadow:inset 0 0 0 2px var(--exercise);}
+  .cal-summary-card{background:var(--card);border:2px solid var(--border);border-radius:20px;padding:18px;margin-bottom:18px;}
+  .cal-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin:12px 0 4px;}
+  .cal-summary-grid .num{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--text);}
+  .cal-summary-grid .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+  .macro-line{font-size:13px;color:var(--muted);text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+  .macro-line b{color:var(--text);}
+  .inline-form{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:14px;margin:4px 0 16px;}
+  .inline-form .field{margin-bottom:10px;}
+  .inline-form .field:last-child{margin-bottom:0;}
+  .exercise-log-form{background:var(--exercise-light);border-radius:16px;padding:14px;margin:4px 0 16px;}
+  .calorie-preview{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--exercise-text);text-align:center;margin:8px 0;}
 
   .settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
   .settings-row .label{font-size:16px;font-weight:700;color:var(--text);}
@@ -259,7 +277,23 @@ zh: {
   editMyProfile:'编辑我的资料',
   noChildrenYetHint:'还没有添加孩子，去设置页添加一个吧', familyMembersTitle:'家庭成员',
   addParentBtn:'+ 添加家长', addChildBtn:'+ 添加孩子',
-  calendarTitle:'积分月历', calNoLogsForDay:'这天还没有加减分记录'
+  calendarTitle:'积分月历', calNoLogsForDay:'这天还没有加减分记录',
+  healthTab:'健康打卡',
+  calorieTargetTitle:'今日热量小结', calorieGoal:'目标', calorieFood:'摄入', calorieExercise:'运动消耗', calorieRemaining:'剩余可吃',
+  macroSuggestion:'建议摄入（仅供参考，非医疗建议）', proteinLabel:'蛋白质', fatLabel:'脂肪', carbLabel:'碳水',
+  activityLevelLabel:'活动量', calorieOverrideLabel:'手动设置目标热量', calorieOverridePlaceholder:'留空则按公式自动计算',
+  activitySedentary:'久坐为主', activityLight:'轻度活动', activityModerate:'中等活动', activityActive:'积极活动', activityVeryActive:'非常活跃',
+  needHeightWeightHint:'先在"身高体重"里记一次身高和体重，才能自动算出热量目标',
+  mealsSubTab:'三餐', exerciseSubTab:'运动',
+  breakfastLabel:'早餐', lunchLabel:'午餐', dinnerLabel:'晚餐', snackLabel:'加餐',
+  addCustomFood:'+ 自定义食物', addCustomExercise:'+ 自定义运动',
+  foodNameLabel:'食物名称', foodNamePlaceholder:'例如：红烧肉(1份)', foodCaloriesLabel:'热量(kcal)',
+  exerciseNameLabel:'运动名称', exerciseNamePlaceholder:'例如：轮滑', exerciseRateLabel:'每分钟消耗(kcal，估算)',
+  exerciseDurationLabel:'时长(分钟)', logExerciseBtn:'记录这次运动', addAndLog:'添加并记录',
+  noMealsToday:'今天还没有饮食记录', noExerciseToday:'今天还没有运动记录',
+  selectExerciseFirst:'请先选一个运动类型', fillFoodFieldsToast:'请填写食物名称和热量', fillExerciseFieldsToast:'请填写运动名称和每分钟消耗',
+  mealLoggedToast:'已记录', exerciseLoggedToast:'运动已记录', targetSavedToast:'目标已保存',
+  perServing:'每份'
 },
 en: {
   appName:'U-Points', appTagline1:'Track good habits, collect little stars', appTagline2:'Make everyday brighter, together as a family',
@@ -337,7 +371,23 @@ en: {
   editMyProfile:'Edit my profile',
   noChildrenYetHint:'No children added yet — add one from Settings', familyMembersTitle:'Family members',
   addParentBtn:'+ Add a parent', addChildBtn:'+ Add a child',
-  calendarTitle:'Points Calendar', calNoLogsForDay:'No points logged this day'
+  calendarTitle:'Points Calendar', calNoLogsForDay:'No points logged this day',
+  healthTab:'Health Log',
+  calorieTargetTitle:"Today's Calories", calorieGoal:'Goal', calorieFood:'Food', calorieExercise:'Exercise', calorieRemaining:'Remaining',
+  macroSuggestion:'Suggested intake (reference only, not medical advice)', proteinLabel:'Protein', fatLabel:'Fat', carbLabel:'Carbs',
+  activityLevelLabel:'Activity level', calorieOverrideLabel:'Set target manually', calorieOverridePlaceholder:'Leave blank to auto-calculate',
+  activitySedentary:'Sedentary', activityLight:'Light activity', activityModerate:'Moderate activity', activityActive:'Active', activityVeryActive:'Very active',
+  needHeightWeightHint:'Log a height and weight first so the target can be calculated automatically',
+  mealsSubTab:'Meals', exerciseSubTab:'Exercise',
+  breakfastLabel:'Breakfast', lunchLabel:'Lunch', dinnerLabel:'Dinner', snackLabel:'Snack',
+  addCustomFood:'+ Custom food', addCustomExercise:'+ Custom exercise',
+  foodNameLabel:'Food name', foodNamePlaceholder:'e.g. Braised pork (1 serving)', foodCaloriesLabel:'Calories (kcal)',
+  exerciseNameLabel:'Exercise name', exerciseNamePlaceholder:'e.g. Roller skating', exerciseRateLabel:'kcal per minute (estimate)',
+  exerciseDurationLabel:'Duration (min)', logExerciseBtn:'Log this workout', addAndLog:'Add & log',
+  noMealsToday:'No meals logged today', noExerciseToday:'No exercise logged today',
+  selectExerciseFirst:'Pick an exercise type first', fillFoodFieldsToast:'Please fill in food name and calories', fillExerciseFieldsToast:'Please fill in exercise name and kcal/min',
+  mealLoggedToast:'Logged', exerciseLoggedToast:'Workout logged', targetSavedToast:'Target saved',
+  perServing:'per serving'
 }
 };
 function t(key, vars){
@@ -352,7 +402,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.4.0';
+var APP_VERSION = '3.5.0';
 var APP_BUILD_DATE = '2026-08-30';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -419,22 +469,62 @@ function behaviorDisplayName(b){
   return b.name;
 }
 
+/* ---------------- 健康打卡：内置食物库 / 运动库（精简版，先覆盖常见项） ---------------- */
+var FOOD_LIBRARY = [
+  {id:'rice', name:'米饭(1碗)', name_en:'Rice (1 bowl)', icon:'🍚', calories:200},
+  {id:'noodle', name:'面条(1碗)', name_en:'Noodles (1 bowl)', icon:'🍜', calories:350},
+  {id:'bread', name:'面包(1片)', name_en:'Bread (1 slice)', icon:'🍞', calories:80},
+  {id:'egg', name:'鸡蛋(1个)', name_en:'Egg (1)', icon:'🥚', calories:70},
+  {id:'milk', name:'牛奶(1杯250ml)', name_en:'Milk (1 cup)', icon:'🥛', calories:150},
+  {id:'chicken', name:'鸡胸肉(100g)', name_en:'Chicken breast (100g)', icon:'🍗', calories:165},
+  {id:'fish', name:'鱼肉(100g)', name_en:'Fish (100g)', icon:'🐟', calories:120},
+  {id:'vegetable', name:'蔬菜(1份)', name_en:'Vegetables (1 serving)', icon:'🥦', calories:50},
+  {id:'fruit', name:'水果(1份)', name_en:'Fruit (1 serving)', icon:'🍎', calories:80},
+  {id:'yogurt', name:'酸奶(1杯)', name_en:'Yogurt (1 cup)', icon:'🍦', calories:120},
+  {id:'soup', name:'汤(1碗)', name_en:'Soup (1 bowl)', icon:'🥣', calories:100},
+  {id:'snack', name:'小零食(1份)', name_en:'Snack (1 serving)', icon:'🍪', calories:150}
+];
+var EXERCISE_LIBRARY = [
+  {id:'run', name:'跑步', name_en:'Running', icon:'🏃', caloriesPerMin:10},
+  {id:'walk', name:'散步', name_en:'Walking', icon:'🚶', caloriesPerMin:4},
+  {id:'jumprope', name:'跳绳', name_en:'Jump rope', icon:'🤾', caloriesPerMin:12},
+  {id:'ball', name:'球类运动', name_en:'Ball sports', icon:'⚽', caloriesPerMin:8},
+  {id:'swim', name:'游泳', name_en:'Swimming', icon:'🏊', caloriesPerMin:9},
+  {id:'bike', name:'骑车', name_en:'Cycling', icon:'🚴', caloriesPerMin:7},
+  {id:'dance', name:'跳舞', name_en:'Dancing', icon:'💃', caloriesPerMin:6},
+  {id:'yoga', name:'瑜伽/拉伸', name_en:'Yoga / stretching', icon:'🧘', caloriesPerMin:3}
+];
+function foodLibraryAll(){
+  return FOOD_LIBRARY.map(function(f){ return {refId:'lib:'+f.id, name:f.name, name_en:f.name_en, icon:f.icon, calories:f.calories}; })
+    .concat((data.customFoods||[]).map(function(f){ return {refId:'custom:'+f.id, name:f.name, name_en:f.name_en||f.name, icon:f.icon||'🍽️', calories:f.calories}; }));
+}
+function exerciseLibraryAll(){
+  return EXERCISE_LIBRARY.map(function(e){ return {refId:'lib:'+e.id, name:e.name, name_en:e.name_en, icon:e.icon, caloriesPerMin:e.caloriesPerMin}; })
+    .concat((data.customExercises||[]).map(function(e){ return {refId:'custom:'+e.id, name:e.name, name_en:e.name_en||e.name, icon:e.icon||'🏃', caloriesPerMin:e.caloriesPerMin}; }));
+}
+
 /* ---------------- 数据（会被云同步覆盖/合并的部分） ---------------- */
 function loadData(){
   var d = storageGet('data', null);
   if(d){
     if(!d.pointLogs) d.pointLogs = [];
     if(!d.thresholds) d.thresholds = [];
+    if(!d.mealLogs) d.mealLogs = [];
+    if(!d.exerciseLogs) d.exerciseLogs = [];
+    if(!d.customFoods) d.customFoods = [];
+    if(!d.customExercises) d.customExercises = [];
     // 迁移：行为规则从"全家共享一份"改成"每个孩子各自一份"。
     // 老数据里孩子还没有 behaviors 字段的，用原来的全局规则（或默认规则）复制一份给它。
     (d.children||[]).forEach(function(c){
       if(!c.behaviors || !c.behaviors.length){
         c.behaviors = (d.behaviors && d.behaviors.length) ? JSON.parse(JSON.stringify(d.behaviors)) : defaultBehaviors();
       }
+      if(!c.activityLevel) c.activityLevel = 'moderate';
+      if(c.calorieTargetOverride === undefined) c.calorieTargetOverride = null;
     });
     return d;
   }
-  return { family:null, parents:[], children:[], pointLogs:[], thresholds:[], setupDone:false };
+  return { family:null, parents:[], children:[], pointLogs:[], thresholds:[], mealLogs:[], exerciseLogs:[], customFoods:[], customExercises:[], setupDone:false };
 }
 var data = loadData();
 function saveData(){ storageSet('data', data); }
@@ -557,6 +647,82 @@ function deletePointLog(logId){
   if(log) rearmThresholds(log.childId);
 }
 
+/* ---------------- 健康打卡：热量目标计算（Mifflin-St Jeor 估算式，仅供参考） ---------------- */
+function latestMetricValue(history){
+  if(!history || !history.length) return null;
+  var sorted = history.slice().sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+  var v = parseFloat(sorted[sorted.length-1].value);
+  return isNaN(v) ? null : v;
+}
+function activityFactor(level){
+  var map = {sedentary:1.2, light:1.375, moderate:1.55, active:1.725, very_active:1.9};
+  return map[level] || 1.55;
+}
+function calcBMR(child){
+  var w = latestMetricValue(child.weightHistory);
+  var h = latestMetricValue(child.heightHistory);
+  var age = parseFloat(child.age);
+  if(!w || !h || !age) return null;
+  var base = 10*w + 6.25*h - 5*age;
+  if(child.gender==='男') return base + 5;
+  if(child.gender==='女') return base - 161;
+  return base - 78; // 性别保密时取男女公式的中间值
+}
+function calorieTarget(child){
+  if(child.calorieTargetOverride) return Math.round(child.calorieTargetOverride);
+  var bmr = calcBMR(child);
+  if(bmr==null) return null;
+  var tdee = bmr * activityFactor(child.activityLevel || 'moderate');
+  return Math.round(tdee/10)*10;
+}
+function macroSuggestion(cal){
+  if(!cal) return null;
+  return {
+    protein: Math.round(cal*0.2/4),
+    fat: Math.round(cal*0.3/9),
+    carb: Math.round(cal*0.5/4)
+  };
+}
+
+/* ---------------- 健康打卡：三餐 / 运动记录 ---------------- */
+function todayMealLogs(childId){
+  return data.mealLogs.filter(function(l){ return l.childId===childId && l.date===todayStr(); });
+}
+function todayExerciseLogs(childId){
+  return data.exerciseLogs.filter(function(l){ return l.childId===childId && l.date===todayStr(); });
+}
+function addMealLog(childId, mealType, food){
+  var log = {
+    id: uid(), childId: childId, mealType: mealType,
+    name: food.name, name_en: food.name_en || '', icon: food.icon, calories: food.calories, refId: food.refId || null,
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+  };
+  persistEntity('mealLogs', log);
+  return log;
+}
+function deleteMealLog(logId){ persistDelete('mealLogs', logId); }
+function addExerciseLog(childId, ex, durationMin){
+  var cal = Math.round((ex.caloriesPerMin || 0) * durationMin);
+  var log = {
+    id: uid(), childId: childId, durationMin: durationMin,
+    name: ex.name, name_en: ex.name_en || '', icon: ex.icon, calories: cal, refId: ex.refId || null,
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+  };
+  persistEntity('exerciseLogs', log);
+  return log;
+}
+function deleteExerciseLog(logId){ persistDelete('exerciseLogs', logId); }
+function addCustomFood(name, name_en, calories){
+  var food = { id: uid(), name: name, name_en: name_en || '', icon: '🍽️', calories: calories };
+  persistEntity('customFoods', food);
+  return food;
+}
+function addCustomExercise(name, name_en, caloriesPerMin){
+  var ex = { id: uid(), name: name, name_en: name_en || '', icon: '🏃', caloriesPerMin: caloriesPerMin };
+  persistEntity('customExercises', ex);
+  return ex;
+}
+
 /* =====================================================================
    云同步（Firebase 匿名登录 + Firestore，按房间码隔离每个家庭）
    ===================================================================== */
@@ -570,7 +736,7 @@ var FIREBASE_CONFIG = {
 };
 var FIREBASE_SDK_VERSION = '10.13.0';
 var CLOUD = { app:null, auth:null, db:null, uid:null, sdkLoadPromise:null, unsubs:{}, pushMap: storageGet('cloudSyncPushMap', {}) };
-var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds'];
+var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds','mealLogs','exerciseLogs','customFoods','customExercises'];
 
 function cloudSyncActive(){ return state.cloudSync.enabled && !!state.cloudSync.roomCode && CLOUD.db; }
 function savePushMap(){ storageSet('cloudSyncPushMap', CLOUD.pushMap); }
@@ -774,6 +940,12 @@ var editChildTab = 'points';
 var confirmDeleteChild = false;
 var screenForm = null; // addParent / addChild 屏幕的表单草稿
 var calendarState = {}; // 积分月历：按孩子 id 各自记住当前查看的年月与选中日期
+var healthSubTab = 'meals'; // 健康打卡子页签：meals | exercise
+var mealTypeDraft = 'breakfast'; // 三餐打卡：当前选中要记到哪一餐
+var showCustomFoodForm = false;
+var showCustomExerciseForm = false;
+var showCalorieOverrideForm = false;
+var selectedExerciseRefId = null; // 运动打卡：当前选中待记录的运动类型
 
 function toast(msg){
   // toast 用独立的常驻 DOM 节点，不参与 render() 的整页重绘——
@@ -916,6 +1088,130 @@ function renderCalendar(child){
         selRows+
       '</div>'+
     '</div>';
+}
+
+/* ---------------- 健康打卡：三餐 + 运动 ---------------- */
+function renderHealthTabBody(c, parentMode){
+  var target = calorieTarget(c);
+  var macros = macroSuggestion(target);
+  var todayFood = todayMealLogs(c.id).reduce(function(s,l){ return s+l.calories; }, 0);
+  var todayEx = todayExerciseLogs(c.id).reduce(function(s,l){ return s+l.calories; }, 0);
+  var remaining = target!=null ? (target - todayFood + todayEx) : null;
+
+  var summary = '<div class="cal-summary-card">'+
+    '<div style="font-family:var(--font-display);font-weight:800;font-size:16px;text-align:center;">'+t('calorieTargetTitle')+'</div>';
+  if(target==null){
+    summary += '<div style="font-size:14px;color:var(--muted);text-align:center;margin-top:10px;">'+t('needHeightWeightHint')+'</div>';
+  } else {
+    summary += '<div class="cal-summary-grid">'+
+      '<div><div class="num">'+target+'</div><div class="lbl">'+t('calorieGoal')+'</div></div>'+
+      '<div><div class="num" style="color:var(--food-text);">'+todayFood+'</div><div class="lbl">'+t('calorieFood')+'</div></div>'+
+      '<div><div class="num" style="color:var(--exercise-text);">'+todayEx+'</div><div class="lbl">'+t('calorieExercise')+'</div></div>'+
+      '<div><div class="num" style="color:'+(remaining>=0?'var(--sky-dark)':'var(--danger)')+';">'+remaining+'</div><div class="lbl">'+t('calorieRemaining')+'</div></div>'+
+    '</div>';
+    if(macros){
+      summary += '<div class="macro-line">'+t('macroSuggestion')+'<br><b>'+t('proteinLabel')+' '+macros.protein+'g</b> · <b>'+t('fatLabel')+' '+macros.fat+'g</b> · <b>'+t('carbLabel')+' '+macros.carb+'g</b></div>';
+    }
+  }
+  if(parentMode){
+    summary += '<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">'+
+      '<div class="field" style="margin-bottom:'+(showCalorieOverrideForm?'10px':'0')+';"><label>'+t('activityLevelLabel')+'</label>'+
+        segmentedHtml('set-activity-level', c.id, c.activityLevel||'moderate', [['sedentary',t('activitySedentary')],['light',t('activityLight')],['moderate',t('activityModerate')],['active',t('activityActive')],['very_active',t('activityVeryActive')]])+
+      '</div>'+
+      (showCalorieOverrideForm ?
+        '<div class="field"><label>'+t('calorieOverrideLabel')+'</label><input type="number" id="mCalorieOverride" placeholder="'+t('calorieOverridePlaceholder')+'" value="'+(c.calorieTargetOverride||'')+'"></div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-calorie-override">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-calorie-override" data-id="'+c.id+'">'+t('save')+'</button></div>'
+        : '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;min-height:auto;" data-act="open-calorie-override" data-id="'+c.id+'">'+t('calorieOverrideLabel')+'</button>'
+      )+
+    '</div>';
+  }
+  summary += '</div>';
+
+  var subTabs = segmentedHtml('health-sub-tab', c.id, healthSubTab, [['meals',t('mealsSubTab')],['exercise',t('exerciseSubTab')]]);
+  var body = healthSubTab==='meals' ? renderMealsSubTab(c, parentMode) : renderExerciseSubTab(c, parentMode);
+
+  return summary + subTabs + body;
+}
+
+function renderMealsSubTab(c, parentMode){
+  var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
+  var html = segmentedHtml('set-meal-type', c.id, mealTypeDraft, mealTypeOpts);
+
+  var foods = foodLibraryAll();
+  var foodChips = foods.map(function(f){
+    var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
+    return '<button class="chip food tap" data-act="log-meal" data-id="'+c.id+'" data-value="'+f.refId+'">'+
+      '<span class="chip-left"><span class="chip-icon">'+esc(f.icon)+'</span><span class="chip-name">'+esc(nm)+'</span></span>'+
+      '<span class="chip-value">'+f.calories+'</span>'+
+    '</button>';
+  }).join('');
+  html += '<div class="chip-grid" style="margin-bottom:10px;">'+foodChips+'</div>';
+
+  html += showCustomFoodForm ?
+    '<div class="inline-form">'+
+      '<div class="field"><label>'+t('foodNameLabel')+'</label><input id="mCustomFoodName" placeholder="'+t('foodNamePlaceholder')+'"></div>'+
+      '<div class="field"><label>'+t('foodCaloriesLabel')+'</label><input type="number" id="mCustomFoodCal" placeholder="200"></div>'+
+      '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-custom-food">'+t('cancel')+'</button>'+
+      '<button class="btn-primary tap" data-act="save-custom-food" data-id="'+c.id+'">'+t('addAndLog')+'</button></div>'+
+    '</div>'
+    : '<button class="dashed-btn tap" data-act="open-custom-food" style="margin-bottom:18px;">'+t('addCustomFood')+'</button>';
+
+  var meals = todayMealLogs(c.id).slice().sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
+  var mealTypeLabel = {breakfast:t('breakfastLabel'), lunch:t('lunchLabel'), dinner:t('dinnerLabel'), snack:t('snackLabel')};
+  var rows = meals.map(function(l){
+    var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
+    return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+(mealTypeLabel[l.mealType]||'')+' · '+l.time+'</span></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--food-light);color:var(--food-text);">'+l.calories+'</span>'+
+      (parentMode ? '<button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
+  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noMealsToday')+'</div>';
+
+  html += '<div class="section-title">'+t('todayLabel')+'</div><div>'+rows+'</div>';
+  return html;
+}
+
+function renderExerciseSubTab(c, parentMode){
+  var exercises = exerciseLibraryAll();
+  var html = '';
+  var exChips = exercises.map(function(e){
+    var nm = (state.lang==='en' && e.name_en) ? e.name_en : e.name;
+    var sel = selectedExerciseRefId === e.refId;
+    return '<button class="chip exercise tap'+(sel?' selected':'')+'" data-act="pick-exercise" data-id="'+c.id+'" data-value="'+e.refId+'">'+
+      '<span class="chip-left"><span class="chip-icon">'+esc(e.icon)+'</span><span class="chip-name">'+esc(nm)+'</span></span>'+
+      '<span class="chip-value">'+e.caloriesPerMin+'/'+(state.lang==='en'?'min':'分')+'</span>'+
+    '</button>';
+  }).join('');
+  html += '<div class="chip-grid" style="margin-bottom:10px;">'+exChips+'</div>';
+
+  html += showCustomExerciseForm ?
+    '<div class="inline-form">'+
+      '<div class="field"><label>'+t('exerciseNameLabel')+'</label><input id="mCustomExName" placeholder="'+t('exerciseNamePlaceholder')+'"></div>'+
+      '<div class="field"><label>'+t('exerciseRateLabel')+'</label><input type="number" id="mCustomExRate" placeholder="8"></div>'+
+      '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-custom-exercise">'+t('cancel')+'</button>'+
+      '<button class="btn-primary tap" data-act="save-custom-exercise" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+    '</div>'
+    : '<button class="dashed-btn tap" data-act="open-custom-exercise" style="margin-bottom:14px;">'+t('addCustomExercise')+'</button>';
+
+  var selEx = exercises.find(function(e){ return e.refId === selectedExerciseRefId; });
+  if(selEx){
+    var nm = (state.lang==='en' && selEx.name_en) ? selEx.name_en : selEx.name;
+    html += '<div class="exercise-log-form">'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+esc(nm)+' · '+t('exerciseDurationLabel')+'</label>'+
+      '<input type="number" id="mExDuration" placeholder="20"></div>'+
+      '<button class="btn-primary tap" data-act="log-exercise" data-id="'+c.id+'" style="background:var(--exercise);box-shadow:0 6px 14px rgba(79,174,138,.35);">'+t('logExerciseBtn')+'</button>'+
+    '</div>';
+  }
+
+  var logs = todayExerciseLogs(c.id).slice().sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
+  var rows = logs.map(function(l){
+    var nm2 = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
+    return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm2)+'</span><span class="meta">'+l.durationMin+(state.lang==='en'?'min':'分钟')+' · '+l.time+'</span></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--exercise-light);color:var(--exercise-text);">'+l.calories+'</span>'+
+      (parentMode ? '<button class="small-icon-btn" data-act="delete-exercise-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
+  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noExerciseToday')+'</div>';
+
+  html += '<div class="section-title">'+t('todayLabel')+'</div><div>'+rows+'</div>';
+  return html;
 }
 
 /* ---------------- 顶层渲染 ---------------- */
@@ -1177,6 +1473,7 @@ function renderChildHome(){
   html += '<div class="section-title">'+t('recentLogs')+'</div><div>'+logRows+'</div>';
 
   html += '<div style="margin-top:22px;">'+
+    '<button class="btn-ghost tap" data-act="open-child-health" data-id="'+c.id+'" style="margin-bottom:10px;">🍎 '+t('healthTab')+'</button>'+
     '<button class="btn-ghost tap" data-act="open-my-profile" data-id="'+c.id+'">✏️ '+t('editMyProfile')+'</button>'+
   '</div>';
   html += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
@@ -1293,11 +1590,13 @@ function renderEditChildScreen(scr){
       renderCalendar(c)+
       '<div class="section-title">'+t('recentLogs')+'</div>'+
       '<div>'+logRows+'</div>';
+  } else if(tab === 'health'){
+    body = renderHealthTabBody(c, parentMode);
   }
 
   var tabs = parentMode
-    ? segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['growth',t('growthTab')],['points',t('pointsTab')]])
-    : segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['info',t('infoTab')],['growth',t('growthTab')]]);
+    ? segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['growth',t('growthTab')],['points',t('pointsTab')],['health',t('healthTab')]])
+    : segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['health',t('healthTab')],['info',t('infoTab')],['growth',t('growthTab')]]);
 
   return screenHeader(esc(c.name)) + tabs + body;
 }
@@ -1585,7 +1884,7 @@ function handleAction(act, id, value, el){
   else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; selectedExerciseRefId=null; render(); }
   else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
@@ -1606,6 +1905,68 @@ function handleAction(act, id, value, el){
   else if(act==='cal-prev'){ shiftCalMonth(getCalState(id), -1); render(); }
   else if(act==='cal-next'){ shiftCalMonth(getCalState(id), 1); render(); }
   else if(act==='cal-select-day'){ getCalState(id).sel = value; render(); }
+
+  else if(act==='open-child-health'){ editChildTab='health'; confirmDeleteChild=false; healthSubTab='meals'; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; selectedExerciseRefId=null; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; render(); }
+  else if(act==='set-activity-level'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.activityLevel=value; persistEntity('children', c);} render(); }
+  else if(act==='open-calorie-override'){ showCalorieOverrideForm=true; render(); }
+  else if(act==='cancel-calorie-override'){ showCalorieOverrideForm=false; render(); }
+  else if(act==='save-calorie-override'){
+    var c = data.children.find(function(x){return x.id===id;});
+    if(c){
+      var v = parseFloat(document.getElementById('mCalorieOverride').value);
+      c.calorieTargetOverride = (v && v>0) ? v : null;
+      persistEntity('children', c);
+    }
+    showCalorieOverrideForm = false;
+    toast(t('targetSavedToast'));
+    render();
+  }
+
+  else if(act==='set-meal-type'){ mealTypeDraft = value; render(); }
+  else if(act==='log-meal'){
+    var f = foodLibraryAll().find(function(x){ return x.refId===value; });
+    if(f){ addMealLog(id, mealTypeDraft, f); toast(t('mealLoggedToast')); }
+    render();
+  }
+  else if(act==='delete-meal-log'){ deleteMealLog(id); render(); }
+  else if(act==='open-custom-food'){ showCustomFoodForm=true; render(); }
+  else if(act==='cancel-custom-food'){ showCustomFoodForm=false; render(); }
+  else if(act==='save-custom-food'){
+    var name = document.getElementById('mCustomFoodName').value.trim();
+    var cal = parseFloat(document.getElementById('mCustomFoodCal').value);
+    if(!name || !cal){ toast(t('fillFoodFieldsToast')); return; }
+    var food = addCustomFood(name, '', cal);
+    addMealLog(id, mealTypeDraft, {name:food.name, name_en:'', icon:food.icon, calories:food.calories, refId:'custom:'+food.id});
+    showCustomFoodForm = false;
+    toast(t('mealLoggedToast'));
+    render();
+  }
+
+  else if(act==='pick-exercise'){ selectedExerciseRefId = (selectedExerciseRefId===value) ? null : value; render(); }
+  else if(act==='open-custom-exercise'){ showCustomExerciseForm=true; render(); }
+  else if(act==='cancel-custom-exercise'){ showCustomExerciseForm=false; render(); }
+  else if(act==='save-custom-exercise'){
+    var name2 = document.getElementById('mCustomExName').value.trim();
+    var rate = parseFloat(document.getElementById('mCustomExRate').value);
+    if(!name2 || !rate){ toast(t('fillExerciseFieldsToast')); return; }
+    var ex = addCustomExercise(name2, '', rate);
+    showCustomExerciseForm = false;
+    selectedExerciseRefId = 'custom:'+ex.id;
+    render();
+  }
+  else if(act==='log-exercise'){
+    var exAll = exerciseLibraryAll();
+    var selEx = exAll.find(function(x){ return x.refId===selectedExerciseRefId; });
+    if(!selEx){ toast(t('selectExerciseFirst')); return; }
+    var dur = parseFloat(document.getElementById('mExDuration').value);
+    if(!dur || dur<=0){ toast(t('fillExerciseFieldsToast')); return; }
+    addExerciseLog(id, selEx, dur);
+    selectedExerciseRefId = null;
+    toast(t('exerciseLoggedToast'));
+    render();
+  }
+  else if(act==='delete-exercise-log'){ deleteExerciseLog(id); render(); }
 
   else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; pushScreen({type:'manageBehaviors', childId:id}); }
   else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', abs:'', escalate:false, growthDays:14}; render(); }
@@ -1658,6 +2019,10 @@ function finishSetup(){
     children: cleanChildren,
     pointLogs: [],
     thresholds: [],
+    mealLogs: [],
+    exerciseLogs: [],
+    customFoods: [],
+    customExercises: [],
     setupDone: true
   };
   saveData();
@@ -1804,10 +2169,16 @@ function handleImportFile(e){
       data = parsed;
       if(!data.pointLogs) data.pointLogs = [];
       if(!data.thresholds) data.thresholds = [];
+      if(!data.mealLogs) data.mealLogs = [];
+      if(!data.exerciseLogs) data.exerciseLogs = [];
+      if(!data.customFoods) data.customFoods = [];
+      if(!data.customExercises) data.customExercises = [];
       (data.children||[]).forEach(function(c){
         if(!c.behaviors || !c.behaviors.length){
           c.behaviors = (data.behaviors && data.behaviors.length) ? JSON.parse(JSON.stringify(data.behaviors)) : defaultBehaviors();
         }
+        if(!c.activityLevel) c.activityLevel = 'moderate';
+        if(c.calorieTargetOverride === undefined) c.calorieTargetOverride = null;
       });
       saveData();
       screenStack = [];
