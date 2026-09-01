@@ -48,6 +48,8 @@
   .segmented{display:flex;background:var(--sky-light);border-radius:14px;padding:4px;margin-bottom:18px;}
   .segmented button{flex:1;border:none;border-radius:11px;padding:12px 8px;font-family:var(--font-body);font-weight:700;font-size:15px;cursor:pointer;background:transparent;color:var(--muted);min-height:44px;}
   .segmented button.active{background:#fff;color:var(--sky-dark);box-shadow:0 2px 6px rgba(43,108,147,.15);}
+  .segmented.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .segmented.scroll button{flex:0 0 auto;white-space:nowrap;padding:12px 16px;font-size:14px;}
 
   .avatar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
   .avatar-pick{position:relative;background:none;border:none;padding:0;cursor:pointer;}
@@ -155,6 +157,27 @@
   .redeem-card .redeem-actions button{width:100%;min-height:44px;font-size:14px;}
   .redeem-card .redeem-actions button:disabled{opacity:.45;box-shadow:none;}
   .field select{width:100%;padding:14px 16px;border-radius:14px;border:2px solid var(--border);background:#FFFEFB;font-family:var(--font-body);font-size:16px;color:var(--text);outline:none;min-height:50px;}
+
+  /* ---- 记账 ---- */
+  .balance-card.money{background:linear-gradient(135deg,var(--sun),#E8A93D);color:#5C4108;}
+  .rate-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;}
+  .rate-card .rate-display{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--text);text-align:center;}
+  .rate-card .offer-banner{background:var(--food-light);color:var(--food-text);border-radius:12px;padding:8px 10px;font-size:13px;text-align:center;margin-top:8px;font-weight:700;}
+  .rate-card .exchange-preview{font-size:13px;color:var(--muted);text-align:center;margin:6px 0 10px;}
+  .offer-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;}
+  .offer-row:last-child{border-bottom:none;}
+  .offer-row .offer-info{display:flex;flex-direction:column;gap:2px;}
+  .offer-row .offer-dates{font-size:12px;color:var(--muted);}
+  .ledger-row{padding:10px 0;border-bottom:1px solid var(--border);}
+  .ledger-row:last-child{border-bottom:none;}
+  .ledger-row .ledger-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .ledger-row .ledger-source{font-size:14px;color:var(--text);font-weight:600;}
+  .ledger-row .ledger-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .ledger-row .ledger-amount{font-family:var(--font-display);font-weight:800;font-size:15px;}
+  .ledger-row .ledger-amount.pos{color:var(--exercise-text);}
+  .ledger-row .ledger-amount.neg{color:var(--danger);}
+  .ledger-row.violation{background:#FFF6F1;border-radius:10px;padding:10px 8px;margin-bottom:2px;}
+  .ledger-row .ledger-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
 
   .settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
   .settings-row .label{font-size:16px;font-weight:700;color:var(--text);}
@@ -346,7 +369,23 @@ zh: {
   noRedemptionHistory:'还没有兑换记录', redeemedRewardToast:'奖励已兑换，积分已扣除',
   penaltyExecutedToast:'惩罚已执行，积分已抵消', fillRewardFieldsToast:'请填写奖励名称和所需积分',
   fillPenaltyFieldsToast:'请填写惩罚名称和抵消积分数', selectBehaviorFirstToast:'请先选一条行为规则',
-  redeemHistoryReward:'奖励', redeemHistoryPenalty:'惩罚'
+  redeemHistoryReward:'奖励', redeemHistoryPenalty:'惩罚', redeemHistoryCash:'兑换零花钱',
+  ledgerTab:'记账', currentMoneyBalanceLabel:'当前零花钱余额',
+  exchangeRateTitle:'积分兑换零花钱', normalRateLabel:'平时汇率', currentRateDisplay:'{{points}} 积分 = ¥{{money}}',
+  specialOfferActiveLabel:'🎉 限时优惠中：{{name}}', specialOfferPeriodLabel:'{{start}} ~ {{end}}',
+  pointsToExchangeLabel:'兑换积分数', exchangePreviewLabel:'预计到账', confirmExchangeBtn:'确认兑换',
+  editRateBtn:'调整平时汇率', pointsPerLabel:'每多少积分(points)', moneyPerLabel:'兑换多少钱(money)',
+  addSpecialOfferBtn:'+ 新建限时优惠', specialOffersTitle:'限时优惠列表',
+  offerNameLabel:'优惠名称', offerNamePlaceholder:'例如：妈妈生日月', offerStartLabel:'开始日期', offerEndLabel:'结束日期',
+  exchangeSuccessToast:'兑换成功，零花钱已到账', notEnoughPointsToast:'积分不够兑换这么多',
+  fillOfferFieldsToast:'请填写完整的优惠信息', fillRateFieldsToast:'请填写完整的汇率信息',
+  addManualEntryBtn:'+ 手动记一笔', ledgerSourceLabel:'说明', ledgerSourcePlaceholder:'例如：奶奶给的红包',
+  ledgerDirectionLabel:'类型', ledgerIncomeLabel:'入账', ledgerExpenseLabel:'出账', ledgerAmountLabel:'金额',
+  ledgerCategoryLabel:'分类', catGrant:'家长发放', catSpending:'孩子消费', catViolation:'违规扣款', catOtherLedger:'其他',
+  fillLedgerFieldsToast:'请填写说明和金额',
+  balanceAfterLabel:'余额', noLedgerEntries:'还没有记账记录',
+  cashExchangeLogName:'积分兑换零花钱', cashExchangeSource:'积分兑换零花钱', cashExchangeSourceSpecial:'积分兑换零花钱（{{offer}} 优惠价）',
+  pointsSpentSuffix:'（用了 {{n}} 积分）'
 },
 en: {
   appName:'U-Points', appTagline1:'Track good habits, collect little stars', appTagline2:'Make everyday brighter, together as a family',
@@ -472,7 +511,23 @@ en: {
   noRedemptionHistory:'No redemptions yet', redeemedRewardToast:'Reward redeemed, points deducted',
   penaltyExecutedToast:'Penalty executed, points offset', fillRewardFieldsToast:'Please fill in reward name and points required',
   fillPenaltyFieldsToast:'Please fill in penalty name and points offset', selectBehaviorFirstToast:'Please pick a behavior rule first',
-  redeemHistoryReward:'Reward', redeemHistoryPenalty:'Penalty'
+  redeemHistoryReward:'Reward', redeemHistoryPenalty:'Penalty', redeemHistoryCash:'Cash exchange',
+  ledgerTab:'Ledger', currentMoneyBalanceLabel:'Current allowance balance',
+  exchangeRateTitle:'Exchange points for allowance', normalRateLabel:'Standard rate', currentRateDisplay:'{{points}} points = ¥{{money}}',
+  specialOfferActiveLabel:'🎉 Special offer active: {{name}}', specialOfferPeriodLabel:'{{start}} ~ {{end}}',
+  pointsToExchangeLabel:'Points to exchange', exchangePreviewLabel:'You will receive', confirmExchangeBtn:'Confirm exchange',
+  editRateBtn:'Adjust standard rate', pointsPerLabel:'Points per unit', moneyPerLabel:'Money per unit',
+  addSpecialOfferBtn:'+ New special offer', specialOffersTitle:'Special offers',
+  offerNameLabel:'Offer name', offerNamePlaceholder:"e.g. Mom's birthday month", offerStartLabel:'Start date', offerEndLabel:'End date',
+  exchangeSuccessToast:'Exchanged successfully, allowance added', notEnoughPointsToast:'Not enough points for that exchange',
+  fillOfferFieldsToast:'Please fill in all offer details', fillRateFieldsToast:'Please fill in the rate details',
+  addManualEntryBtn:'+ Add manual entry', ledgerSourceLabel:'Description', ledgerSourcePlaceholder:'e.g. Red envelope from grandma',
+  ledgerDirectionLabel:'Type', ledgerIncomeLabel:'Income', ledgerExpenseLabel:'Expense', ledgerAmountLabel:'Amount',
+  ledgerCategoryLabel:'Category', catGrant:'Given by parent', catSpending:'Spending', catViolation:'Violation deduction', catOtherLedger:'Other',
+  fillLedgerFieldsToast:'Please fill in description and amount',
+  balanceAfterLabel:'Balance', noLedgerEntries:'No ledger entries yet',
+  cashExchangeLogName:'Points exchanged for allowance', cashExchangeSource:'Points exchanged for allowance', cashExchangeSourceSpecial:'Points exchanged for allowance ({{offer}} rate)',
+  pointsSpentSuffix:' ({{n}} points used)'
 }
 };
 function t(key, vars){
@@ -487,7 +542,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.9.0';
+var APP_VERSION = '3.10.0';
 var APP_BUILD_DATE = '2026-08-30';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -618,6 +673,7 @@ function loadData(){
     if(!d.exerciseLogs) d.exerciseLogs = [];
     if(!d.customFoods) d.customFoods = [];
     if(!d.customExercises) d.customExercises = [];
+    if(!d.ledgerLogs) d.ledgerLogs = [];
     // 迁移：行为规则从"全家共享一份"改成"每个孩子各自一份"。
     // 老数据里孩子还没有 behaviors 字段的，用原来的全局规则（或默认规则）复制一份给它。
     (d.children||[]).forEach(function(c){
@@ -629,10 +685,12 @@ function loadData(){
       if(!c.nutritionRules) c.nutritionRules = defaultNutritionRules();
       if(!c.rewards) c.rewards = [];
       if(!c.penalties) c.penalties = [];
+      if(!c.exchangeRate) c.exchangeRate = defaultExchangeRate();
+      if(!c.specialOffers) c.specialOffers = [];
     });
     return d;
   }
-  return { family:null, parents:[], children:[], pointLogs:[], thresholds:[], mealLogs:[], exerciseLogs:[], customFoods:[], customExercises:[], setupDone:false };
+  return { family:null, parents:[], children:[], pointLogs:[], thresholds:[], mealLogs:[], exerciseLogs:[], customFoods:[], customExercises:[], ledgerLogs:[], setupDone:false };
 }
 var data = loadData();
 function saveData(){ storageSet('data', data); }
@@ -972,6 +1030,80 @@ function redemptionHistory(childId){
     .slice().sort(function(a,b){ return parseLogDT(b) - parseLogDT(a); });
 }
 
+/* ---------------- 记账：积分兑换零花钱 + 基础流水账 ---------------- */
+function defaultExchangeRate(){ return { points: 10, money: 1 }; }
+function activeSpecialOffer(child){
+  var today = todayStr();
+  var offers = (child.specialOffers||[]).filter(function(o){ return o.startDate<=today && today<=o.endDate; });
+  if(!offers.length) return null;
+  // 如果同时有多个限时优惠生效，选对孩子最划算的那个（每积分能换到的钱最多）
+  offers.sort(function(a,b){ return (b.money/b.points) - (a.money/a.points); });
+  return offers[0];
+}
+function currentExchangeRate(child){
+  var special = activeSpecialOffer(child);
+  if(special) return { points: special.points, money: special.money, special: special };
+  var r = child.exchangeRate || defaultExchangeRate();
+  return { points: r.points, money: r.money, special: null };
+}
+function ledgerBalance(childId){
+  return data.ledgerLogs.filter(function(l){ return l.childId===childId; })
+    .reduce(function(s,l){ return s + l.amount; }, 0);
+}
+// 排序用精确到毫秒的 ts，而不是只精确到分钟的 date+time 字符串——
+// 避免同一分钟内连续记好几笔账时，"最新在前"和余额累加的顺序算错
+function ledgerSortKey(l){ return l.ts!=null ? l.ts : parseLogDT(l).getTime(); }
+function ledgerEntriesNewestFirst(childId){
+  return data.ledgerLogs.filter(function(l){ return l.childId===childId; })
+    .slice().sort(function(a,b){ return ledgerSortKey(b) - ledgerSortKey(a); });
+}
+function addLedgerEntry(childId, source, amount, category, pointsSpent){
+  var log = {
+    id: uid(), childId: childId, source: source, amount: amount, category: category||'other',
+    pointsSpent: pointsSpent || null, ts: Date.now(),
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+  };
+  persistEntity('ledgerLogs', log);
+  return log;
+}
+function deleteLedgerEntry(logId){ persistDelete('ledgerLogs', logId); }
+function saveExchangeRate(childId, points, money){
+  var child = childById(childId);
+  if(!child) return;
+  child.exchangeRate = { points: points, money: money };
+  persistEntity('children', child);
+}
+function addSpecialOffer(childId, name, startDate, endDate, points, money){
+  var child = childById(childId);
+  if(!child) return null;
+  if(!child.specialOffers) child.specialOffers = [];
+  var offer = { id: uid(), name: name, startDate: startDate, endDate: endDate, points: points, money: money };
+  child.specialOffers.push(offer);
+  persistEntity('children', child);
+  return offer;
+}
+function deleteSpecialOffer(childId, offerId){
+  var child = childById(childId);
+  if(!child || !child.specialOffers) return;
+  child.specialOffers = child.specialOffers.filter(function(o){ return o.id!==offerId; });
+  persistEntity('children', child);
+}
+function exchangePointsForMoney(childId, pointsToSpend){
+  var child = childById(childId);
+  if(!child) return null;
+  var rate = currentExchangeRate(child);
+  var money = Math.round((pointsToSpend / rate.points) * rate.money * 100) / 100;
+  var pointLog = {
+    id: uid(), childId: childId, behaviorId: null, source: 'redemption', redemptionKind: 'cash',
+    name: t('cashExchangeLogName'), name_en: 'Points exchanged for allowance', icon: '💰', points: -Math.abs(pointsToSpend),
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+  };
+  persistEntity('pointLogs', pointLog);
+  var desc = rate.special ? t('cashExchangeSourceSpecial', {offer: rate.special.name}) : t('cashExchangeSource');
+  addLedgerEntry(childId, desc, money, 'exchange', pointsToSpend);
+  rearmThresholds(childId);
+  return money;
+}
 
 /* =====================================================================
    云同步（Firebase 匿名登录 + Firestore，按房间码隔离每个家庭）
@@ -986,7 +1118,7 @@ var FIREBASE_CONFIG = {
 };
 var FIREBASE_SDK_VERSION = '10.13.0';
 var CLOUD = { app:null, auth:null, db:null, uid:null, sdkLoadPromise:null, unsubs:{}, pushMap: storageGet('cloudSyncPushMap', {}) };
-var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds','mealLogs','exerciseLogs','customFoods','customExercises'];
+var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds','mealLogs','exerciseLogs','customFoods','customExercises','ledgerLogs'];
 
 function cloudSyncActive(){ return state.cloudSync.enabled && !!state.cloudSync.roomCode && CLOUD.db; }
 function savePushMap(){ storageSet('cloudSyncPushMap', CLOUD.pushMap); }
@@ -1207,6 +1339,11 @@ var showRewardForm = false;
 var showPenaltyForm = false;
 var rewardFormScope = 'total'; // 新建奖励表单：total(总积分) | behavior(单项累计)
 var penaltyFormScope = 'total'; // 新建惩罚表单：total | behavior
+var showExchangeRateForm = false; // 记账：是否展开"设置兑换汇率"表单
+var showSpecialOfferForm = false; // 记账：是否展开"新建限时优惠"表单
+var showManualLedgerForm = false; // 记账：是否展开"手动记一笔"表单
+var manualLedgerDirection = 'income'; // 手动记账表单：income(入账) | expense(出账)
+var manualLedgerCategory = 'grant'; // 手动记账表单：grant/spending/violation/other
 
 function toast(msg){
   // toast 用独立的常驻 DOM 节点，不参与 render() 的整页重绘——
@@ -1230,8 +1367,8 @@ function stepDots(total, current){
   for(var i=0;i<total;i++) s += '<span class="'+(i===current?'active':'')+'"></span>';
   return s + '</div>';
 }
-function segmentedHtml(actName, id, value, options){
-  var s = '<div class="segmented">';
+function segmentedHtml(actName, id, value, options, scrollable){
+  var s = '<div class="segmented'+(scrollable?' scroll':'')+'">';
   options.forEach(function(opt){
     s += '<button type="button" class="'+(value===opt[0]?'active':'')+'" data-act="'+actName+'" data-id="'+id+'" data-value="'+esc(opt[0])+'">'+esc(opt[1])+'</button>';
   });
@@ -1706,12 +1843,109 @@ function renderRedeemHistorySubTab(c, parentMode){
   }
   var rows = history.map(function(l){
     var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-    var kindLabel = l.redemptionKind==='penalty' ? t('redeemHistoryPenalty') : t('redeemHistoryReward');
+    var kindLabel = l.redemptionKind==='penalty' ? t('redeemHistoryPenalty') : (l.redemptionKind==='cash' ? t('redeemHistoryCash') : t('redeemHistoryReward'));
     return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+kindLabel+' · '+l.date+' '+l.time+'</span></div>'+
       '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span>'+
       (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
   }).join('');
   return '<div>'+rows+'</div>';
+}
+
+/* ---------------- 记账 ---------------- */
+function renderLedgerTabBody(c, parentMode){
+  var balance = ledgerBalance(c.id);
+  var pointsBalance = pointBalance(c.id);
+  var rate = currentExchangeRate(c);
+
+  var html = '<div class="balance-card money"><div class="balance-num">¥'+balance+'</div><div class="balance-label">'+t('currentMoneyBalanceLabel')+'</div></div>';
+
+  // 兑换区
+  html += '<div class="rate-card">'+
+    '<div class="rate-display">'+t('currentRateDisplay',{points:rate.points, money:rate.money})+'</div>';
+  if(rate.special){
+    html += '<div class="offer-banner">'+t('specialOfferActiveLabel',{name:rate.special.name})+'<br>'+t('specialOfferPeriodLabel',{start:rate.special.startDate, end:rate.special.endDate})+'</div>';
+  }
+  html += '<div class="field" style="margin-top:12px;"><label>'+t('pointsToExchangeLabel')+' ('+t('currentBalanceLabel')+': '+pointsBalance+')</label>'+
+    '<input type="number" id="mExchangePoints" placeholder="'+rate.points+'"></div>'+
+    '<div class="exchange-preview" id="mExchangePreview">'+t('exchangePreviewLabel')+'：¥0</div>'+
+    '<button class="btn-primary tap" data-act="confirm-exchange" data-id="'+c.id+'" style="width:100%;">'+t('confirmExchangeBtn')+'</button>'+
+  '</div>';
+
+  if(parentMode){
+    // 平时汇率设置
+    html += showExchangeRateForm ?
+      '<div class="inline-form">'+
+        '<div class="field"><label>'+t('pointsPerLabel')+'</label><input type="number" id="mRatePoints" value="'+(c.exchangeRate?c.exchangeRate.points:10)+'"></div>'+
+        '<div class="field"><label>'+t('moneyPerLabel')+'</label><input type="number" id="mRateMoney" value="'+(c.exchangeRate?c.exchangeRate.money:1)+'"></div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-rate-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-rate" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>'
+      : '<button class="dashed-btn tap" data-act="open-rate-form" style="margin-bottom:16px;">'+t('editRateBtn')+'</button>';
+
+    // 限时优惠列表
+    html += '<div class="section-title" style="margin-top:0;">'+t('specialOffersTitle')+'</div>';
+    var offers = c.specialOffers || [];
+    if(offers.length){
+      html += offers.map(function(o){
+        return '<div class="offer-row"><div class="offer-info"><span>'+esc(o.name)+' · '+o.points+' = ¥'+o.money+'</span><span class="offer-dates">'+o.startDate+' ~ '+o.endDate+'</span></div>'+
+          '<button class="small-icon-btn" data-act="delete-offer" data-id="'+c.id+'" data-value="'+o.id+'">✕</button></div>';
+      }).join('');
+    }
+    html += showSpecialOfferForm ?
+      '<div class="inline-form">'+
+        '<div class="field"><label>'+t('offerNameLabel')+'</label><input id="mOfferName" placeholder="'+t('offerNamePlaceholder')+'"></div>'+
+        '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('offerStartLabel')+'</span><input type="date" id="mOfferStart"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('offerEndLabel')+'</span><input type="date" id="mOfferEnd"></div>'+
+        '</div></div>'+
+        '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('pointsPerLabel')+'</span><input type="number" id="mOfferPoints" placeholder="'+rate.points+'"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('moneyPerLabel')+'</span><input type="number" id="mOfferMoney" placeholder="2"></div>'+
+        '</div></div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-offer-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-offer" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>'
+      : '<button class="dashed-btn tap" data-act="open-offer-form" style="margin-bottom:18px;">'+t('addSpecialOfferBtn')+'</button>';
+
+    // 手动记账
+    html += showManualLedgerForm ?
+      '<div class="inline-form">'+
+        '<div class="field"><label>'+t('ledgerSourceLabel')+'</label><input id="mLedgerSource" placeholder="'+t('ledgerSourcePlaceholder')+'"></div>'+
+        '<div class="field"><label>'+t('ledgerDirectionLabel')+'</label>'+segmentedHtml('draft-ledger-direction', c.id, manualLedgerDirection, [['income',t('ledgerIncomeLabel')],['expense',t('ledgerExpenseLabel')]])+'</div>'+
+        '<div class="field"><label>'+t('ledgerAmountLabel')+'</label><input type="number" id="mLedgerAmount" placeholder="20"></div>'+
+        '<div class="field"><label>'+t('ledgerCategoryLabel')+'</label>'+segmentedHtml('draft-ledger-category', c.id, manualLedgerCategory, [['grant',t('catGrant')],['spending',t('catSpending')],['violation',t('catViolation')],['other',t('catOtherLedger')]])+'</div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-ledger-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-ledger-entry" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>'
+      : '<button class="dashed-btn tap" data-act="open-ledger-form" style="margin-bottom:6px;">'+t('addManualEntryBtn')+'</button>';
+  }
+
+  // 流水记录
+  html += '<div class="section-title">'+t('ledgerTab')+'</div>';
+  var entriesDesc = ledgerEntriesNewestFirst(c.id);
+  if(!entriesDesc.length){
+    html += '<div style="font-size:14px;color:var(--muted);padding:14px 2px;text-align:center;">'+t('noLedgerEntries')+'</div>';
+  } else {
+    // 余额要按时间正序累加，所以先正序算出每一笔之后的余额，再倒序展示
+    var entriesAsc = entriesDesc.slice().reverse();
+    var running = 0;
+    var runningMap = {};
+    entriesAsc.forEach(function(l){ running += l.amount; runningMap[l.id] = running; });
+    html += entriesDesc.map(function(l){
+      var isViolation = l.category==='violation';
+      var catLabel = {grant:t('catGrant'), spending:t('catSpending'), violation:t('catViolation'), other:t('catOtherLedger'), exchange:''}[l.category] || '';
+      var meta = l.date+' '+l.time + (catLabel?(' · '+catLabel):'') + (l.pointsSpent ? t('pointsSpentSuffix',{n:l.pointsSpent}) : '');
+      return '<div class="ledger-row'+(isViolation?' violation':'')+'">'+
+        '<div class="ledger-top"><span class="ledger-source">'+(isViolation?'⚠️ ':'')+esc(l.source)+'</span>'+
+        '<span class="ledger-amount '+(l.amount>=0?'pos':'neg')+'">'+(l.amount>=0?'+':'')+'¥'+Math.abs(l.amount)+'</span></div>'+
+        '<div class="ledger-bottom"><span class="ledger-meta">'+esc(meta)+'</span>'+
+        '<span class="ledger-meta">'+t('balanceAfterLabel')+' ¥'+runningMap[l.id]+'</span></div>'+
+        (parentMode ? '<div style="text-align:right;margin-top:4px;"><button class="small-icon-btn" data-act="delete-ledger-entry" data-id="'+l.id+'">✕</button></div>' : '')+
+      '</div>';
+    }).join('');
+  }
+
+  return html;
 }
 
 /* ---------------- 顶层渲染 ---------------- */
@@ -1975,6 +2209,7 @@ function renderChildHome(){
   html += '<div style="margin-top:22px;">'+
     '<button class="btn-ghost tap" data-act="open-child-health" data-id="'+c.id+'" style="margin-bottom:10px;">🍎 '+t('healthTab')+'</button>'+
     '<button class="btn-ghost tap" data-act="open-child-redeem" data-id="'+c.id+'" style="margin-bottom:10px;">🎁 '+t('redeemTab')+'</button>'+
+    '<button class="btn-ghost tap" data-act="open-child-ledger" data-id="'+c.id+'" style="margin-bottom:10px;">💰 '+t('ledgerTab')+'</button>'+
     '<button class="btn-ghost tap" data-act="open-my-profile" data-id="'+c.id+'">✏️ '+t('editMyProfile')+'</button>'+
   '</div>';
   html += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
@@ -2095,11 +2330,13 @@ function renderEditChildScreen(scr){
     body = renderHealthTabBody(c, parentMode);
   } else if(tab === 'redeem'){
     body = renderRedeemTabBody(c, parentMode);
+  } else if(tab === 'ledger'){
+    body = renderLedgerTabBody(c, parentMode);
   }
 
   var tabs = parentMode
-    ? segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['growth',t('growthTab')],['points',t('pointsTab')],['health',t('healthTab')],['redeem',t('redeemTab')]])
-    : segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['health',t('healthTab')],['redeem',t('redeemTab')],['info',t('infoTab')],['growth',t('growthTab')]]);
+    ? segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['growth',t('growthTab')],['points',t('pointsTab')],['health',t('healthTab')],['redeem',t('redeemTab')],['ledger',t('ledgerTab')]], true)
+    : segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['health',t('healthTab')],['redeem',t('redeemTab')],['ledger',t('ledgerTab')],['info',t('infoTab')],['growth',t('growthTab')]], true);
 
   return screenHeader(esc(c.name)) + tabs + body;
 }
@@ -2338,6 +2575,17 @@ function bindEvents(){
       if(wrap){ wrap.innerHTML = renderExerciseChipList(editingChild); bindScoped(wrap); }
     });
   }
+  var exchangePointsInput = document.getElementById('mExchangePoints');
+  if(exchangePointsInput && editingChild){
+    exchangePointsInput.addEventListener('input', function(){
+      var previewEl = document.getElementById('mExchangePreview');
+      if(!previewEl) return;
+      var pts = parseFloat(exchangePointsInput.value) || 0;
+      var rate = currentExchangeRate(editingChild);
+      var money = Math.round((pts / rate.points) * rate.money * 100) / 100;
+      previewEl.textContent = t('exchangePreviewLabel')+'：¥'+money;
+    });
+  }
 }
 function toggleDisabled(selector, disabled){
   var btn = document.querySelector(selector);
@@ -2416,7 +2664,7 @@ function handleAction(act, id, value, el){
   else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; render(); }
   else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
@@ -2482,6 +2730,55 @@ function handleAction(act, id, value, el){
   }
   else if(act==='delete-penalty'){ deletePenalty(id, value); render(); }
   else if(act==='execute-penalty'){ executePenalty(id, value); toast(t('penaltyExecutedToast')); render(); }
+
+  else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='open-rate-form'){ showExchangeRateForm=true; render(); }
+  else if(act==='cancel-rate-form'){ showExchangeRateForm=false; render(); }
+  else if(act==='save-rate'){
+    var pts = parseFloat(document.getElementById('mRatePoints').value);
+    var money = parseFloat(document.getElementById('mRateMoney').value);
+    if(!pts || !money){ toast(t('fillRateFieldsToast')); return; }
+    saveExchangeRate(id, pts, money);
+    showExchangeRateForm = false;
+    render();
+  }
+  else if(act==='open-offer-form'){ showSpecialOfferForm=true; render(); }
+  else if(act==='cancel-offer-form'){ showSpecialOfferForm=false; render(); }
+  else if(act==='save-offer'){
+    var oname = document.getElementById('mOfferName').value.trim();
+    var ostart = document.getElementById('mOfferStart').value;
+    var oend = document.getElementById('mOfferEnd').value;
+    var opts = parseFloat(document.getElementById('mOfferPoints').value);
+    var omoney = parseFloat(document.getElementById('mOfferMoney').value);
+    if(!oname || !ostart || !oend || !opts || !omoney){ toast(t('fillOfferFieldsToast')); return; }
+    addSpecialOffer(id, oname, ostart, oend, opts, omoney);
+    showSpecialOfferForm = false;
+    render();
+  }
+  else if(act==='delete-offer'){ deleteSpecialOffer(id, value); render(); }
+  else if(act==='draft-ledger-direction'){ manualLedgerDirection = value; render(); }
+  else if(act==='draft-ledger-category'){ manualLedgerCategory = value; render(); }
+  else if(act==='open-ledger-form'){ showManualLedgerForm=true; manualLedgerDirection='income'; manualLedgerCategory='grant'; render(); }
+  else if(act==='cancel-ledger-form'){ showManualLedgerForm=false; render(); }
+  else if(act==='save-ledger-entry'){
+    var source = document.getElementById('mLedgerSource').value.trim();
+    var amt = parseFloat(document.getElementById('mLedgerAmount').value);
+    if(!source || !amt){ toast(t('fillLedgerFieldsToast')); return; }
+    var signedAmt = manualLedgerDirection==='expense' ? -Math.abs(amt) : Math.abs(amt);
+    addLedgerEntry(id, source, signedAmt, manualLedgerCategory, null);
+    showManualLedgerForm = false;
+    render();
+  }
+  else if(act==='delete-ledger-entry'){ deleteLedgerEntry(id); render(); }
+  else if(act==='confirm-exchange'){
+    var child = childById(id);
+    var ptsToSpend = parseFloat(document.getElementById('mExchangePoints').value);
+    if(!ptsToSpend || ptsToSpend<=0){ return; }
+    if(pointBalance(id) < ptsToSpend){ toast(t('notEnoughPointsToast')); return; }
+    exchangePointsForMoney(id, ptsToSpend);
+    toast(t('exchangeSuccessToast'));
+    render();
+  }
   else if(act==='set-activity-level'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.activityLevel=value; persistEntity('children', c);} render(); }
   else if(act==='open-calorie-override'){ showCalorieOverrideForm=true; render(); }
   else if(act==='cancel-calorie-override'){ showCalorieOverrideForm=false; render(); }
@@ -2641,6 +2938,7 @@ function finishSetup(){
     exerciseLogs: [],
     customFoods: [],
     customExercises: [],
+    ledgerLogs: [],
     setupDone: true
   };
   saveData();
@@ -2791,6 +3089,7 @@ function handleImportFile(e){
       if(!data.exerciseLogs) data.exerciseLogs = [];
       if(!data.customFoods) data.customFoods = [];
       if(!data.customExercises) data.customExercises = [];
+      if(!data.ledgerLogs) data.ledgerLogs = [];
       (data.children||[]).forEach(function(c){
         if(!c.behaviors || !c.behaviors.length){
           c.behaviors = (data.behaviors && data.behaviors.length) ? JSON.parse(JSON.stringify(data.behaviors)) : defaultBehaviors();
@@ -2800,6 +3099,8 @@ function handleImportFile(e){
         if(!c.nutritionRules) c.nutritionRules = defaultNutritionRules();
         if(!c.rewards) c.rewards = [];
         if(!c.penalties) c.penalties = [];
+        if(!c.exchangeRate) c.exchangeRate = defaultExchangeRate();
+        if(!c.specialOffers) c.specialOffers = [];
       });
       saveData();
       screenStack = [];
