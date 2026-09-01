@@ -441,7 +441,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.7.0';
+var APP_VERSION = '3.8.0';
 var APP_BUILD_DATE = '2026-08-30';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -540,6 +540,26 @@ function foodLibraryAll(){
 function exerciseLibraryAll(){
   return EXERCISE_LIBRARY.map(function(e){ return {refId:'lib:'+e.id, name:e.name, name_en:e.name_en, icon:e.icon, caloriesPerMin:e.caloriesPerMin}; })
     .concat((data.customExercises||[]).map(function(e){ return {refId:'custom:'+e.id, name:e.name, name_en:e.name_en||e.name, icon:e.icon||'🏃', caloriesPerMin:e.caloriesPerMin}; }));
+}
+
+// 常用优先排序：按这个孩子历史上吃过/做过的次数从高到低排；次数相同则保持原有顺序（内置在前、自定义按添加顺序）
+function foodLibrarySorted(childId){
+  var all = foodLibraryAll();
+  var counts = {};
+  data.mealLogs.forEach(function(l){ if(l.childId===childId && l.refId){ counts[l.refId] = (counts[l.refId]||0) + 1; } });
+  return all
+    .map(function(f, i){ return {f:f, count:counts[f.refId]||0, idx:i}; })
+    .sort(function(a,b){ return b.count!==a.count ? b.count-a.count : a.idx-b.idx; })
+    .map(function(x){ return x.f; });
+}
+function exerciseLibrarySorted(childId){
+  var all = exerciseLibraryAll();
+  var counts = {};
+  data.exerciseLogs.forEach(function(l){ if(l.childId===childId && l.refId){ counts[l.refId] = (counts[l.refId]||0) + 1; } });
+  return all
+    .map(function(e, i){ return {e:e, count:counts[e.refId]||0, idx:i}; })
+    .sort(function(a,b){ return b.count!==a.count ? b.count-a.count : a.idx-b.idx; })
+    .map(function(x){ return x.e; });
 }
 
 /* ---------------- 数据（会被云同步覆盖/合并的部分） ---------------- */
@@ -1057,9 +1077,9 @@ var selectedExerciseRefId = null; // 运动打卡：当前选中待记录的运�
 var showNutritionSettings = false; // 营养达标：是否展开"调整达标标准"表单
 var customFoodCategoryDraft = 'other'; // 自定义食物表单：当前选中的分类（蔬菜/水果/其他）
 var mealFoodSearch = ''; // 三餐食物库：搜索关键词
-var mealFoodShowAllCustom = false; // 三餐食物库：是否展开显示全部自定义食物
+var mealFoodShowAll = false; // 三餐食物库：是否展开显示全部（默认只显示最常吃的前8个）
 var exerciseSearch = ''; // 运动库：搜索关键词
-var exerciseShowAllCustom = false; // 运动库：是否展开显示全部自定义运动
+var exerciseShowAll = false; // 运动库：是否展开显示全部（默认只显示最常做的前8个）
 
 function toast(msg){
   // toast 用独立的常驻 DOM 节点，不参与 render() 的整页重绘——
@@ -1313,23 +1333,18 @@ function renderNutritionCard(c, parentMode){
 
 function renderFoodChipList(c){
   var query = mealFoodSearch.trim().toLowerCase();
-  var allFoods = foodLibraryAll();
-  var builtinIds = {};
-  FOOD_LIBRARY.forEach(function(f){ builtinIds['lib:'+f.id] = true; });
-  var builtin = allFoods.filter(function(f){ return builtinIds[f.refId]; });
-  var custom = allFoods.filter(function(f){ return !builtinIds[f.refId]; });
+  var sorted = foodLibrarySorted(c.id);
 
   function matches(f){
     if(!query) return true;
     var nm = (f.name||'').toLowerCase(), nmEn = (f.name_en||'').toLowerCase();
     return nm.indexOf(query)>=0 || nmEn.indexOf(query)>=0;
   }
-  var builtinFiltered = builtin.filter(matches);
-  var customFiltered = custom.filter(matches);
+  var filtered = sorted.filter(matches);
   var LIMIT = 8;
-  var showAll = !!query || mealFoodShowAllCustom;
-  var customToShow = showAll ? customFiltered : customFiltered.slice(0, LIMIT);
-  var hiddenCount = customFiltered.length - customToShow.length;
+  var showAll = !!query || mealFoodShowAll;
+  var toShow = showAll ? filtered : filtered.slice(0, LIMIT);
+  var hiddenCount = filtered.length - toShow.length;
 
   function chipHtml(f){
     var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
@@ -1339,21 +1354,14 @@ function renderFoodChipList(c){
     '</button>';
   }
 
-  if(query && !builtinFiltered.length && !customFiltered.length){
+  if(query && !filtered.length){
     return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noFoodMatchHint')+'</div>';
   }
-  var html = '';
-  if(builtinFiltered.length){
-    html += '<div class="chip-grid" style="margin-bottom:'+(customFiltered.length?'10px':'4px')+';">'+builtinFiltered.map(chipHtml).join('')+'</div>';
-  }
-  if(customFiltered.length){
-    html += '<div style="font-size:12px;color:var(--muted);font-weight:700;margin:4px 2px 6px;">'+t('customFoodsLabel')+'</div>';
-    html += '<div class="chip-grid" style="margin-bottom:6px;">'+customToShow.map(chipHtml).join('')+'</div>';
-    if(!showAll && hiddenCount>0){
-      html += '<button class="dashed-btn tap" data-act="toggle-food-show-all" style="margin-bottom:4px;">'+t('showMoreFoodsBtn',{n:hiddenCount})+'</button>';
-    } else if(mealFoodShowAllCustom && !query && customFiltered.length>LIMIT){
-      html += '<button class="dashed-btn tap" data-act="toggle-food-show-all" style="margin-bottom:4px;">'+t('showLessFoodsBtn')+'</button>';
-    }
+  var html = '<div class="chip-grid" style="margin-bottom:6px;">'+toShow.map(chipHtml).join('')+'</div>';
+  if(!showAll && hiddenCount>0){
+    html += '<button class="dashed-btn tap" data-act="toggle-food-show-all" style="margin-bottom:4px;">'+t('showMoreFoodsBtn',{n:hiddenCount})+'</button>';
+  } else if(mealFoodShowAll && !query && filtered.length>LIMIT){
+    html += '<button class="dashed-btn tap" data-act="toggle-food-show-all" style="margin-bottom:4px;">'+t('showLessFoodsBtn')+'</button>';
   }
   return html;
 }
@@ -1397,23 +1405,18 @@ function renderMealsSubTab(c, parentMode){
 
 function renderExerciseChipList(c){
   var query = exerciseSearch.trim().toLowerCase();
-  var allExercises = exerciseLibraryAll();
-  var builtinIds = {};
-  EXERCISE_LIBRARY.forEach(function(e){ builtinIds['lib:'+e.id] = true; });
-  var builtin = allExercises.filter(function(e){ return builtinIds[e.refId]; });
-  var custom = allExercises.filter(function(e){ return !builtinIds[e.refId]; });
+  var sorted = exerciseLibrarySorted(c.id);
 
   function matches(e){
     if(!query) return true;
     var nm = (e.name||'').toLowerCase(), nmEn = (e.name_en||'').toLowerCase();
     return nm.indexOf(query)>=0 || nmEn.indexOf(query)>=0;
   }
-  var builtinFiltered = builtin.filter(matches);
-  var customFiltered = custom.filter(matches);
+  var filtered = sorted.filter(matches);
   var LIMIT = 8;
-  var showAll = !!query || exerciseShowAllCustom;
-  var customToShow = showAll ? customFiltered : customFiltered.slice(0, LIMIT);
-  var hiddenCount = customFiltered.length - customToShow.length;
+  var showAll = !!query || exerciseShowAll;
+  var toShow = showAll ? filtered : filtered.slice(0, LIMIT);
+  var hiddenCount = filtered.length - toShow.length;
 
   function chipHtml(e){
     var nm = (state.lang==='en' && e.name_en) ? e.name_en : e.name;
@@ -1424,21 +1427,14 @@ function renderExerciseChipList(c){
     '</button>';
   }
 
-  if(query && !builtinFiltered.length && !customFiltered.length){
+  if(query && !filtered.length){
     return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noExerciseMatchHint')+'</div>';
   }
-  var html = '';
-  if(builtinFiltered.length){
-    html += '<div class="chip-grid" style="margin-bottom:'+(customFiltered.length?'10px':'4px')+';">'+builtinFiltered.map(chipHtml).join('')+'</div>';
-  }
-  if(customFiltered.length){
-    html += '<div style="font-size:12px;color:var(--muted);font-weight:700;margin:4px 2px 6px;">'+t('customExercisesLabel')+'</div>';
-    html += '<div class="chip-grid" style="margin-bottom:6px;">'+customToShow.map(chipHtml).join('')+'</div>';
-    if(!showAll && hiddenCount>0){
-      html += '<button class="dashed-btn tap" data-act="toggle-exercise-show-all" style="margin-bottom:4px;">'+t('showMoreExercisesBtn',{n:hiddenCount})+'</button>';
-    } else if(exerciseShowAllCustom && !query && customFiltered.length>LIMIT){
-      html += '<button class="dashed-btn tap" data-act="toggle-exercise-show-all" style="margin-bottom:4px;">'+t('showLessExercisesBtn')+'</button>';
-    }
+  var html = '<div class="chip-grid" style="margin-bottom:6px;">'+toShow.map(chipHtml).join('')+'</div>';
+  if(!showAll && hiddenCount>0){
+    html += '<button class="dashed-btn tap" data-act="toggle-exercise-show-all" style="margin-bottom:4px;">'+t('showMoreExercisesBtn',{n:hiddenCount})+'</button>';
+  } else if(exerciseShowAll && !query && filtered.length>LIMIT){
+    html += '<button class="dashed-btn tap" data-act="toggle-exercise-show-all" style="margin-bottom:4px;">'+t('showLessExercisesBtn')+'</button>';
   }
   return html;
 }
@@ -2177,7 +2173,7 @@ function handleAction(act, id, value, el){
   else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAllCustom=false; exerciseSearch=''; exerciseShowAllCustom=false; render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; render(); }
   else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
@@ -2200,7 +2196,7 @@ function handleAction(act, id, value, el){
   else if(act==='cal-select-day'){ getCalState(id).sel = value; render(); }
 
   else if(act==='open-child-health'){ editChildTab='health'; confirmDeleteChild=false; healthSubTab='meals'; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; selectedExerciseRefId=null; pushScreen({type:'editChild', childId:id}); }
-  else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAllCustom=false; exerciseSearch=''; exerciseShowAllCustom=false; render(); }
+  else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; render(); }
   else if(act==='set-activity-level'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.activityLevel=value; persistEntity('children', c);} render(); }
   else if(act==='open-calorie-override'){ showCalorieOverrideForm=true; render(); }
   else if(act==='cancel-calorie-override'){ showCalorieOverrideForm=false; render(); }
@@ -2223,7 +2219,7 @@ function handleAction(act, id, value, el){
     render();
   }
   else if(act==='delete-meal-log'){ deleteMealLog(id); render(); }
-  else if(act==='toggle-food-show-all'){ mealFoodShowAllCustom = !mealFoodShowAllCustom; render(); }
+  else if(act==='toggle-food-show-all'){ mealFoodShowAll = !mealFoodShowAll; render(); }
   else if(act==='open-custom-food'){ showCustomFoodForm=true; customFoodCategoryDraft='other'; render(); }
   else if(act==='cancel-custom-food'){ showCustomFoodForm=false; render(); }
   else if(act==='draft-custom-food-category'){ customFoodCategoryDraft = value; render(); }
@@ -2265,7 +2261,7 @@ function handleAction(act, id, value, el){
     render();
   }
   else if(act==='delete-exercise-log'){ deleteExerciseLog(id); render(); }
-  else if(act==='toggle-exercise-show-all'){ exerciseShowAllCustom = !exerciseShowAllCustom; render(); }
+  else if(act==='toggle-exercise-show-all'){ exerciseShowAll = !exerciseShowAll; render(); }
 
   else if(act==='toggle-nutrition-enabled'){
     var c = data.children.find(function(x){return x.id===id;});
