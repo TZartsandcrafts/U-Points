@@ -125,6 +125,12 @@
   .chip.food{background:var(--food-light);color:var(--food-text);}
   .chip.exercise{background:var(--exercise-light);color:var(--exercise-text);}
   .chip.exercise.selected{box-shadow:inset 0 0 0 2px var(--exercise);}
+  .chip.checklist{background:var(--sky-light);color:var(--sky-dark);}
+  .chip.checklist.done{background:var(--exercise-light);color:var(--exercise-text);}
+  .range-picker{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:14px;margin:4px 0 18px;}
+  .range-picker-title{font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:10px;text-align:center;}
+  .range-picker-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .range-pick-btn{background:var(--sky-light);color:var(--sky-dark);border:none;border-radius:12px;padding:10px 16px;font-weight:800;font-family:var(--font-display);font-size:15px;cursor:pointer;min-width:52px;}
   .cal-summary-card{background:var(--card);border:2px solid var(--border);border-radius:20px;padding:18px;margin-bottom:18px;}
   .cal-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin:12px 0 4px;}
   .cal-summary-grid .num{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--text);}
@@ -135,6 +141,8 @@
   .inline-form .field{margin-bottom:10px;}
   .inline-form .field:last-child{margin-bottom:0;}
   .exercise-log-form{background:var(--exercise-light);border-radius:16px;padding:14px;margin:4px 0 16px;}
+  .meal-group-header{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-display);font-weight:800;font-size:14px;color:var(--food-text);background:var(--food-light);border-radius:10px;padding:8px 12px;margin:14px 0 4px;}
+  .meal-group-header .meal-group-total{font-size:12px;font-weight:700;opacity:.8;}
   .calorie-preview{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--exercise-text);text-align:center;margin:8px 0;}
   .nutri-row{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--border);font-size:14px;}
   .nutri-row:last-child{border-bottom:none;}
@@ -283,7 +291,10 @@ zh: {
   addHeight:'新增身高', addWeight:'新增体重', record:'记录',
   noHeightYet:'还没有身高记录', noWeightYet:'还没有体重记录',
   currentPoints:'当前积分', thresholdSettings:'⚠️ 预警阈值设置',
-  rewardSection:'加分 ✨', penaltySection:'扣分 ⚠️',
+  rewardSection:'加分 ✨', penaltySection:'扣分 ⚠️', checklistSection:'每日打卡 ✔️',
+  pointsModeLabel:'计分方式', pointsModeFixed:'固定分值', pointsModeRange:'浮动区间', pointsModeChecklist:'每日打卡(不计分)',
+  rangeMinLabel:'最小值', rangeMaxLabel:'最大值', rangeHint:'打分时可以在这个区间里挑一个具体分值，做得好选高一点、一般般选低一点',
+  checklistHint:'这是每天需要完成的固定项，只有"完成/未完成"两种状态，不计入积分', fillRangeFieldsToast:'请填写完整的区间范围',
   noRewards:'还没有加分项，去"行为规则"里添加吧', noPenalties:'还没有扣分项',
   recentLogs:'最近记录', noLogs:'还没有积分记录',
   behaviorsTitle:'行为规则与积分', behaviorsTitleForChild:'{{name}} 的行为规则', behaviorsDesc:'这里的加减分项，会出现在这个孩子的"积分记录"页面里，方便随手打分。每个孩子的规则可以各不相同。',
@@ -341,13 +352,16 @@ zh: {
   nutritionTitle:'营养达标', nutritionEnableLabel:'启用营养积分（与三餐达标情况自动挂钩加减分）',
   nutritionEnabledOn:'已启用', nutritionEnabledOff:'未启用',
   nutritionSettingsBtn:'调整达标标准', carbLimitLabel:'碳水上限(g，留空按建议值)', proteinMinLabel:'蛋白质下限(g，留空按建议值)',
-  fatLimitLabel:'脂肪上限(g，留空按建议值)', vegTargetLabel:'蔬菜份数目标', fruitTargetLabel:'水果份数目标',
+  fatLimitLabel:'脂肪上限(g，留空按建议值)', vegTargetLabel:'蔬菜克重目标(g)', fruitTargetLabel:'水果克重目标(g)',
   pointsPerRuleTitle:'每项达标/超标的分值', calorieRulePoints:'热量', carbRulePoints:'碳水', proteinRulePoints:'蛋白质',
   fatRulePoints:'脂肪', vegRulePoints:'蔬菜', fruitRulePoints:'水果',
   settleNutritionBtn:'结算今日营养积分', nutritionSettledToast:'今日营养积分已结算',
   metLabel:'达标', notMetLabel:'未达标', needHeightWeightForNutritionHint:'先记录身高体重，才能算出热量/碳水/蛋白质/脂肪的目标',
   foodCategoryLabel:'食物分类', catVeg:'蔬菜', catFruit:'水果', catOtherFood:'其他',
   proteinGLabel:'蛋白质(g)', fatGLabel:'脂肪(g)', carbGLabel:'碳水(g)',
+  foodAmountLabel:'数量', unitCount:'个', unitGrams:'克',
+  logMealBtn:'记录这餐', foodUnitLabel:'计量单位', foodBaseAmountGLabel:'基准克重(g)', foodBaseAmountCountLabel:'基准个数',
+  customFoodBaseHint:'下面填的热量/碳水/蛋白质/脂肪是"这个基准数量"对应的值，以后再吃这个食物换了数量，会自动按比例折算',
   searchFoodPlaceholder:'搜索食物…', searchExercisePlaceholder:'搜索运动…',
   noFoodMatchHint:'没有找到匹配的食物，换个关键词试试，或直接添加自定义食物',
   noExerciseMatchHint:'没有找到匹配的运动，换个关键词试试，或直接添加自定义运动',
@@ -385,7 +399,13 @@ zh: {
   fillLedgerFieldsToast:'请填写说明和金额',
   balanceAfterLabel:'余额', noLedgerEntries:'还没有记账记录',
   cashExchangeLogName:'积分兑换零花钱', cashExchangeSource:'积分兑换零花钱', cashExchangeSourceSpecial:'积分兑换零花钱（{{offer}} 优惠价）',
-  pointsSpentSuffix:'（用了 {{n}} 积分）'
+  pointsSpentSuffix:'（用了 {{n}} 积分）',
+  transferFromLabel:'从', transferToLabel:'转到', transferAmountLabel:'转出金额', transferRateLabel:'转换汇率（1{{from}} = ? {{to}}）',
+  transferPreviewLabel:'预计到账', transferBtn:'+ 货币互转', confirmTransferBtn:'确认互转',
+  transferOutSource:'转出到{{to}}', transferInSource:'从{{from}}转入',
+  catTransfer:'货币互转', catAdjustment:'初始调整',
+  adjustInitialMoneyBtn:'调整初始金额', initialMoneyLabel:'初始金额', initialMoneyLogSource:'初始金额调整',
+  adjustInitialPointsBtn:'调整初始积分', initialPointsLabel:'初始积分', initialPointsLogName:'初始积分调整',
 },
 en: {
   appName:'U-Points', appTagline1:'Track good habits, collect little stars', appTagline2:'Make everyday brighter, together as a family',
@@ -425,7 +445,10 @@ en: {
   addHeight:'Add height', addWeight:'Add weight', record:'Log',
   noHeightYet:'No height records yet', noWeightYet:'No weight records yet',
   currentPoints:'Current points', thresholdSettings:'⚠️ Alert thresholds',
-  rewardSection:'Reward points ✨', penaltySection:'Deductions ⚠️',
+  rewardSection:'Reward points ✨', penaltySection:'Deductions ⚠️', checklistSection:'Daily checklist ✔️',
+  pointsModeLabel:'Scoring type', pointsModeFixed:'Fixed value', pointsModeRange:'Flexible range', pointsModeChecklist:'Daily checklist (no points)',
+  rangeMinLabel:'Minimum', rangeMaxLabel:'Maximum', rangeHint:'When logging, pick an exact value in this range — higher for a great job, lower for so-so effort',
+  checklistHint:"A fixed daily item — just done/not-done, doesn't affect points", fillRangeFieldsToast:'Please fill in the full range',
   noRewards:'No reward items yet — add some in "Behavior rules"', noPenalties:'No deduction items yet',
   recentLogs:'Recent activity', noLogs:'No points logged yet',
   behaviorsTitle:"Behavior rules & points", behaviorsTitleForChild:"{{name}}'s behavior rules", behaviorsDesc:"These items show up on this child's Points tab for quick tapping. Each child can have their own set of rules.",
@@ -483,13 +506,16 @@ en: {
   nutritionTitle:'Nutrition Goals', nutritionEnableLabel:'Enable nutrition points (auto reward/penalty based on meals)',
   nutritionEnabledOn:'On', nutritionEnabledOff:'Off',
   nutritionSettingsBtn:'Adjust targets', carbLimitLabel:'Carb limit (g, blank = suggested)', proteinMinLabel:'Protein minimum (g, blank = suggested)',
-  fatLimitLabel:'Fat limit (g, blank = suggested)', vegTargetLabel:'Veggie servings target', fruitTargetLabel:'Fruit servings target',
+  fatLimitLabel:'Fat limit (g, blank = suggested)', vegTargetLabel:'Veggie grams target (g)', fruitTargetLabel:'Fruit grams target (g)',
   pointsPerRuleTitle:'Points per rule (met / missed)', calorieRulePoints:'Calories', carbRulePoints:'Carbs', proteinRulePoints:'Protein',
   fatRulePoints:'Fat', vegRulePoints:'Veggies', fruitRulePoints:'Fruit',
   settleNutritionBtn:"Settle today's nutrition points", nutritionSettledToast:"Today's nutrition points settled",
   metLabel:'Met', notMetLabel:'Missed', needHeightWeightForNutritionHint:'Log height & weight first to calculate calorie/carb/protein/fat targets',
   foodCategoryLabel:'Food category', catVeg:'Vegetable', catFruit:'Fruit', catOtherFood:'Other',
   proteinGLabel:'Protein (g)', fatGLabel:'Fat (g)', carbGLabel:'Carbs (g)',
+  foodAmountLabel:'Amount', unitCount:'count', unitGrams:'grams',
+  logMealBtn:'Log this meal', foodUnitLabel:'Unit', foodBaseAmountGLabel:'Base weight (g)', foodBaseAmountCountLabel:'Base count',
+  customFoodBaseHint:"The calories/carbs/protein/fat below are for this base amount — next time you log this food with a different amount, it'll scale automatically",
   searchFoodPlaceholder:'Search foods…', searchExercisePlaceholder:'Search exercises…',
   noFoodMatchHint:'No matching foods — try another search, or add a custom food',
   noExerciseMatchHint:'No matching exercises — try another search, or add a custom exercise',
@@ -527,7 +553,13 @@ en: {
   fillLedgerFieldsToast:'Please fill in description and amount',
   balanceAfterLabel:'Balance', noLedgerEntries:'No ledger entries yet',
   cashExchangeLogName:'Points exchanged for allowance', cashExchangeSource:'Points exchanged for allowance', cashExchangeSourceSpecial:'Points exchanged for allowance ({{offer}} rate)',
-  pointsSpentSuffix:' ({{n}} points used)'
+  pointsSpentSuffix:' ({{n}} points used)',
+  transferFromLabel:'From', transferToLabel:'To', transferAmountLabel:'Amount to transfer', transferRateLabel:'Conversion rate (1 {{from}} = ? {{to}})',
+  transferPreviewLabel:'You will receive', transferBtn:'+ Currency transfer', confirmTransferBtn:'Confirm transfer',
+  transferOutSource:'Transferred to {{to}}', transferInSource:'Transferred from {{from}}',
+  catTransfer:'Currency transfer', catAdjustment:'Initial adjustment',
+  adjustInitialMoneyBtn:'Adjust initial balance', initialMoneyLabel:'Initial balance', initialMoneyLogSource:'Initial balance adjustment',
+  adjustInitialPointsBtn:'Adjust initial points', initialPointsLabel:'Initial points', initialPointsLogName:'Initial points adjustment',
 }
 };
 function t(key, vars){
@@ -542,8 +574,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.10.0';
-var APP_BUILD_DATE = '2026-08-30';
+var APP_VERSION = '3.11.0';
+var APP_BUILD_DATE = '2026-09-01';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -611,18 +643,18 @@ function behaviorDisplayName(b){
 
 /* ---------------- 健康打卡：内置食物库 / 运动库（精简版，先覆盖常见项） ---------------- */
 var FOOD_LIBRARY = [
-  {id:'rice', name:'米饭(1碗)', name_en:'Rice (1 bowl)', icon:'🍚', calories:200, carb:44, protein:4, fat:0.4, category:'other'},
-  {id:'noodle', name:'面条(1碗)', name_en:'Noodles (1 bowl)', icon:'🍜', calories:350, carb:60, protein:12, fat:6, category:'other'},
-  {id:'bread', name:'面包(1片)', name_en:'Bread (1 slice)', icon:'🍞', calories:80, carb:15, protein:3, fat:1, category:'other'},
-  {id:'egg', name:'鸡蛋(1个)', name_en:'Egg (1)', icon:'🥚', calories:70, carb:0.5, protein:6, fat:5, category:'other'},
-  {id:'milk', name:'牛奶(1杯250ml)', name_en:'Milk (1 cup)', icon:'🥛', calories:150, carb:12, protein:8, fat:8, category:'other'},
-  {id:'chicken', name:'鸡胸肉(100g)', name_en:'Chicken breast (100g)', icon:'🍗', calories:165, carb:0, protein:31, fat:3.6, category:'other'},
-  {id:'fish', name:'鱼肉(100g)', name_en:'Fish (100g)', icon:'🐟', calories:120, carb:0, protein:22, fat:3, category:'other'},
-  {id:'vegetable', name:'蔬菜(1份)', name_en:'Vegetables (1 serving)', icon:'🥦', calories:50, carb:10, protein:2, fat:0.3, category:'veg'},
-  {id:'fruit', name:'水果(1份)', name_en:'Fruit (1 serving)', icon:'🍎', calories:80, carb:20, protein:1, fat:0.3, category:'fruit'},
-  {id:'yogurt', name:'酸奶(1杯)', name_en:'Yogurt (1 cup)', icon:'🍦', calories:120, carb:15, protein:6, fat:4, category:'other'},
-  {id:'soup', name:'汤(1碗)', name_en:'Soup (1 bowl)', icon:'🥣', calories:100, carb:8, protein:5, fat:5, category:'other'},
-  {id:'snack', name:'小零食(1份)', name_en:'Snack (1 serving)', icon:'🍪', calories:150, carb:20, protein:2, fat:6, category:'other'}
+  {id:'rice', name:'米饭(1碗)', name_en:'Rice (1 bowl)', icon:'🍚', unit:'g', baseAmount:150, calories:200, carb:44, protein:4, fat:0.4, category:'other'},
+  {id:'noodle', name:'面条(1碗)', name_en:'Noodles (1 bowl)', icon:'🍜', unit:'g', baseAmount:200, calories:350, carb:60, protein:12, fat:6, category:'other'},
+  {id:'bread', name:'面包(1片)', name_en:'Bread (1 slice)', icon:'🍞', unit:'g', baseAmount:30, calories:80, carb:15, protein:3, fat:1, category:'other'},
+  {id:'egg', name:'鸡蛋(1个)', name_en:'Egg (1)', icon:'🥚', unit:'count', baseAmount:1, calories:70, carb:0.5, protein:6, fat:5, category:'other'},
+  {id:'milk', name:'牛奶(1杯250ml)', name_en:'Milk (1 cup)', icon:'🥛', unit:'g', baseAmount:250, calories:150, carb:12, protein:8, fat:8, category:'other'},
+  {id:'chicken', name:'鸡胸肉(100g)', name_en:'Chicken breast (100g)', icon:'🍗', unit:'g', baseAmount:100, calories:165, carb:0, protein:31, fat:3.6, category:'other'},
+  {id:'fish', name:'鱼肉(100g)', name_en:'Fish (100g)', icon:'🐟', unit:'g', baseAmount:100, calories:120, carb:0, protein:22, fat:3, category:'other'},
+  {id:'vegetable', name:'蔬菜(100g)', name_en:'Vegetables (100g)', icon:'🥦', unit:'g', baseAmount:100, calories:50, carb:10, protein:2, fat:0.3, category:'veg'},
+  {id:'fruit', name:'水果(100g)', name_en:'Fruit (100g)', icon:'🍎', unit:'g', baseAmount:100, calories:80, carb:20, protein:1, fat:0.3, category:'fruit'},
+  {id:'yogurt', name:'酸奶(1杯)', name_en:'Yogurt (1 cup)', icon:'🍦', unit:'g', baseAmount:200, calories:120, carb:15, protein:6, fat:4, category:'other'},
+  {id:'soup', name:'汤(1碗)', name_en:'Soup (1 bowl)', icon:'🥣', unit:'g', baseAmount:250, calories:100, carb:8, protein:5, fat:5, category:'other'},
+  {id:'snack', name:'小零食(1份)', name_en:'Snack (1 serving)', icon:'🍪', unit:'count', baseAmount:1, calories:150, carb:20, protein:2, fat:6, category:'other'}
 ];
 var EXERCISE_LIBRARY = [
   {id:'run', name:'跑步', name_en:'Running', icon:'🏃', caloriesPerMin:10},
@@ -635,9 +667,28 @@ var EXERCISE_LIBRARY = [
   {id:'yoga', name:'瑜伽/拉伸', name_en:'Yoga / stretching', icon:'🧘', caloriesPerMin:3}
 ];
 function foodLibraryAll(){
-  return FOOD_LIBRARY.map(function(f){ return {refId:'lib:'+f.id, name:f.name, name_en:f.name_en, icon:f.icon, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; })
-    .concat((data.customFoods||[]).map(function(f){ return {refId:'custom:'+f.id, name:f.name, name_en:f.name_en||f.name, icon:f.icon||'🍽️', calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; }));
+  return FOOD_LIBRARY.map(function(f){ return {refId:'lib:'+f.id, name:f.name, name_en:f.name_en, icon:f.icon, unit:f.unit||'count', baseAmount:f.baseAmount||1, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; })
+    .concat((data.customFoods||[]).map(function(f){ return {refId:'custom:'+f.id, name:f.name, name_en:f.name_en||f.name, icon:f.icon||'🍽️', unit:f.unit||'count', baseAmount:f.baseAmount||1, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; }));
 }
+// 按食物的"基准量"营养素折算成任意实际食用量对应的数值（比如基准是250g对应150kcal，吃了300g就按比例放大）
+function scaleFoodValues(food, amount){
+  var ratio = amount / (food.baseAmount || 1);
+  return {
+    amount: amount,
+    calories: Math.round(food.calories * ratio),
+    carb: Math.round(food.carb * ratio * 10) / 10,
+    protein: Math.round(food.protein * ratio * 10) / 10,
+    fat: Math.round(food.fat * ratio * 10) / 10
+  };
+}
+// 记住这个孩子上一次吃某个食物时用的量，下次弹出输入框默认填这个量（而不是每次都要重填基准量）
+function lastFoodAmount(childId, refId){
+  var logs = data.mealLogs.filter(function(l){ return l.childId===childId && l.refId===refId; });
+  if(!logs.length) return null;
+  var latest = logs.reduce(function(a,b){ return ledgerSortKeyGeneric(a) > ledgerSortKeyGeneric(b) ? a : b; });
+  return latest.amount || null;
+}
+function ledgerSortKeyGeneric(l){ return l.ts!=null ? l.ts : parseLogDT(l).getTime(); }
 function exerciseLibraryAll(){
   return EXERCISE_LIBRARY.map(function(e){ return {refId:'lib:'+e.id, name:e.name, name_en:e.name_en, icon:e.icon, caloriesPerMin:e.caloriesPerMin}; })
     .concat((data.customExercises||[]).map(function(e){ return {refId:'custom:'+e.id, name:e.name, name_en:e.name_en||e.name, icon:e.icon||'🏃', caloriesPerMin:e.caloriesPerMin}; }));
@@ -685,7 +736,7 @@ function loadData(){
       if(!c.nutritionRules) c.nutritionRules = defaultNutritionRules();
       if(!c.rewards) c.rewards = [];
       if(!c.penalties) c.penalties = [];
-      if(!c.exchangeRate) c.exchangeRate = defaultExchangeRate();
+      if(!c.exchangeRates) c.exchangeRates = childExchangeRates(c);
       if(!c.specialOffers) c.specialOffers = [];
     });
     return d;
@@ -697,7 +748,8 @@ function saveData(){ storageSet('data', data); }
 
 /* ---------------- 积分辅助 ---------------- */
 function pointBalance(childId){
-  return data.pointLogs.reduce(function(sum, log){ return log.childId === childId ? sum + log.points : sum; }, 0);
+  var sum = data.pointLogs.reduce(function(sum, log){ return log.childId === childId ? sum + log.points : sum; }, 0);
+  return Math.round(sum*10)/10;
 }
 function childById(childId){
   return data.children.find(function(c){ return c.id===childId; }) || null;
@@ -707,6 +759,12 @@ function behaviorById(childId, id){
   if(!c || !c.behaviors) return null;
   for(var i=0;i<c.behaviors.length;i++) if(c.behaviors[i].id===id) return c.behaviors[i];
   return null;
+}
+// 三种计分方式：固定分值(fixed，默认，兼容老数据) / 浮动区间(range，家长打分时在区间里选一个数) / 每日打卡(checklist，只有完成/未完成，不计分)
+function behaviorSign(b){
+  if(b.pointsMode==='checklist') return 'checklist';
+  if(b.pointsMode==='range') return (b.pointsMax>=0) ? 'reward' : 'penalty';
+  return (b.points>=0) ? 'reward' : 'penalty';
 }
 function childThresholds(childId){
   return data.thresholds.filter(function(t2){ return t2.childId === childId; });
@@ -793,19 +851,39 @@ function nextEscalatedPoints(child, behavior){
   return -R;
 }
 
-function addPointLog(childId, behaviorId){
+function addPointLog(childId, behaviorId, overridePoints){
   var child = childById(childId);
   var b = behaviorById(childId, behaviorId);
   if(!b || !child) return null;
-  var pts = (b.points < 0 && b.escalate) ? nextEscalatedPoints(child, b) : b.points;
+  var pts;
+  if(b.pointsMode==='checklist'){
+    pts = 0;
+  } else if(b.pointsMode==='range'){
+    pts = (overridePoints!=null) ? Math.round(overridePoints*10)/10 : b.pointsMin;
+  } else {
+    pts = (b.points < 0 && b.escalate) ? nextEscalatedPoints(child, b) : b.points;
+  }
   var log = {
     id: uid(), childId: childId, behaviorId: behaviorId,
     name: b.name, name_en: b.name_en || '', icon: b.icon, points: pts,
-    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5), ts: Date.now()
   };
+  if(b.pointsMode==='checklist') log.source = 'checklist';
   persistEntity('pointLogs', log);
   rearmThresholds(childId);
   return log;
+}
+function todayChecklistLog(childId, behaviorId){
+  var today = todayStr();
+  return data.pointLogs.find(function(l){ return l.childId===childId && l.behaviorId===behaviorId && l.date===today && l.source==='checklist'; });
+}
+function toggleChecklist(childId, behaviorId){
+  var existing = todayChecklistLog(childId, behaviorId);
+  if(existing){
+    persistDelete('pointLogs', existing.id);
+  } else {
+    addPointLog(childId, behaviorId);
+  }
 }
 function deletePointLog(logId){
   var log = data.pointLogs.find(function(l){ return l.id===logId; });
@@ -857,11 +935,14 @@ function todayMealLogs(childId){
 function todayExerciseLogs(childId){
   return data.exerciseLogs.filter(function(l){ return l.childId===childId && l.date===todayStr(); });
 }
-function addMealLog(childId, mealType, food){
+function addMealLog(childId, mealType, food, amount){
+  var scaled = scaleFoodValues(food, amount);
   var log = {
-    id: uid(), childId: childId, mealType: mealType,
-    name: food.name, name_en: food.name_en || '', icon: food.icon, calories: food.calories, refId: food.refId || null,
-    carb: food.carb || 0, protein: food.protein || 0, fat: food.fat || 0, category: food.category || 'other',
+    id: uid(), childId: childId, mealType: mealType, ts: Date.now(),
+    name: food.name, name_en: food.name_en || '', icon: food.icon, refId: food.refId || null,
+    unit: food.unit || 'count', amount: scaled.amount,
+    calories: scaled.calories, carb: scaled.carb, protein: scaled.protein, fat: scaled.fat,
+    category: food.category || 'other',
     date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
   };
   persistEntity('mealLogs', log);
@@ -871,7 +952,7 @@ function deleteMealLog(logId){ persistDelete('mealLogs', logId); }
 function addExerciseLog(childId, ex, durationMin){
   var cal = Math.round((ex.caloriesPerMin || 0) * durationMin);
   var log = {
-    id: uid(), childId: childId, durationMin: durationMin,
+    id: uid(), childId: childId, durationMin: durationMin, ts: Date.now(),
     name: ex.name, name_en: ex.name_en || '', icon: ex.icon, calories: cal, refId: ex.refId || null,
     date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
   };
@@ -879,8 +960,8 @@ function addExerciseLog(childId, ex, durationMin){
   return log;
 }
 function deleteExerciseLog(logId){ persistDelete('exerciseLogs', logId); }
-function addCustomFood(name, name_en, calories, carb, protein, fat, category){
-  var food = { id: uid(), name: name, name_en: name_en || '', icon: '🍽️', calories: calories, carb: carb||0, protein: protein||0, fat: fat||0, category: category||'other' };
+function addCustomFood(name, name_en, unit, baseAmount, calories, carb, protein, fat, category){
+  var food = { id: uid(), name: name, name_en: name_en || '', icon: '🍽️', unit: unit||'count', baseAmount: baseAmount||1, calories: calories, carb: carb||0, protein: protein||0, fat: fat||0, category: category||'other' };
   persistEntity('customFoods', food);
   return food;
 }
@@ -895,7 +976,7 @@ function defaultNutritionRules(){
   return {
     enabled: false,
     carbMaxOverride: null, proteinMinOverride: null, fatMaxOverride: null,
-    vegServingsTarget: 3, fruitServingsTarget: 2,
+    vegGramsTarget: 300, fruitGramsTarget: 200,
     points: { calorie:3, carb:2, protein:3, fat:2, veg:3, fruit:2 }
   };
 }
@@ -908,16 +989,17 @@ function nutritionTargets(child){
     carb: nr.carbMaxOverride || (macros ? macros.carb : null),
     protein: nr.proteinMinOverride || (macros ? macros.protein : null),
     fat: nr.fatMaxOverride || (macros ? macros.fat : null),
-    veg: nr.vegServingsTarget,
-    fruit: nr.fruitServingsTarget
+    veg: nr.vegGramsTarget != null ? nr.vegGramsTarget : (nr.vegServingsTarget ? nr.vegServingsTarget*100 : 300),
+    fruit: nr.fruitGramsTarget != null ? nr.fruitGramsTarget : (nr.fruitServingsTarget ? nr.fruitServingsTarget*100 : 200)
   };
 }
 function todayNutritionTotals(childId){
   var t = {calories:0, carb:0, protein:0, fat:0, veg:0, fruit:0};
   todayMealLogs(childId).forEach(function(l){
     t.calories += l.calories||0; t.carb += l.carb||0; t.protein += l.protein||0; t.fat += l.fat||0;
-    if(l.category==='veg') t.veg += 1;
-    if(l.category==='fruit') t.fruit += 1;
+    // 蔬菜/水果按实际吃了多少克数累计（不是按次数）；如果这条记录不是按克计量的（比如按个数），退化为用 calories 无关，直接跳过累计克数
+    if(l.category==='veg' && l.unit==='g') t.veg += (l.amount||0);
+    if(l.category==='fruit' && l.unit==='g') t.fruit += (l.amount||0);
   });
   return t;
 }
@@ -926,11 +1008,11 @@ function nutritionChecklist(child){
   var totals = todayNutritionTotals(child.id);
   var items = [];
   if(targets.calorie!=null) items.push({key:'calorie', icon:'🔥', name_zh:'热量不超标', name_en:'Calories within limit', ok: totals.calories <= targets.calorie, actual: totals.calories, target: targets.calorie, dir:'max'});
-  if(targets.carb!=null) items.push({key:'carb', icon:'🍞', name_zh:'碳水不超标', name_en:'Carbs within limit', ok: totals.carb <= targets.carb, actual: Math.round(totals.carb), target: targets.carb, dir:'max'});
-  if(targets.protein!=null) items.push({key:'protein', icon:'🍗', name_zh:'蛋白质达标', name_en:'Protein target met', ok: totals.protein >= targets.protein, actual: Math.round(totals.protein), target: targets.protein, dir:'min'});
-  if(targets.fat!=null) items.push({key:'fat', icon:'🥑', name_zh:'脂肪不超标', name_en:'Fat within limit', ok: totals.fat <= targets.fat, actual: Math.round(totals.fat), target: targets.fat, dir:'max'});
-  items.push({key:'veg', icon:'🥦', name_zh:'蔬菜达标', name_en:'Veggies target met', ok: totals.veg >= targets.veg, actual: totals.veg, target: targets.veg, dir:'min'});
-  items.push({key:'fruit', icon:'🍎', name_zh:'水果达标', name_en:'Fruit target met', ok: totals.fruit >= targets.fruit, actual: totals.fruit, target: targets.fruit, dir:'min'});
+  if(targets.carb!=null) items.push({key:'carb', icon:'🍞', name_zh:'碳水不超标', name_en:'Carbs within limit', ok: totals.carb <= targets.carb, actual: Math.round(totals.carb*10)/10, target: targets.carb, dir:'max'});
+  if(targets.protein!=null) items.push({key:'protein', icon:'🍗', name_zh:'蛋白质达标', name_en:'Protein target met', ok: totals.protein >= targets.protein, actual: Math.round(totals.protein*10)/10, target: targets.protein, dir:'min'});
+  if(targets.fat!=null) items.push({key:'fat', icon:'🥑', name_zh:'脂肪不超标', name_en:'Fat within limit', ok: totals.fat <= targets.fat, actual: Math.round(totals.fat*10)/10, target: targets.fat, dir:'max'});
+  items.push({key:'veg', icon:'🥦', name_zh:'蔬菜达标(g)', name_en:'Veggies target met (g)', ok: totals.veg >= targets.veg, actual: totals.veg, target: targets.veg, dir:'min'});
+  items.push({key:'fruit', icon:'🍎', name_zh:'水果达标(g)', name_en:'Fruit target met (g)', ok: totals.fruit >= targets.fruit, actual: totals.fruit, target: targets.fruit, dir:'min'});
   return items;
 }
 function settleNutritionToday(childId){
@@ -961,9 +1043,10 @@ function settleNutritionToday(childId){
 // （包括这条行为本身产生的加减分 + 之前用这条规则兑换/执行过的记录），互相独立、天然会在兑换后回落，不用额外记状态
 function scopeCumulative(childId, scope, behaviorId){
   if(scope==='behavior' && behaviorId){
-    return data.pointLogs
+    var sum = data.pointLogs
       .filter(function(l){ return l.childId===childId && (l.behaviorId===behaviorId || l.linkedBehaviorId===behaviorId); })
       .reduce(function(s,l){ return s+l.points; }, 0);
+    return Math.round(sum*10)/10;
   }
   return pointBalance(childId);
 }
@@ -1031,53 +1114,75 @@ function redemptionHistory(childId){
 }
 
 /* ---------------- 记账：积分兑换零花钱 + 基础流水账 ---------------- */
+var CURRENCIES = [
+  {code:'CAD', symbol:'C$', name_zh:'加元', name_en:'CAD'},
+  {code:'USD', symbol:'$', name_zh:'美元', name_en:'USD'},
+  {code:'CNY', symbol:'¥', name_zh:'人民币', name_en:'CNY'}
+];
+function currencyInfo(code){ return CURRENCIES.find(function(c){ return c.code===code; }) || CURRENCIES[0]; }
+function currencySymbol(code){ return currencyInfo(code).symbol; }
+function currencyName(code){ var ci = currencyInfo(code); return state.lang==='en' ? ci.name_en : ci.name_zh; }
 function defaultExchangeRate(){ return { points: 10, money: 1 }; }
-function activeSpecialOffer(child){
+function childExchangeRates(child){
+  if(!child.exchangeRates){
+    // 迁移：老数据只有单一 c.exchangeRate（对应第一个币种），其余币种用默认汇率
+    var rates = {};
+    CURRENCIES.forEach(function(cur){ rates[cur.code] = defaultExchangeRate(); });
+    if(child.exchangeRate) rates[CURRENCIES[0].code] = child.exchangeRate;
+    return rates;
+  }
+  return child.exchangeRates;
+}
+function activeSpecialOffer(child, currency){
   var today = todayStr();
-  var offers = (child.specialOffers||[]).filter(function(o){ return o.startDate<=today && today<=o.endDate; });
+  var offers = (child.specialOffers||[]).filter(function(o){ return (o.currency||CURRENCIES[0].code)===currency && o.startDate<=today && today<=o.endDate; });
   if(!offers.length) return null;
   // 如果同时有多个限时优惠生效，选对孩子最划算的那个（每积分能换到的钱最多）
   offers.sort(function(a,b){ return (b.money/b.points) - (a.money/a.points); });
   return offers[0];
 }
-function currentExchangeRate(child){
-  var special = activeSpecialOffer(child);
+function currentExchangeRate(child, currency){
+  var special = activeSpecialOffer(child, currency);
   if(special) return { points: special.points, money: special.money, special: special };
-  var r = child.exchangeRate || defaultExchangeRate();
+  var r = childExchangeRates(child)[currency] || defaultExchangeRate();
   return { points: r.points, money: r.money, special: null };
 }
-function ledgerBalance(childId){
-  return data.ledgerLogs.filter(function(l){ return l.childId===childId; })
+function ledgerBalance(childId, currency){
+  var sum = data.ledgerLogs.filter(function(l){ return l.childId===childId && (l.currency||CURRENCIES[0].code)===currency; })
     .reduce(function(s,l){ return s + l.amount; }, 0);
+  return Math.round(sum*100)/100;
 }
 // 排序用精确到毫秒的 ts，而不是只精确到分钟的 date+time 字符串——
 // 避免同一分钟内连续记好几笔账时，"最新在前"和余额累加的顺序算错
 function ledgerSortKey(l){ return l.ts!=null ? l.ts : parseLogDT(l).getTime(); }
-function ledgerEntriesNewestFirst(childId){
-  return data.ledgerLogs.filter(function(l){ return l.childId===childId; })
+function ledgerEntriesNewestFirst(childId, currency){
+  return data.ledgerLogs.filter(function(l){ return l.childId===childId && (l.currency||CURRENCIES[0].code)===currency; })
     .slice().sort(function(a,b){ return ledgerSortKey(b) - ledgerSortKey(a); });
 }
-function addLedgerEntry(childId, source, amount, category, pointsSpent){
+function addLedgerEntry(childId, source, amount, category, pointsSpent, currency){
   var log = {
-    id: uid(), childId: childId, source: source, amount: amount, category: category||'other',
-    pointsSpent: pointsSpent || null, ts: Date.now(),
+    id: uid(), childId: childId, source: source, amount: Math.round(amount*100)/100, category: category||'other',
+    pointsSpent: pointsSpent || null, ts: Date.now(), currency: currency || CURRENCIES[0].code,
     date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
   };
   persistEntity('ledgerLogs', log);
   return log;
 }
 function deleteLedgerEntry(logId){ persistDelete('ledgerLogs', logId); }
-function saveExchangeRate(childId, points, money){
+function saveExchangeRate(childId, currency, points, money){
   var child = childById(childId);
   if(!child) return;
-  child.exchangeRate = { points: points, money: money };
+  var rates = childExchangeRates(child);
+  rates[currency] = { points: points, money: money };
+  child.exchangeRates = rates;
+  delete child.exchangeRate;
   persistEntity('children', child);
 }
-function addSpecialOffer(childId, name, startDate, endDate, points, money){
+function addSpecialOffer(childId, currency, name, startDate, endDate, points, money){
   var child = childById(childId);
   if(!child) return null;
   if(!child.specialOffers) child.specialOffers = [];
-  var offer = { id: uid(), name: name, startDate: startDate, endDate: endDate, points: points, money: money };
+  var offer = { id: uid(), currency: currency, name: name, startDate: startDate, endDate: endDate, points: points, money: money };
   child.specialOffers.push(offer);
   persistEntity('children', child);
   return offer;
@@ -1088,21 +1193,57 @@ function deleteSpecialOffer(childId, offerId){
   child.specialOffers = child.specialOffers.filter(function(o){ return o.id!==offerId; });
   persistEntity('children', child);
 }
-function exchangePointsForMoney(childId, pointsToSpend){
+function exchangePointsForMoney(childId, currency, pointsToSpend){
   var child = childById(childId);
   if(!child) return null;
-  var rate = currentExchangeRate(child);
+  var rate = currentExchangeRate(child, currency);
   var money = Math.round((pointsToSpend / rate.points) * rate.money * 100) / 100;
   var pointLog = {
     id: uid(), childId: childId, behaviorId: null, source: 'redemption', redemptionKind: 'cash',
     name: t('cashExchangeLogName'), name_en: 'Points exchanged for allowance', icon: '💰', points: -Math.abs(pointsToSpend),
-    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5), ts: Date.now()
   };
   persistEntity('pointLogs', pointLog);
   var desc = rate.special ? t('cashExchangeSourceSpecial', {offer: rate.special.name}) : t('cashExchangeSource');
-  addLedgerEntry(childId, desc, money, 'exchange', pointsToSpend);
+  addLedgerEntry(childId, desc, money, 'exchange', pointsToSpend, currency);
   rearmThresholds(childId);
   return money;
+}
+// 账户内货币互转：用家长自定义的汇率（不管实际汇率），从一个币种扣一笔、另一个币种加一笔，两条记录用同一个 transferId 关联
+function transferCurrency(childId, fromCurrency, toCurrency, fromAmount, toAmount){
+  var transferId = uid();
+  var fromName = currencyName(fromCurrency), toName = currencyName(toCurrency);
+  addLedgerEntry(childId, t('transferOutSource',{to:toName}), -Math.abs(fromAmount), 'transfer', null, fromCurrency);
+  addLedgerEntry(childId, t('transferInSource',{from:fromName}), Math.abs(toAmount), 'transfer', null, toCurrency);
+  return transferId;
+}
+
+/* ---------------- 初始积分 / 初始金额调整（支持家长自定义起始值） ---------------- */
+function pointsAdjustmentLog(childId){
+  return data.pointLogs.find(function(l){ return l.childId===childId && l.source==='adjustment'; });
+}
+function setPointsAdjustment(childId, value){
+  var existing = pointsAdjustmentLog(childId);
+  if(existing){
+    existing.points = Math.round(value*10)/10;
+    persistEntity('pointLogs', existing);
+  } else {
+    var log = { id: uid(), childId: childId, behaviorId: null, source:'adjustment', name: t('initialPointsLogName'), name_en:'Initial points adjustment', icon:'🎯', points: Math.round(value*10)/10, date: todayStr(), time:(new Date()).toTimeString().slice(0,5), ts: Date.now() };
+    persistEntity('pointLogs', log);
+  }
+  rearmThresholds(childId);
+}
+function ledgerAdjustmentLog(childId, currency){
+  return data.ledgerLogs.find(function(l){ return l.childId===childId && l.category==='adjustment' && (l.currency||CURRENCIES[0].code)===currency; });
+}
+function setLedgerAdjustment(childId, currency, value){
+  var existing = ledgerAdjustmentLog(childId, currency);
+  if(existing){
+    existing.amount = Math.round(value*100)/100;
+    persistEntity('ledgerLogs', existing);
+  } else {
+    addLedgerEntry(childId, t('initialMoneyLogSource'), value, 'adjustment', null, currency);
+  }
 }
 
 /* =====================================================================
@@ -1328,8 +1469,11 @@ var showCustomFoodForm = false;
 var showCustomExerciseForm = false;
 var showCalorieOverrideForm = false;
 var selectedExerciseRefId = null; // 运动打卡：当前选中待记录的运动类型
+var selectedFoodRefId = null; // 三餐打卡：当前选中待记录的食物
+var selectedRangeBehaviorId = null; // 浮动区间行为规则：当前选中待打分的那一条
 var showNutritionSettings = false; // 营养达标：是否展开"调整达标标准"表单
 var customFoodCategoryDraft = 'other'; // 自定义食物表单：当前选中的分类（蔬菜/水果/其他）
+var customFoodUnitDraft = 'g'; // 自定义食物表单：计量单位（g=按克重 / count=按个数）
 var mealFoodSearch = ''; // 三餐食物库：搜索关键词
 var mealFoodShowAll = false; // 三餐食物库：是否展开显示全部（默认只显示最常吃的前8个）
 var exerciseSearch = ''; // 运动库：搜索关键词
@@ -1344,6 +1488,11 @@ var showSpecialOfferForm = false; // 记账：是否展开"新建限时优惠"�
 var showManualLedgerForm = false; // 记账：是否展开"手动记一笔"表单
 var manualLedgerDirection = 'income'; // 手动记账表单：income(入账) | expense(出账)
 var manualLedgerCategory = 'grant'; // 手动记账表单：grant/spending/violation/other
+var ledgerCurrency = 'CAD'; // 记账：当前查看的币种
+var showTransferForm = false; // 记账：是否展开"货币互转"表单
+var transferToCurrencyDraft = 'USD'; // 货币互转表单：目标币种
+var showPointsAdjustForm = false; // 积分：是否展开"调整初始积分"表单
+var showLedgerAdjustForm = false; // 记账：是否展开"调整初始金额"表单
 
 function toast(msg){
   // toast 用独立的常驻 DOM 节点，不参与 render() 的整页重绘——
@@ -1388,12 +1537,48 @@ function screenHeader(title, backAct){
   return '<div class="screen-header"><button class="screen-back tap" data-act="'+(backAct||'nav-back')+'">‹</button><div class="screen-title">'+title+'</div></div>';
 }
 function renderPointChip(child, b){
+  var mode = b.pointsMode || 'fixed';
+  if(mode==='checklist'){
+    var done = !!todayChecklistLog(child.id, b.id);
+    return '<button class="chip checklist tap'+(done?' done':'')+'" data-act="toggle-checklist" data-id="'+child.id+'" data-value="'+b.id+'">'+
+      '<span class="chip-left"><span class="chip-icon">'+esc(b.icon)+'</span><span class="chip-name">'+esc(behaviorDisplayName(b))+'</span></span>'+
+      '<span class="chip-value">'+(done?'✅':'⬜')+'</span>'+
+    '</button>';
+  }
+  if(mode==='range'){
+    var sel = selectedRangeBehaviorId === b.id;
+    return '<button class="chip '+(b.pointsMax>=0?'reward':'penalty')+' tap'+(sel?' selected':'')+'" data-act="pick-range-behavior" data-id="'+child.id+'" data-value="'+b.id+'">'+
+      '<span class="chip-left"><span class="chip-icon">'+esc(b.icon)+'</span><span class="chip-name">'+esc(behaviorDisplayName(b))+'</span></span>'+
+      '<span class="chip-value">'+(b.pointsMax>=0?'+':'')+fmtPts(b.pointsMin)+'~'+fmtPts(b.pointsMax)+'</span>'+
+    '</button>';
+  }
   var pts = (b.points < 0 && b.escalate) ? nextEscalatedPoints(child, b) : b.points;
   var cls = b.points >= 0 ? 'reward' : 'penalty';
   return '<button class="chip '+cls+' tap" data-act="log-point" data-id="'+child.id+'" data-value="'+b.id+'">'+
     '<span class="chip-left"><span class="chip-icon">'+esc(b.icon)+'</span><span class="chip-name">'+esc(behaviorDisplayName(b))+(b.escalate?' 🌱':'')+'</span></span>'+
-    '<span class="chip-value">'+(pts>=0?'+':'')+pts+'</span>'+
+    '<span class="chip-value">'+(pts>=0?'+':'')+fmtPts(pts)+'</span>'+
   '</button>';
+}
+// 浮动区间行为规则的快速选点：在 min~max 之间按 0.5 为步长列出可选分值（步长细一点方便"做得一般般"选中间值）
+function renderRangePicker(child, b){
+  var vals = [];
+  var step = (b.pointsMax - b.pointsMin) <= 3 ? 0.5 : 1;
+  for(var v = b.pointsMin; v <= b.pointsMax + 1e-9; v += step){
+    vals.push(Math.round(v*10)/10);
+  }
+  var nm = behaviorDisplayName(b);
+  var btns = vals.map(function(v){
+    return '<button type="button" class="range-pick-btn tap" data-act="log-range-point" data-id="'+child.id+'" data-value="'+b.id+'" data-points="'+v+'">'+(v>=0?'+':'')+fmtPts(v)+'</button>';
+  }).join('');
+  return '<div class="range-picker">'+
+    '<div class="range-picker-title">'+esc(b.icon)+' '+esc(nm)+'</div>'+
+    '<div class="range-picker-btns">'+btns+'</div>'+
+  '</div>';
+}
+// 一位小数的积分显示：整数就不带小数点，比如 3 而不是 3.0；有小数才显示到小数点后一位
+function fmtPts(n){
+  n = Math.round(n*10)/10;
+  return (n % 1 === 0) ? String(n) : n.toFixed(1);
 }
 
 /* ---------------- 积分月历 ---------------- */
@@ -1468,7 +1653,7 @@ function renderCalendar(child){
   var selRows = selLogs.map(function(l){
     var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
     return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.time+'</span></div>'+
-      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span>'+
+      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
       (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
   }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('calNoLogsForDay')+'</div>';
 
@@ -1573,8 +1758,8 @@ function renderNutritionCard(c, parentMode){
         '<div class="field"><label>'+t('carbLimitLabel')+'</label><input type="number" id="mNutriCarbMax" value="'+(nr.carbMaxOverride||'')+'"></div>'+
         '<div class="field"><label>'+t('proteinMinLabel')+'</label><input type="number" id="mNutriProteinMin" value="'+(nr.proteinMinOverride||'')+'"></div>'+
         '<div class="field"><label>'+t('fatLimitLabel')+'</label><input type="number" id="mNutriFatMax" value="'+(nr.fatMaxOverride||'')+'"></div>'+
-        '<div class="field"><label>'+t('vegTargetLabel')+'</label><input type="number" id="mNutriVegTarget" value="'+nr.vegServingsTarget+'"></div>'+
-        '<div class="field"><label>'+t('fruitTargetLabel')+'</label><input type="number" id="mNutriFruitTarget" value="'+nr.fruitServingsTarget+'"></div>'+
+        '<div class="field"><label>'+t('vegTargetLabel')+'</label><input type="number" id="mNutriVegTarget" value="'+nutritionTargets(c).veg+'"></div>'+
+        '<div class="field"><label>'+t('fruitTargetLabel')+'</label><input type="number" id="mNutriFruitTarget" value="'+nutritionTargets(c).fruit+'"></div>'+
         '<div class="field"><label>'+t('pointsPerRuleTitle')+'</label>'+
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
             '<div><span style="font-size:12px;color:var(--muted);">'+t('calorieRulePoints')+'</span><input type="number" id="mNutriPtsCalorie" value="'+nr.points.calorie+'"></div>'+
@@ -1612,7 +1797,8 @@ function renderFoodChipList(c){
 
   function chipHtml(f){
     var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
-    return '<button class="chip food tap" data-act="log-meal" data-id="'+c.id+'" data-value="'+f.refId+'">'+
+    var sel = selectedFoodRefId === f.refId;
+    return '<button class="chip food tap'+(sel?' selected':'')+'" data-act="pick-food" data-id="'+c.id+'" data-value="'+f.refId+'">'+
       '<span class="chip-left"><span class="chip-icon">'+esc(f.icon)+'</span><span class="chip-name">'+esc(nm)+'</span></span>'+
       '<span class="chip-value">'+f.calories+'</span>'+
     '</button>';
@@ -1637,9 +1823,24 @@ function renderMealsSubTab(c, parentMode){
   html += '<div class="field" style="margin:10px 0;"><input type="text" id="mFoodSearch" placeholder="'+t('searchFoodPlaceholder')+'" value="'+esc(mealFoodSearch)+'"></div>';
   html += '<div id="mealFoodListWrap">'+renderFoodChipList(c)+'</div>';
 
+  var selFood = selectedFoodRefId ? foodLibraryAll().find(function(f){ return f.refId===selectedFoodRefId; }) : null;
+  if(selFood){
+    var nm = (state.lang==='en' && selFood.name_en) ? selFood.name_en : selFood.name;
+    var prefillAmt = lastFoodAmount(c.id, selFood.refId) || selFood.baseAmount;
+    var unitLabel = selFood.unit==='g' ? 'g' : t('unitCount');
+    html += '<div class="exercise-log-form" style="background:var(--food-light);">'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+esc(nm)+' · '+t('foodAmountLabel')+' ('+unitLabel+')</label>'+
+      '<input type="number" id="mFoodAmount" value="'+prefillAmt+'"></div>'+
+      '<div class="calorie-preview" id="mFoodAmountPreview" style="color:var(--food-text);"></div>'+
+      '<button class="btn-primary tap" data-act="log-meal" data-id="'+c.id+'" style="background:var(--food);box-shadow:0 6px 14px rgba(242,169,59,.35);">'+t('logMealBtn')+'</button>'+
+    '</div>';
+  }
+
   html += showCustomFoodForm ?
     '<div class="inline-form">'+
       '<div class="field"><label>'+t('foodNameLabel')+'</label><input id="mCustomFoodName" placeholder="'+t('foodNamePlaceholder')+'"></div>'+
+      '<div class="field"><label>'+t('foodUnitLabel')+'</label>'+segmentedHtml('draft-custom-food-unit', c.id, customFoodUnitDraft, [['g',t('unitGrams')],['count',t('unitCount')]])+'</div>'+
+      '<div class="field"><label>'+(customFoodUnitDraft==='g'?t('foodBaseAmountGLabel'):t('foodBaseAmountCountLabel'))+'</label><input type="number" id="mCustomFoodBaseAmount" placeholder="'+(customFoodUnitDraft==='g'?'100':'1')+'"></div>'+
       '<div class="field"><label>'+t('foodCaloriesLabel')+'</label><input type="number" id="mCustomFoodCal" placeholder="200"></div>'+
       '<div class="field"><label>'+t('foodCategoryLabel')+'</label>'+
         segmentedHtml('draft-custom-food-category', c.id, customFoodCategoryDraft, [['other',t('catOtherFood')],['veg',t('catVeg')],['fruit',t('catFruit')]])+
@@ -1649,21 +1850,34 @@ function renderMealsSubTab(c, parentMode){
         '<div><span style="font-size:12px;color:var(--muted);">'+t('proteinGLabel')+'</span><input type="number" id="mCustomFoodProtein" placeholder="0"></div>'+
         '<div><span style="font-size:12px;color:var(--muted);">'+t('fatGLabel')+'</span><input type="number" id="mCustomFoodFat" placeholder="0"></div>'+
       '</div></div>'+
+      '<div style="font-size:12px;color:var(--muted);margin:-6px 0 12px;">'+t('customFoodBaseHint')+'</div>'+
       '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-custom-food">'+t('cancel')+'</button>'+
-      '<button class="btn-primary tap" data-act="save-custom-food" data-id="'+c.id+'">'+t('addAndLog')+'</button></div>'+
+      '<button class="btn-primary tap" data-act="save-custom-food" data-id="'+c.id+'">'+t('save')+'</button></div>'+
     '</div>'
     : '<button class="dashed-btn tap" data-act="open-custom-food" style="margin-bottom:18px;">'+t('addCustomFood')+'</button>';
 
-  var meals = todayMealLogs(c.id).slice().sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
+  var mealTypeOrder = ['breakfast','lunch','dinner','snack'];
   var mealTypeLabel = {breakfast:t('breakfastLabel'), lunch:t('lunchLabel'), dinner:t('dinnerLabel'), snack:t('snackLabel')};
-  var rows = meals.map(function(l){
-    var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-    return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+(mealTypeLabel[l.mealType]||'')+' · '+l.time+'</span></div>'+
-      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--food-light);color:var(--food-text);">'+l.calories+'</span>'+
-      (parentMode ? '<button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
-  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noMealsToday')+'</div>';
-
-  html += '<div class="section-title">'+t('todayLabel')+'</div><div>'+rows+'</div>';
+  var allMeals = todayMealLogs(c.id);
+  html += '<div class="section-title">'+t('todayLabel')+'</div>';
+  var anyMeals = false;
+  mealTypeOrder.forEach(function(mt){
+    var group = allMeals.filter(function(l){ return l.mealType===mt; }).sort(function(a,b){ return (a.time||'')<(b.time||'')?-1:1; });
+    if(!group.length) return;
+    anyMeals = true;
+    var groupCal = group.reduce(function(s,l){ return s+l.calories; }, 0);
+    html += '<div class="meal-group-header"><span>'+mealTypeLabel[mt]+'</span><span class="meal-group-total">'+groupCal+' kcal</span></div>';
+    html += group.map(function(l){
+      var nm2 = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
+      var amtLabel = l.amount!=null ? (' · '+l.amount+(l.unit==='g'?'g':t('unitCount'))) : '';
+      return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm2)+'</span><span class="meta">'+l.time+amtLabel+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--food-light);color:var(--food-text);">'+l.calories+'</span>'+
+        (parentMode ? '<button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
+    }).join('');
+  });
+  if(!anyMeals){
+    html += '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noMealsToday')+'</div>';
+  }
   return html;
 }
 
@@ -1754,7 +1968,7 @@ function renderBehaviorSelectHtml(id, c){
 
 function renderRedeemTabBody(c, parentMode){
   var balance = pointBalance(c.id);
-  var html = '<div class="balance-card"><div class="balance-num">'+balance+'</div><div class="balance-label">'+t('currentBalanceLabel')+'</div></div>';
+  var html = '<div class="balance-card"><div class="balance-num">'+fmtPts(balance)+'</div><div class="balance-label">'+t('currentBalanceLabel')+'</div></div>';
   html += segmentedHtml('redeem-sub-tab', c.id, redeemSubTab, [['rewards',t('rewardsSubTab')],['penalties',t('penaltiesSubTab')],['history',t('historySubTab')]]);
   if(redeemSubTab==='rewards') html += renderRewardsSubTab(c, parentMode);
   else if(redeemSubTab==='penalties') html += renderPenaltiesSubTab(c, parentMode);
@@ -1778,7 +1992,7 @@ function renderRewardsSubTab(c, parentMode){
         (parentMode ? '<button class="small-icon-btn" data-act="delete-reward" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
         '</div>'+
         '<div class="redeem-scope">'+scopeLabel+'</div>'+
-        '<div class="redeem-progress"><span>'+cumulative+' / '+item.cost+'</span><span class="nutri-badge '+(eligible?'ok':'bad')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
+        '<div class="redeem-progress"><span>'+fmtPts(cumulative)+' / '+fmtPts(item.cost)+'</span><span class="nutri-badge '+(eligible?'ok':'bad')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
         '<div class="redeem-actions"><button class="btn-primary tap" data-act="redeem-reward" data-id="'+c.id+'" data-value="'+item.id+'"'+((!parentMode && !eligible)?' disabled':'')+'>'+t('redeemBtn')+'</button></div>'+
       '</div>';
     }).join('');
@@ -1790,7 +2004,7 @@ function renderRewardsSubTab(c, parentMode){
         '<div class="field"><label>'+t('rewardNameLabel')+'</label><input id="mRewardName" placeholder="'+t('rewardNamePlaceholder')+'"></div>'+
         '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-reward-scope', c.id, rewardFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
         (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mRewardBehaviorSelect', c)+'</div>' : '')+
-        '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" id="mRewardCost" placeholder="50"></div>'+
+        '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50"></div>'+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-reward-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-reward" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
@@ -1815,7 +2029,7 @@ function renderPenaltiesSubTab(c, parentMode){
         (parentMode ? '<button class="small-icon-btn" data-act="delete-penalty" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
         '</div>'+
         '<div class="redeem-scope">'+scopeLabel+'</div>'+
-        '<div class="redeem-progress"><span>'+cumulative+' / -'+item.offset+'</span><span class="nutri-badge '+(eligible?'bad':'ok')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
+        '<div class="redeem-progress"><span>'+fmtPts(cumulative)+' / -'+fmtPts(item.offset)+'</span><span class="nutri-badge '+(eligible?'bad':'ok')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
         (parentMode ? '<div class="redeem-actions"><button class="btn-primary tap" data-act="execute-penalty" data-id="'+c.id+'" data-value="'+item.id+'" style="background:var(--danger);box-shadow:0 6px 14px rgba(224,138,90,.35);">'+t('executePenaltyBtn')+'</button></div>' : '')+
       '</div>';
     }).join('');
@@ -1827,7 +2041,7 @@ function renderPenaltiesSubTab(c, parentMode){
         '<div class="field"><label>'+t('penaltyNameLabel')+'</label><input id="mPenaltyName" placeholder="'+t('penaltyNamePlaceholder')+'"></div>'+
         '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-penalty-scope', c.id, penaltyFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
         (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mPenaltyBehaviorSelect', c)+'</div>' : '')+
-        '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" id="mPenaltyOffset" placeholder="20"></div>'+
+        '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20"></div>'+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-penalty-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-penalty" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
@@ -1845,7 +2059,7 @@ function renderRedeemHistorySubTab(c, parentMode){
     var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
     var kindLabel = l.redemptionKind==='penalty' ? t('redeemHistoryPenalty') : (l.redemptionKind==='cash' ? t('redeemHistoryCash') : t('redeemHistoryReward'));
     return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+kindLabel+' · '+l.date+' '+l.time+'</span></div>'+
-      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span>'+
+      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
       (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
   }).join('');
   return '<div>'+rows+'</div>';
@@ -1853,21 +2067,23 @@ function renderRedeemHistorySubTab(c, parentMode){
 
 /* ---------------- 记账 ---------------- */
 function renderLedgerTabBody(c, parentMode){
-  var balance = ledgerBalance(c.id);
+  var sym = currencySymbol(ledgerCurrency);
+  var balance = ledgerBalance(c.id, ledgerCurrency);
   var pointsBalance = pointBalance(c.id);
-  var rate = currentExchangeRate(c);
+  var rate = currentExchangeRate(c, ledgerCurrency);
 
-  var html = '<div class="balance-card money"><div class="balance-num">¥'+balance+'</div><div class="balance-label">'+t('currentMoneyBalanceLabel')+'</div></div>';
+  var html = segmentedHtml('set-ledger-currency', c.id, ledgerCurrency, CURRENCIES.map(function(cur){ return [cur.code, cur.code]; }));
+  html += '<div class="balance-card money"><div class="balance-num">'+sym+fmtMoney(balance)+'</div><div class="balance-label">'+t('currentMoneyBalanceLabel')+' ('+currencyName(ledgerCurrency)+')</div></div>';
 
   // 兑换区
   html += '<div class="rate-card">'+
-    '<div class="rate-display">'+t('currentRateDisplay',{points:rate.points, money:rate.money})+'</div>';
+    '<div class="rate-display">'+t('currentRateDisplay',{points:fmtPts(rate.points), money:fmtMoney(rate.money)})+' '+sym+'</div>';
   if(rate.special){
     html += '<div class="offer-banner">'+t('specialOfferActiveLabel',{name:rate.special.name})+'<br>'+t('specialOfferPeriodLabel',{start:rate.special.startDate, end:rate.special.endDate})+'</div>';
   }
-  html += '<div class="field" style="margin-top:12px;"><label>'+t('pointsToExchangeLabel')+' ('+t('currentBalanceLabel')+': '+pointsBalance+')</label>'+
-    '<input type="number" id="mExchangePoints" placeholder="'+rate.points+'"></div>'+
-    '<div class="exchange-preview" id="mExchangePreview">'+t('exchangePreviewLabel')+'：¥0</div>'+
+  html += '<div class="field" style="margin-top:12px;"><label>'+t('pointsToExchangeLabel')+' ('+t('currentBalanceLabel')+': '+fmtPts(pointsBalance)+')</label>'+
+    '<input type="number" step="0.1" id="mExchangePoints" placeholder="'+rate.points+'"></div>'+
+    '<div class="exchange-preview" id="mExchangePreview">'+t('exchangePreviewLabel')+'：'+sym+'0</div>'+
     '<button class="btn-primary tap" data-act="confirm-exchange" data-id="'+c.id+'" style="width:100%;">'+t('confirmExchangeBtn')+'</button>'+
   '</div>';
 
@@ -1875,19 +2091,19 @@ function renderLedgerTabBody(c, parentMode){
     // 平时汇率设置
     html += showExchangeRateForm ?
       '<div class="inline-form">'+
-        '<div class="field"><label>'+t('pointsPerLabel')+'</label><input type="number" id="mRatePoints" value="'+(c.exchangeRate?c.exchangeRate.points:10)+'"></div>'+
-        '<div class="field"><label>'+t('moneyPerLabel')+'</label><input type="number" id="mRateMoney" value="'+(c.exchangeRate?c.exchangeRate.money:1)+'"></div>'+
+        '<div class="field"><label>'+t('pointsPerLabel')+'</label><input type="number" step="0.1" id="mRatePoints" value="'+rate.points+'"></div>'+
+        '<div class="field"><label>'+t('moneyPerLabel')+'</label><input type="number" step="0.01" id="mRateMoney" value="'+rate.money+'"></div>'+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-rate-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-rate" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
       : '<button class="dashed-btn tap" data-act="open-rate-form" style="margin-bottom:16px;">'+t('editRateBtn')+'</button>';
 
-    // 限时优惠列表
+    // 限时优惠列表（只显示当前币种的）
     html += '<div class="section-title" style="margin-top:0;">'+t('specialOffersTitle')+'</div>';
-    var offers = c.specialOffers || [];
+    var offers = (c.specialOffers||[]).filter(function(o){ return (o.currency||CURRENCIES[0].code)===ledgerCurrency; });
     if(offers.length){
       html += offers.map(function(o){
-        return '<div class="offer-row"><div class="offer-info"><span>'+esc(o.name)+' · '+o.points+' = ¥'+o.money+'</span><span class="offer-dates">'+o.startDate+' ~ '+o.endDate+'</span></div>'+
+        return '<div class="offer-row"><div class="offer-info"><span>'+esc(o.name)+' · '+fmtPts(o.points)+' = '+sym+fmtMoney(o.money)+'</span><span class="offer-dates">'+o.startDate+' ~ '+o.endDate+'</span></div>'+
           '<button class="small-icon-btn" data-act="delete-offer" data-id="'+c.id+'" data-value="'+o.id+'">✕</button></div>';
       }).join('');
     }
@@ -1899,30 +2115,53 @@ function renderLedgerTabBody(c, parentMode){
           '<div><span style="font-size:12px;color:var(--muted);">'+t('offerEndLabel')+'</span><input type="date" id="mOfferEnd"></div>'+
         '</div></div>'+
         '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
-          '<div><span style="font-size:12px;color:var(--muted);">'+t('pointsPerLabel')+'</span><input type="number" id="mOfferPoints" placeholder="'+rate.points+'"></div>'+
-          '<div><span style="font-size:12px;color:var(--muted);">'+t('moneyPerLabel')+'</span><input type="number" id="mOfferMoney" placeholder="2"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('pointsPerLabel')+'</span><input type="number" step="0.1" id="mOfferPoints" placeholder="'+rate.points+'"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('moneyPerLabel')+'</span><input type="number" step="0.01" id="mOfferMoney" placeholder="2"></div>'+
         '</div></div>'+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-offer-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-offer" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
       : '<button class="dashed-btn tap" data-act="open-offer-form" style="margin-bottom:18px;">'+t('addSpecialOfferBtn')+'</button>';
 
+    // 货币互转
+    html += showTransferForm ?
+      '<div class="inline-form">'+
+        '<div style="font-size:13px;color:var(--muted);margin-bottom:8px;">'+t('transferFromLabel')+'：'+currencyName(ledgerCurrency)+'</div>'+
+        '<div class="field"><label>'+t('transferToLabel')+'</label>'+segmentedHtml('draft-transfer-to', c.id, transferToCurrencyDraft, CURRENCIES.filter(function(cur){return cur.code!==ledgerCurrency;}).map(function(cur){ return [cur.code, cur.code]; }))+'</div>'+
+        '<div class="field"><label>'+t('transferAmountLabel')+' ('+currencyName(ledgerCurrency)+')</label><input type="number" step="0.01" id="mTransferAmount" placeholder="10"></div>'+
+        '<div class="field"><label>'+t('transferRateLabel',{from:ledgerCurrency, to:transferToCurrencyDraft})+'</label><input type="number" step="0.0001" id="mTransferRate" placeholder="1"></div>'+
+        '<div class="exchange-preview" id="mTransferPreview">'+t('transferPreviewLabel')+'：0 '+transferToCurrencyDraft+'</div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-transfer-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="confirm-transfer" data-id="'+c.id+'">'+t('confirmTransferBtn')+'</button></div>'+
+      '</div>'
+      : '<button class="dashed-btn tap" data-act="open-transfer-form" style="margin-bottom:6px;">'+t('transferBtn')+'</button>';
+
     // 手动记账
     html += showManualLedgerForm ?
       '<div class="inline-form">'+
         '<div class="field"><label>'+t('ledgerSourceLabel')+'</label><input id="mLedgerSource" placeholder="'+t('ledgerSourcePlaceholder')+'"></div>'+
         '<div class="field"><label>'+t('ledgerDirectionLabel')+'</label>'+segmentedHtml('draft-ledger-direction', c.id, manualLedgerDirection, [['income',t('ledgerIncomeLabel')],['expense',t('ledgerExpenseLabel')]])+'</div>'+
-        '<div class="field"><label>'+t('ledgerAmountLabel')+'</label><input type="number" id="mLedgerAmount" placeholder="20"></div>'+
+        '<div class="field"><label>'+t('ledgerAmountLabel')+' ('+currencyName(ledgerCurrency)+')</label><input type="number" step="0.01" id="mLedgerAmount" placeholder="20"></div>'+
         '<div class="field"><label>'+t('ledgerCategoryLabel')+'</label>'+segmentedHtml('draft-ledger-category', c.id, manualLedgerCategory, [['grant',t('catGrant')],['spending',t('catSpending')],['violation',t('catViolation')],['other',t('catOtherLedger')]])+'</div>'+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-ledger-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-ledger-entry" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
       : '<button class="dashed-btn tap" data-act="open-ledger-form" style="margin-bottom:6px;">'+t('addManualEntryBtn')+'</button>';
+
+    // 调整初始金额
+    var adj = ledgerAdjustmentLog(c.id, ledgerCurrency);
+    html += showLedgerAdjustForm ?
+      '<div class="inline-form">'+
+        '<div class="field"><label>'+t('initialMoneyLabel')+' ('+currencyName(ledgerCurrency)+')</label><input type="number" step="0.01" id="mLedgerAdjustValue" value="'+(adj?adj.amount:0)+'"></div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-ledger-adjust-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-ledger-adjust" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>'
+      : '<button class="dashed-btn tap" data-act="open-ledger-adjust-form" style="margin-bottom:18px;">'+t('adjustInitialMoneyBtn')+'</button>';
   }
 
   // 流水记录
   html += '<div class="section-title">'+t('ledgerTab')+'</div>';
-  var entriesDesc = ledgerEntriesNewestFirst(c.id);
+  var entriesDesc = ledgerEntriesNewestFirst(c.id, ledgerCurrency);
   if(!entriesDesc.length){
     html += '<div style="font-size:14px;color:var(--muted);padding:14px 2px;text-align:center;">'+t('noLedgerEntries')+'</div>';
   } else {
@@ -1930,22 +2169,27 @@ function renderLedgerTabBody(c, parentMode){
     var entriesAsc = entriesDesc.slice().reverse();
     var running = 0;
     var runningMap = {};
-    entriesAsc.forEach(function(l){ running += l.amount; runningMap[l.id] = running; });
+    entriesAsc.forEach(function(l){ running += l.amount; runningMap[l.id] = Math.round(running*100)/100; });
     html += entriesDesc.map(function(l){
       var isViolation = l.category==='violation';
-      var catLabel = {grant:t('catGrant'), spending:t('catSpending'), violation:t('catViolation'), other:t('catOtherLedger'), exchange:''}[l.category] || '';
-      var meta = l.date+' '+l.time + (catLabel?(' · '+catLabel):'') + (l.pointsSpent ? t('pointsSpentSuffix',{n:l.pointsSpent}) : '');
+      var catLabel = {grant:t('catGrant'), spending:t('catSpending'), violation:t('catViolation'), other:t('catOtherLedger'), exchange:'', transfer:t('catTransfer'), adjustment:t('catAdjustment')}[l.category] || '';
+      var meta = l.date+' '+l.time + (catLabel?(' · '+catLabel):'') + (l.pointsSpent ? t('pointsSpentSuffix',{n:fmtPts(l.pointsSpent)}) : '');
       return '<div class="ledger-row'+(isViolation?' violation':'')+'">'+
         '<div class="ledger-top"><span class="ledger-source">'+(isViolation?'⚠️ ':'')+esc(l.source)+'</span>'+
-        '<span class="ledger-amount '+(l.amount>=0?'pos':'neg')+'">'+(l.amount>=0?'+':'')+'¥'+Math.abs(l.amount)+'</span></div>'+
+        '<span class="ledger-amount '+(l.amount>=0?'pos':'neg')+'">'+(l.amount>=0?'+':'')+sym+fmtMoney(Math.abs(l.amount))+'</span></div>'+
         '<div class="ledger-bottom"><span class="ledger-meta">'+esc(meta)+'</span>'+
-        '<span class="ledger-meta">'+t('balanceAfterLabel')+' ¥'+runningMap[l.id]+'</span></div>'+
+        '<span class="ledger-meta">'+t('balanceAfterLabel')+' '+sym+fmtMoney(runningMap[l.id])+'</span></div>'+
         (parentMode ? '<div style="text-align:right;margin-top:4px;"><button class="small-icon-btn" data-act="delete-ledger-entry" data-id="'+l.id+'">✕</button></div>' : '')+
       '</div>';
     }).join('');
   }
 
   return html;
+}
+// 金额显示：默认不强行补两位小数，但保留最多两位小数（比如 10 不显示成 10.00，10.5 保留 10.5，10.256 四舍五入成 10.26）
+function fmtMoney(n){
+  n = Math.round(n*100)/100;
+  return String(n);
 }
 
 /* ---------------- 顶层渲染 ---------------- */
@@ -2176,8 +2420,9 @@ function renderChildHome(){
   if(!c) return renderPickYourself();
   var bal = pointBalance(c.id);
   var childBehaviors = c.behaviors || [];
-  var rewards = childBehaviors.filter(function(b){ return b.points > 0; });
-  var penalties = childBehaviors.filter(function(b){ return b.points < 0; });
+  var rewards = childBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; });
+  var penalties = childBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; });
+  var checklist = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; });
   var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,10);
 
   var html = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px;">'+
@@ -2187,15 +2432,21 @@ function renderChildHome(){
   html += '<div class="child-home-header">'+
     avatarHtml(c.avatar, 88) +
     '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-top:12px;">'+esc(c.name)+'</div>'+
-    '<div class="child-home-balance" style="color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+bal+'</div>'+
+    '<div class="child-home-balance" style="color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+fmtPts(bal)+'</div>'+
     '<div style="color:var(--muted);font-size:14px;">'+t('currentPoints')+'</div>'+
   '</div>';
 
   var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
   var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
+  var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('');
 
   html += '<div class="section-title">'+t('rewardSection')+'</div><div class="chip-grid">'+rewardChips+'</div>';
   html += '<div class="section-title">'+t('penaltySection')+'</div><div class="chip-grid">'+penaltyChips+'</div>';
+  if(checklist.length){ html += '<div class="section-title">'+t('checklistSection')+'</div><div class="chip-grid">'+checklistChips+'</div>'; }
+  if(selectedRangeBehaviorId){
+    var selRB = childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; });
+    if(selRB) html += renderRangePicker(c, selRB);
+  }
 
   html += renderCalendar(c);
 
@@ -2297,32 +2548,42 @@ function renderEditChildScreen(scr){
   } else if(tab === 'points'){
     var bal = pointBalance(c.id);
     var childBehaviors = c.behaviors || [];
-    var rewards = childBehaviors.filter(function(b){ return b.points > 0; });
-    var penalties = childBehaviors.filter(function(b){ return b.points < 0; });
+    var rewards = childBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; });
+    var penalties = childBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; });
+    var checklist = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; });
     var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,12);
 
     var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
     var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
+    var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('');
     var logRows = logs.map(function(l){
       var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
       return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
-        '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span>'+
+        '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
         (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
     }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noLogs')+'</div>';
 
     body = ''+
       '<div style="text-align:center;background:var(--sky-light);border-radius:18px;padding:18px;margin-bottom:18px;">'+
         '<div style="font-size:13px;color:var(--muted);font-weight:700;">'+t('currentPoints')+'</div>'+
-        '<div style="font-family:var(--font-display);font-weight:800;font-size:36px;color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+bal+'</div>'+
+        '<div style="font-family:var(--font-display);font-weight:800;font-size:36px;color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+fmtPts(bal)+'</div>'+
         (parentMode ? '<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;">'+
           '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;min-height:auto;" data-act="open-manage-behaviors" data-id="'+c.id+'">'+t('behaviorRuleEntryTitle')+'</button>'+
           '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;min-height:auto;" data-act="open-manage-thresholds" data-id="'+c.id+'">'+t('thresholdSettings')+'</button>'+
+          '<button class="btn-ghost tap" style="width:auto;padding:8px 16px;font-size:13px;min-height:auto;" data-act="open-points-adjust-form" data-id="'+c.id+'">'+t('adjustInitialPointsBtn')+'</button>'+
         '</div>' : '')+
+        (showPointsAdjustForm ? ('<div class="inline-form" style="text-align:left;margin-top:14px;">'+
+          '<div class="field"><label>'+t('initialPointsLabel')+'</label><input type="number" step="0.1" id="mPointsAdjustValue" value="'+(pointsAdjustmentLog(c.id) ? pointsAdjustmentLog(c.id).points : 0)+'"></div>'+
+          '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-points-adjust-form">'+t('cancel')+'</button>'+
+          '<button class="btn-primary tap" data-act="save-points-adjust" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+        '</div>') : '')+
       '</div>'+
       '<div class="section-title" style="margin-top:0;">'+t('rewardSection')+'</div>'+
       '<div class="chip-grid" style="margin-bottom:18px;">'+rewardChips+'</div>'+
       '<div class="section-title">'+t('penaltySection')+'</div>'+
       '<div class="chip-grid" style="margin-bottom:18px;">'+penaltyChips+'</div>'+
+      (checklist.length ? ('<div class="section-title">'+t('checklistSection')+'</div><div class="chip-grid" style="margin-bottom:18px;">'+checklistChips+'</div>') : '')+
+      (selectedRangeBehaviorId && childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; }) ? renderRangePicker(c, childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; })) : '')+
       renderCalendar(c)+
       '<div class="section-title">'+t('recentLogs')+'</div>'+
       '<div>'+logRows+'</div>';
@@ -2352,10 +2613,19 @@ function renderManageBehaviorsScreen(scr){
         '<button class="small-icon-btn" style="color:var(--danger);" data-act="confirm-delete-behavior" data-id="'+b.id+'">✓</button></div>';
     }
     var catKey = {'学习':'catStudy','生活':'catLife','礼貌':'catManner','家务':'catChore','其他':'catOther'}[b.category] || 'catOther';
+    var mode = b.pointsMode || 'fixed';
+    var valueHtml;
+    if(mode==='checklist'){
+      valueHtml = '<span class="point-pill" style="background:var(--sky-light);color:var(--sky-dark);">✔️</span>';
+    } else if(mode==='range'){
+      valueHtml = '<span class="point-pill '+(b.pointsMax>=0?'pos':'neg')+'">'+(b.pointsMax>=0?'+':'')+fmtPts(b.pointsMin)+'~'+fmtPts(b.pointsMax)+'</span>';
+    } else {
+      valueHtml = '<span class="point-pill '+(b.points>=0?'pos':'neg')+'">'+(b.points>=0?'+':'')+fmtPts(b.points)+'</span>';
+    }
     return '<div class="behavior-row">'+
       '<span style="font-size:22px;">'+esc(b.icon)+'</span>'+
       '<div class="name">'+esc(behaviorDisplayName(b))+' <span class="cat-tag">'+esc(t(catKey))+'</span>'+(b.escalate?' <span class="cat-tag" style="background:var(--sun-light);color:#8A6A2C;">🌱 '+esc(t('escalateModeStep'))+'</span>':'')+'</div>'+
-      '<span class="point-pill '+(b.points>=0?'pos':'neg')+'">'+(b.points>=0?'+':'')+b.points+'</span>'+
+      valueHtml+
       '<button class="small-icon-btn" data-act="edit-behavior" data-id="'+b.id+'">✏️</button>'+
       '<button class="small-icon-btn" data-act="ask-delete-behavior" data-id="'+b.id+'">🗑</button>'+
     '</div>';
@@ -2364,6 +2634,7 @@ function renderManageBehaviorsScreen(scr){
   var formHtml = '';
   if(behaviorForm){
     var f = behaviorForm;
+    var pm = f.pointsMode || 'fixed';
     formHtml = '<div class="card-box" style="margin-top:16px;">'+
       '<div class="field"><label>'+t('behaviorNameLabel')+'</label><input id="mBehaviorName" value="'+esc(f.name)+'" placeholder="'+t('behaviorNamePlaceholder')+'"></div>'+
       '<div class="field"><label>'+t('categoryLabel')+'</label>'+segmentedHtml('behavior-category', '_', f.category, categoryOptions())+'</div>'+
@@ -2371,9 +2642,18 @@ function renderManageBehaviorsScreen(scr){
       '<div class="icon-grid">'+BEHAVIOR_ICONS.map(function(ic){
         return '<button type="button" class="icon-pick tap'+(f.icon===ic?' selected':'')+'" data-act="behavior-icon" data-value="'+ic+'">'+ic+'</button>';
       }).join('')+'</div>'+
-      '<div class="field"><label>'+t('signLabel')+'</label>'+segmentedHtml('behavior-sign', '_', f.sign, [['reward',t('signReward')],['penalty',t('signPenalty')]])+'</div>'+
-      '<div class="field"><label>'+t('pointValueLabel')+'</label><input type="number" id="mBehaviorAbs" value="'+esc(f.abs)+'" placeholder="'+t('pointValuePlaceholder')+'"></div>'+
-      (f.sign==='penalty' ? (''+
+      '<div class="field"><label>'+t('pointsModeLabel')+'</label>'+segmentedHtml('behavior-points-mode', '_', pm, [['fixed',t('pointsModeFixed')],['range',t('pointsModeRange')],['checklist',t('pointsModeChecklist')]])+'</div>'+
+      (pm!=='checklist' ? '<div class="field"><label>'+t('signLabel')+'</label>'+segmentedHtml('behavior-sign', '_', f.sign, [['reward',t('signReward')],['penalty',t('signPenalty')]])+'</div>' : '')+
+      (pm==='fixed' ? '<div class="field"><label>'+t('pointValueLabel')+'</label><input type="number" step="0.1" id="mBehaviorAbs" value="'+esc(f.abs)+'" placeholder="'+t('pointValuePlaceholder')+'"></div>' : '')+
+      (pm==='range' ? (''+
+        '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('rangeMinLabel')+'</span><input type="number" step="0.1" id="mBehaviorRangeMin" value="'+esc(f.rangeMin)+'" placeholder="1"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('rangeMaxLabel')+'</span><input type="number" step="0.1" id="mBehaviorRangeMax" value="'+esc(f.rangeMax)+'" placeholder="5"></div>'+
+        '</div></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">'+t('rangeHint')+'</div>'
+      ) : '')+
+      (pm==='checklist' ? '<div style="font-size:13px;color:var(--muted);margin:-6px 0 16px;line-height:1.5;">'+t('checklistHint')+'</div>' : '')+
+      (pm==='fixed' && f.sign==='penalty' ? (''+
         '<div class="field"><label>'+t('escalateModeLabel')+'</label>'+segmentedHtml('behavior-escalate-mode', '_', f.escalate?'step':'fixed', [['fixed',t('escalateModeFixed')],['step',t('escalateModeStep')]])+'</div>'+
         (f.escalate ? (''+
           '<div class="field"><label>'+t('growthPeriodLabel')+'</label><input type="number" id="mGrowthDays" value="'+esc(f.growthDays)+'" placeholder="'+t('growthPeriodPlaceholder')+'"></div>'+
@@ -2581,10 +2861,38 @@ function bindEvents(){
       var previewEl = document.getElementById('mExchangePreview');
       if(!previewEl) return;
       var pts = parseFloat(exchangePointsInput.value) || 0;
-      var rate = currentExchangeRate(editingChild);
+      var rate = currentExchangeRate(editingChild, ledgerCurrency);
       var money = Math.round((pts / rate.points) * rate.money * 100) / 100;
-      previewEl.textContent = t('exchangePreviewLabel')+'：¥'+money;
+      previewEl.textContent = t('exchangePreviewLabel')+'：'+currencySymbol(ledgerCurrency)+fmtMoney(money);
     });
+  }
+  var transferAmountInput = document.getElementById('mTransferAmount');
+  var transferRateInput = document.getElementById('mTransferRate');
+  if(transferAmountInput && transferRateInput && editingChild){
+    var updateTransferPreview = function(){
+      var previewEl = document.getElementById('mTransferPreview');
+      if(!previewEl) return;
+      var amt = parseFloat(transferAmountInput.value) || 0;
+      var rateVal = parseFloat(transferRateInput.value) || 0;
+      var toAmt = Math.round(amt * rateVal * 100) / 100;
+      previewEl.textContent = t('transferPreviewLabel')+'：'+currencySymbol(transferToCurrencyDraft)+fmtMoney(toAmt);
+    };
+    transferAmountInput.addEventListener('input', updateTransferPreview);
+    transferRateInput.addEventListener('input', updateTransferPreview);
+  }
+  var foodAmountInput = document.getElementById('mFoodAmount');
+  if(foodAmountInput && editingChild && selectedFoodRefId){
+    var updateFoodPreview = function(){
+      var previewEl = document.getElementById('mFoodAmountPreview');
+      if(!previewEl) return;
+      var f = foodLibraryAll().find(function(x){ return x.refId===selectedFoodRefId; });
+      if(!f) return;
+      var amt = parseFloat(foodAmountInput.value) || 0;
+      var s = scaleFoodValues(f, amt);
+      previewEl.textContent = s.calories+' kcal · '+t('carbGLabel')+' '+s.carb+' · '+t('proteinGLabel')+' '+s.protein+' · '+t('fatGLabel')+' '+s.fat;
+    };
+    foodAmountInput.addEventListener('input', updateFoodPreview);
+    updateFoodPreview();
   }
 }
 function toggleDisabled(selector, disabled){
@@ -2664,7 +2972,7 @@ function handleAction(act, id, value, el){
   else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; selectedFoodRefId=null; selectedRangeBehaviorId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showPointsAdjustForm=false; render(); }
   else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
@@ -2676,9 +2984,18 @@ function handleAction(act, id, value, el){
 
   else if(act==='log-point'){
     var loggedEntry = addPointLog(id, value);
-    toast(loggedEntry ? ((loggedEntry.points>=0?'+':'')+loggedEntry.points+' '+t('pointsRecordedToast')) : '');
+    toast(loggedEntry ? ((loggedEntry.points>=0?'+':'')+fmtPts(loggedEntry.points)+' '+t('pointsRecordedToast')) : '');
     render();
   }
+  else if(act==='pick-range-behavior'){ selectedRangeBehaviorId = (selectedRangeBehaviorId===value) ? null : value; render(); }
+  else if(act==='log-range-point'){
+    var chosenPts = parseFloat(el.getAttribute('data-points'));
+    var loggedEntry2 = addPointLog(id, value, chosenPts);
+    selectedRangeBehaviorId = null;
+    toast(loggedEntry2 ? ((loggedEntry2.points>=0?'+':'')+fmtPts(loggedEntry2.points)+' '+t('pointsRecordedToast')) : '');
+    render();
+  }
+  else if(act==='toggle-checklist'){ toggleChecklist(id, value); render(); }
   else if(act==='delete-log'){ deletePointLog(id); render(); }
   else if(act==='open-child-points'){ editChildTab='points'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
@@ -2687,7 +3004,7 @@ function handleAction(act, id, value, el){
   else if(act==='cal-select-day'){ getCalState(id).sel = value; render(); }
 
   else if(act==='open-child-health'){ editChildTab='health'; confirmDeleteChild=false; healthSubTab='meals'; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; selectedExerciseRefId=null; pushScreen({type:'editChild', childId:id}); }
-  else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; render(); }
+  else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; selectedFoodRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; render(); }
 
   else if(act==='open-child-redeem'){ editChildTab='redeem'; confirmDeleteChild=false; redeemSubTab='rewards'; showRewardForm=false; showPenaltyForm=false; pushScreen({type:'editChild', childId:id}); }
   else if(act==='redeem-sub-tab'){ redeemSubTab = value; showRewardForm=false; showPenaltyForm=false; render(); }
@@ -2731,14 +3048,15 @@ function handleAction(act, id, value, el){
   else if(act==='delete-penalty'){ deletePenalty(id, value); render(); }
   else if(act==='execute-penalty'){ executePenalty(id, value); toast(t('penaltyExecutedToast')); render(); }
 
-  else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; ledgerCurrency='CAD'; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='set-ledger-currency'){ ledgerCurrency = value; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; render(); }
   else if(act==='open-rate-form'){ showExchangeRateForm=true; render(); }
   else if(act==='cancel-rate-form'){ showExchangeRateForm=false; render(); }
   else if(act==='save-rate'){
     var pts = parseFloat(document.getElementById('mRatePoints').value);
     var money = parseFloat(document.getElementById('mRateMoney').value);
     if(!pts || !money){ toast(t('fillRateFieldsToast')); return; }
-    saveExchangeRate(id, pts, money);
+    saveExchangeRate(id, ledgerCurrency, pts, money);
     showExchangeRateForm = false;
     render();
   }
@@ -2751,7 +3069,7 @@ function handleAction(act, id, value, el){
     var opts = parseFloat(document.getElementById('mOfferPoints').value);
     var omoney = parseFloat(document.getElementById('mOfferMoney').value);
     if(!oname || !ostart || !oend || !opts || !omoney){ toast(t('fillOfferFieldsToast')); return; }
-    addSpecialOffer(id, oname, ostart, oend, opts, omoney);
+    addSpecialOffer(id, ledgerCurrency, oname, ostart, oend, opts, omoney);
     showSpecialOfferForm = false;
     render();
   }
@@ -2765,18 +3083,46 @@ function handleAction(act, id, value, el){
     var amt = parseFloat(document.getElementById('mLedgerAmount').value);
     if(!source || !amt){ toast(t('fillLedgerFieldsToast')); return; }
     var signedAmt = manualLedgerDirection==='expense' ? -Math.abs(amt) : Math.abs(amt);
-    addLedgerEntry(id, source, signedAmt, manualLedgerCategory, null);
+    addLedgerEntry(id, source, signedAmt, manualLedgerCategory, null, ledgerCurrency);
     showManualLedgerForm = false;
     render();
   }
   else if(act==='delete-ledger-entry'){ deleteLedgerEntry(id); render(); }
   else if(act==='confirm-exchange'){
-    var child = childById(id);
     var ptsToSpend = parseFloat(document.getElementById('mExchangePoints').value);
     if(!ptsToSpend || ptsToSpend<=0){ return; }
     if(pointBalance(id) < ptsToSpend){ toast(t('notEnoughPointsToast')); return; }
-    exchangePointsForMoney(id, ptsToSpend);
+    exchangePointsForMoney(id, ledgerCurrency, ptsToSpend);
     toast(t('exchangeSuccessToast'));
+    render();
+  }
+  else if(act==='open-transfer-form'){ showTransferForm=true; transferToCurrencyDraft = CURRENCIES.filter(function(cur){return cur.code!==ledgerCurrency;})[0].code; render(); }
+  else if(act==='cancel-transfer-form'){ showTransferForm=false; render(); }
+  else if(act==='draft-transfer-to'){ transferToCurrencyDraft = value; render(); }
+  else if(act==='confirm-transfer'){
+    var fromAmt = parseFloat(document.getElementById('mTransferAmount').value);
+    var rateVal = parseFloat(document.getElementById('mTransferRate').value);
+    if(!fromAmt || !rateVal){ toast(t('fillLedgerFieldsToast')); return; }
+    if(ledgerBalance(id, ledgerCurrency) < fromAmt){ toast(t('notEnoughPointsToast')); return; }
+    var toAmt = Math.round(fromAmt * rateVal * 100) / 100;
+    transferCurrency(id, ledgerCurrency, transferToCurrencyDraft, fromAmt, toAmt);
+    showTransferForm = false;
+    render();
+  }
+  else if(act==='open-ledger-adjust-form'){ showLedgerAdjustForm=true; render(); }
+  else if(act==='cancel-ledger-adjust-form'){ showLedgerAdjustForm=false; render(); }
+  else if(act==='save-ledger-adjust'){
+    var adjVal = parseFloat(document.getElementById('mLedgerAdjustValue').value) || 0;
+    setLedgerAdjustment(id, ledgerCurrency, adjVal);
+    showLedgerAdjustForm = false;
+    render();
+  }
+  else if(act==='open-points-adjust-form'){ showPointsAdjustForm=true; render(); }
+  else if(act==='cancel-points-adjust-form'){ showPointsAdjustForm=false; render(); }
+  else if(act==='save-points-adjust'){
+    var pAdjVal = parseFloat(document.getElementById('mPointsAdjustValue').value) || 0;
+    setPointsAdjustment(id, pAdjVal);
+    showPointsAdjustForm = false;
     render();
   }
   else if(act==='set-activity-level'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.activityLevel=value; persistEntity('children', c);} render(); }
@@ -2795,27 +3141,34 @@ function handleAction(act, id, value, el){
   }
 
   else if(act==='set-meal-type'){ mealTypeDraft = value; render(); }
+  else if(act==='pick-food'){ selectedFoodRefId = (selectedFoodRefId===value) ? null : value; render(); }
   else if(act==='log-meal'){
-    var f = foodLibraryAll().find(function(x){ return x.refId===value; });
-    if(f){ addMealLog(id, mealTypeDraft, f); toast(t('mealLoggedToast')); }
+    var f = foodLibraryAll().find(function(x){ return x.refId===selectedFoodRefId; });
+    var amtEl = document.getElementById('mFoodAmount');
+    var amt = amtEl ? parseFloat(amtEl.value) : NaN;
+    if(!f || !amt || amt<=0){ return; }
+    addMealLog(id, mealTypeDraft, f, amt);
+    selectedFoodRefId = null;
+    toast(t('mealLoggedToast'));
     render();
   }
   else if(act==='delete-meal-log'){ deleteMealLog(id); render(); }
   else if(act==='toggle-food-show-all'){ mealFoodShowAll = !mealFoodShowAll; render(); }
-  else if(act==='open-custom-food'){ showCustomFoodForm=true; customFoodCategoryDraft='other'; render(); }
+  else if(act==='open-custom-food'){ showCustomFoodForm=true; customFoodCategoryDraft='other'; customFoodUnitDraft='g'; render(); }
   else if(act==='cancel-custom-food'){ showCustomFoodForm=false; render(); }
   else if(act==='draft-custom-food-category'){ customFoodCategoryDraft = value; render(); }
+  else if(act==='draft-custom-food-unit'){ customFoodUnitDraft = value; render(); }
   else if(act==='save-custom-food'){
     var name = document.getElementById('mCustomFoodName').value.trim();
+    var baseAmount = parseFloat(document.getElementById('mCustomFoodBaseAmount').value);
     var cal = parseFloat(document.getElementById('mCustomFoodCal').value);
-    if(!name || !cal){ toast(t('fillFoodFieldsToast')); return; }
+    if(!name || !cal || !baseAmount){ toast(t('fillFoodFieldsToast')); return; }
     var carb = parseFloat(document.getElementById('mCustomFoodCarb').value) || 0;
     var protein = parseFloat(document.getElementById('mCustomFoodProtein').value) || 0;
     var fat = parseFloat(document.getElementById('mCustomFoodFat').value) || 0;
-    var food = addCustomFood(name, '', cal, carb, protein, fat, customFoodCategoryDraft);
-    addMealLog(id, mealTypeDraft, {name:food.name, name_en:'', icon:food.icon, calories:food.calories, carb:food.carb, protein:food.protein, fat:food.fat, category:food.category, refId:'custom:'+food.id});
+    var food = addCustomFood(name, '', customFoodUnitDraft, baseAmount, cal, carb, protein, fat, customFoodCategoryDraft);
     showCustomFoodForm = false;
-    toast(t('mealLoggedToast'));
+    selectedFoodRefId = 'custom:'+food.id;
     render();
   }
 
@@ -2864,8 +3217,9 @@ function handleAction(act, id, value, el){
       nr.carbMaxOverride = (carbV && carbV>0) ? carbV : null;
       nr.proteinMinOverride = (proteinV && proteinV>0) ? proteinV : null;
       nr.fatMaxOverride = (fatV && fatV>0) ? fatV : null;
-      nr.vegServingsTarget = (vegV && vegV>=0) ? vegV : nr.vegServingsTarget;
-      nr.fruitServingsTarget = (fruitV && fruitV>=0) ? fruitV : nr.fruitServingsTarget;
+      nr.vegGramsTarget = (vegV && vegV>=0) ? vegV : nutritionTargets(c).veg;
+      nr.fruitGramsTarget = (fruitV && fruitV>=0) ? fruitV : nutritionTargets(c).fruit;
+      delete nr.vegServingsTarget; delete nr.fruitServingsTarget;
       nr.points = {
         calorie: parseFloat(document.getElementById('mNutriPtsCalorie').value) || 0,
         carb: parseFloat(document.getElementById('mNutriPtsCarb').value) || 0,
@@ -2884,17 +3238,27 @@ function handleAction(act, id, value, el){
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
 
   else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; pushScreen({type:'manageBehaviors', childId:id}); }
-  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', abs:'', escalate:false, growthDays:14}; render(); }
+  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', pointsMode:'fixed', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14}; render(); }
   else if(act==='edit-behavior'){
     var scrB = currentScreen();
     var b = scrB ? behaviorById(scrB.childId, id) : null;
-    if(b) behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.points>=0?'reward':'penalty', abs: Math.abs(b.points), escalate: !!b.escalate, growthDays: b.growthDays || 14};
+    if(b){
+      var bMode = b.pointsMode || 'fixed';
+      if(bMode==='range'){
+        behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.pointsMax>=0?'reward':'penalty', pointsMode:'range', abs:'', rangeMin: Math.abs(b.pointsMin), rangeMax: Math.abs(b.pointsMax), escalate:false, growthDays:14};
+      } else if(bMode==='checklist'){
+        behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign:'reward', pointsMode:'checklist', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14};
+      } else {
+        behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.points>=0?'reward':'penalty', pointsMode:'fixed', abs: Math.abs(b.points), rangeMin:'', rangeMax:'', escalate: !!b.escalate, growthDays: b.growthDays || 14};
+      }
+    }
     render();
   }
   else if(act==='cancel-behavior-form'){ behaviorForm=null; render(); }
   else if(act==='behavior-category'){ if(behaviorForm) behaviorForm.category=value; render(); }
   else if(act==='behavior-icon'){ if(behaviorForm) behaviorForm.icon=value; render(); }
   else if(act==='behavior-sign'){ if(behaviorForm) behaviorForm.sign=value; render(); }
+  else if(act==='behavior-points-mode'){ if(behaviorForm) behaviorForm.pointsMode=value; render(); }
   else if(act==='behavior-escalate-mode'){ if(behaviorForm) behaviorForm.escalate = (value==='step'); render(); }
   else if(act==='save-behavior'){ saveBehavior(id); }
   else if(act==='ask-delete-behavior'){ confirmDeleteBehaviorId = id; render(); }
@@ -3024,24 +3388,50 @@ function saveBehavior(childId){
   if(!child) return;
   if(!child.behaviors) child.behaviors = [];
   var n = document.getElementById('mBehaviorName');
-  var a = document.getElementById('mBehaviorAbs');
-  var gEl = document.getElementById('mGrowthDays');
   var name = n ? n.value.trim() : '';
-  var absVal = a ? Number(a.value) : 0;
-  if(!name || !absVal){ toast(t('fillBehaviorFieldsToast')); return; }
-  var points = behaviorForm.sign === 'penalty' ? -Math.abs(absVal) : Math.abs(absVal);
-  var escalate = behaviorForm.sign === 'penalty' && !!behaviorForm.escalate;
-  var growthDays = escalate ? (Number(gEl && gEl.value) || 14) : undefined;
+  if(!name){ toast(t('fillBehaviorFieldsToast')); return; }
+  var pm = behaviorForm.pointsMode || 'fixed';
+
+  var fields = { name:name, icon:behaviorForm.icon, category:behaviorForm.category, pointsMode:pm };
+
+  if(pm==='checklist'){
+    fields.points = 0;
+    fields.escalate = false;
+  } else if(pm==='range'){
+    var minEl = document.getElementById('mBehaviorRangeMin');
+    var maxEl = document.getElementById('mBehaviorRangeMax');
+    var minAbs = minEl ? Math.abs(Number(minEl.value)) : 0;
+    var maxAbs = maxEl ? Math.abs(Number(maxEl.value)) : 0;
+    if(!minAbs || !maxAbs){ toast(t('fillRangeFieldsToast')); return; }
+    var lo = Math.min(minAbs, maxAbs), hi = Math.max(minAbs, maxAbs);
+    if(behaviorForm.sign==='penalty'){ fields.pointsMin = -hi; fields.pointsMax = -lo; }
+    else { fields.pointsMin = lo; fields.pointsMax = hi; }
+    fields.escalate = false;
+  } else {
+    var a = document.getElementById('mBehaviorAbs');
+    var absVal = a ? Number(a.value) : 0;
+    if(!absVal){ toast(t('fillBehaviorFieldsToast')); return; }
+    fields.points = behaviorForm.sign === 'penalty' ? -Math.abs(absVal) : Math.abs(absVal);
+    fields.escalate = behaviorForm.sign === 'penalty' && !!behaviorForm.escalate;
+    if(fields.escalate){
+      var gEl = document.getElementById('mGrowthDays');
+      fields.growthDays = Number(gEl && gEl.value) || 14;
+    }
+  }
+
   if(behaviorForm.id){
     var b = child.behaviors.find(function(x){ return x.id===behaviorForm.id; });
     if(b){
-      b.name=name; b.icon=behaviorForm.icon; b.category=behaviorForm.category; b.points=points;
-      b.escalate=escalate; if(escalate) b.growthDays=growthDays; else delete b.growthDays;
+      b.name=fields.name; b.icon=fields.icon; b.category=fields.category; b.pointsMode=fields.pointsMode;
+      delete b.points; delete b.pointsMin; delete b.pointsMax; delete b.growthDays;
+      if(pm==='range'){ b.pointsMin=fields.pointsMin; b.pointsMax=fields.pointsMax; b.escalate=false; }
+      else { b.points=fields.points; b.escalate=fields.escalate; if(fields.escalate) b.growthDays=fields.growthDays; }
     }
     toast(t('behaviorSavedToast'));
   } else {
-    var newB = {id:uid(), name:name, icon:behaviorForm.icon, category:behaviorForm.category, points:points, escalate:escalate};
-    if(escalate) newB.growthDays = growthDays;
+    var newB = {id:uid(), name:fields.name, icon:fields.icon, category:fields.category, pointsMode:fields.pointsMode, escalate: fields.escalate||false};
+    if(pm==='range'){ newB.pointsMin=fields.pointsMin; newB.pointsMax=fields.pointsMax; }
+    else { newB.points=fields.points; if(fields.escalate) newB.growthDays=fields.growthDays; }
     child.behaviors.push(newB);
     toast(t('behaviorAddedToast'));
   }
@@ -3099,7 +3489,7 @@ function handleImportFile(e){
         if(!c.nutritionRules) c.nutritionRules = defaultNutritionRules();
         if(!c.rewards) c.rewards = [];
         if(!c.penalties) c.penalties = [];
-        if(!c.exchangeRate) c.exchangeRate = defaultExchangeRate();
+        if(!c.exchangeRates) c.exchangeRates = childExchangeRates(c);
         if(!c.specialOffers) c.specialOffers = [];
       });
       saveData();
