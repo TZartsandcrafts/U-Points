@@ -574,7 +574,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.11.0';
+var APP_VERSION = '3.11.1';
 var APP_BUILD_DATE = '2026-09-01';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -715,6 +715,17 @@ function exerciseLibrarySorted(childId){
 }
 
 /* ---------------- 数据（会被云同步覆盖/合并的部分） ---------------- */
+// 币种常量（记账模块用）：必须定义在 loadData() 之前，因为老数据迁移逻辑里会用到 CURRENCIES
+var CURRENCIES = [
+  {code:'CAD', symbol:'C$', name_zh:'加元', name_en:'CAD'},
+  {code:'USD', symbol:'$', name_zh:'美元', name_en:'USD'},
+  {code:'CNY', symbol:'¥', name_zh:'人民币', name_en:'CNY'}
+];
+function currencyInfo(code){ return CURRENCIES.find(function(c){ return c.code===code; }) || CURRENCIES[0]; }
+function currencySymbol(code){ return currencyInfo(code).symbol; }
+function currencyName(code){ var ci = currencyInfo(code); return (typeof state!=='undefined' && state.lang==='en') ? ci.name_en : ci.name_zh; }
+function defaultExchangeRate(){ return { points: 10, money: 1 }; }
+
 function loadData(){
   var d = storageGet('data', null);
   if(d){
@@ -1114,15 +1125,6 @@ function redemptionHistory(childId){
 }
 
 /* ---------------- 记账：积分兑换零花钱 + 基础流水账 ---------------- */
-var CURRENCIES = [
-  {code:'CAD', symbol:'C$', name_zh:'加元', name_en:'CAD'},
-  {code:'USD', symbol:'$', name_zh:'美元', name_en:'USD'},
-  {code:'CNY', symbol:'¥', name_zh:'人民币', name_en:'CNY'}
-];
-function currencyInfo(code){ return CURRENCIES.find(function(c){ return c.code===code; }) || CURRENCIES[0]; }
-function currencySymbol(code){ return currencyInfo(code).symbol; }
-function currencyName(code){ var ci = currencyInfo(code); return state.lang==='en' ? ci.name_en : ci.name_zh; }
-function defaultExchangeRate(){ return { points: 10, money: 1 }; }
 function childExchangeRates(child){
   if(!child.exchangeRates){
     // 迁移：老数据只有单一 c.exchangeRate（对应第一个币种），其余币种用默认汇率
