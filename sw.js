@@ -6,7 +6,7 @@
 // （比如改成 u-points-cache-v3.3.0），旧缓存会在 activate 阶段自动清掉。
 // 同时 fetch 时显式加 cache:'no-store'，绕过浏览器自己的 HTTP 缓存，
 // 确保联网时始终拿到最新版本，不会出现"部署了新版但手机上还是旧版"的情况。
-var CACHE_NAME = 'u-points-cache-v3.11.1';
+var CACHE_NAME = 'u-points-cache-v3.11.2';
 var APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function(event){
