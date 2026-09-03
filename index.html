@@ -216,24 +216,34 @@
 <div id="app"></div>
 <script>
 // 修 iOS Safari / 主屏幕独立打开时的经典 100dvh 坑：
-// 冷启动那一刻浏览器工具栏/主屏幕指示条还没"落定"，100dvh 算出来的高度偏大，
-// 底部会露出一条空白（body 背景之外的默认白色），要等用户手动滑一下触发浏览器重新计算才会消失。
-// 这里改成用 JS 实际测量 window.innerHeight 写成 CSS 变量，首次加载、resize、
-// 从后台恢复前台（pageshow/visibilitychange）时都重新量一次，不依赖浏览器自己"什么时候想通"。
+// 冷启动那一刻浏览器工具栏/主屏幕指示条还没"落定"，100dvh 算出来的高度偏大，底部会露出一条空白。
+// v3.11.2 的第一版修复用 window.innerHeight 量了一次就定死，结果划一下工具栏收起、
+// 视口变高了，这个写死的值不会跟着涨，反而变成"怎么划都消不掉"，比原来更糟——这次改用
+// visualViewport API：它专门用来跟踪"工具栏收起/展开导致的可视区域变化"，resize/scroll
+// 都会正确触发，值也会跟着实时涨跌，不会再卡死。
 (function(){
+  function currentViewportHeight(){
+    return (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  }
   function setAppVh(){
-    document.documentElement.style.setProperty('--app-vh', (window.innerHeight * 0.01) + 'px');
+    document.documentElement.style.setProperty('--app-vh', (currentViewportHeight() * 0.01) + 'px');
   }
   setAppVh();
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', setAppVh);
+    window.visualViewport.addEventListener('scroll', setAppVh);
+  }
   window.addEventListener('resize', setAppVh);
   window.addEventListener('orientationchange', setAppVh);
   window.addEventListener('pageshow', setAppVh);
+  window.addEventListener('scroll', setAppVh, {passive:true});
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) setAppVh(); });
-  // 有些机型工具栏收起的动画会晚一点点落定，加载后再补量一次兜底
+  // 有些机型工具栏收起的动画会晚一点点落定，加载后再补量几次兜底
   window.addEventListener('load', function(){
     setAppVh();
     setTimeout(setAppVh, 100);
     setTimeout(setAppVh, 400);
+    setTimeout(setAppVh, 900);
   });
 })();
 </script>
@@ -597,7 +607,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.11.2';
+var APP_VERSION = '3.11.3';
 var APP_BUILD_DATE = '2026-09-01';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
