@@ -23,7 +23,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html{-webkit-text-size-adjust:100%;}
   body{margin:0;background:linear-gradient(180deg,var(--sky-light) 0%, var(--bg) 340px);font-family:var(--font-body);color:var(--text);font-size:16px;line-height:1.55;overflow-x:hidden;}
-  #app{max-width:480px;margin:0 auto;padding:max(22px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));position:relative;min-height:100vh;min-height:100dvh;min-height:calc(var(--app-vh, 1vh) * 100);display:flex;flex-direction:column;}
+  #app{max-width:480px;margin:0 auto;padding:max(22px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;}
   input, select, textarea, button{font-size:16px;}
   .tap:active{transform:scale(0.96);}
   .tap{transition:transform .12s ease;}
@@ -215,36 +215,29 @@
 <body>
 <div id="app"></div>
 <script>
-// 修 iOS Safari / 主屏幕独立打开时的经典 100dvh 坑：
-// 冷启动那一刻浏览器工具栏/主屏幕指示条还没"落定"，100dvh 算出来的高度偏大，底部会露出一条空白。
-// v3.11.2 的第一版修复用 window.innerHeight 量了一次就定死，结果划一下工具栏收起、
-// 视口变高了，这个写死的值不会跟着涨，反而变成"怎么划都消不掉"，比原来更糟——这次改用
-// visualViewport API：它专门用来跟踪"工具栏收起/展开导致的可视区域变化"，resize/scroll
-// 都会正确触发，值也会跟着实时涨跌，不会再卡死。
+// 修"冷启动时底部露白条，划一下才消失"的问题。
+// 前两版都在猜"是不是量到的视口高度不对"，分别试了 window.innerHeight 定死、
+// visualViewport 实时跟踪，结果后者跟原生 100dvh 表现完全一样——说明高度这个"数值"
+// 从头到尾就没错，真正的问题出在 WebKit 自己：独立主屏幕启动那一下，它没有照着
+// 正确的高度去重绘，要等一次真实的滚动手势才会触发重新布局。用户手动下拉一下会
+// "碰巧"解决，正是因为下拉本身就是一次滚动事件。
+// 这里改成启动后用 JS 自动模拟一次极小幅度的滚动（挪 1px 再挪回来），
+// 相当于代替用户自动"下拉"一次，强制 WebKit 立刻按正确高度重新布局，不用等真人去划。
 (function(){
-  function currentViewportHeight(){
-    return (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  function nudgeScroll(){
+    var y = window.scrollY || window.pageYOffset || 0;
+    window.scrollTo(0, y + 1);
+    requestAnimationFrame(function(){ window.scrollTo(0, y); });
   }
-  function setAppVh(){
-    document.documentElement.style.setProperty('--app-vh', (currentViewportHeight() * 0.01) + 'px');
-  }
-  setAppVh();
-  if(window.visualViewport){
-    window.visualViewport.addEventListener('resize', setAppVh);
-    window.visualViewport.addEventListener('scroll', setAppVh);
-  }
-  window.addEventListener('resize', setAppVh);
-  window.addEventListener('orientationchange', setAppVh);
-  window.addEventListener('pageshow', setAppVh);
-  window.addEventListener('scroll', setAppVh, {passive:true});
-  document.addEventListener('visibilitychange', function(){ if(!document.hidden) setAppVh(); });
-  // 有些机型工具栏收起的动画会晚一点点落定，加载后再补量几次兜底
   window.addEventListener('load', function(){
-    setAppVh();
-    setTimeout(setAppVh, 100);
-    setTimeout(setAppVh, 400);
-    setTimeout(setAppVh, 900);
+    nudgeScroll();
+    setTimeout(nudgeScroll, 60);
+    setTimeout(nudgeScroll, 200);
+    setTimeout(nudgeScroll, 500);
+    setTimeout(nudgeScroll, 1000);
   });
+  window.addEventListener('pageshow', nudgeScroll);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) nudgeScroll(); });
 })();
 </script>
 <script>
@@ -607,7 +600,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.11.3';
+var APP_VERSION = '3.11.4';
 var APP_BUILD_DATE = '2026-09-01';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
