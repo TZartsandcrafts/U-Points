@@ -129,7 +129,11 @@
   .chip.checklist.done{background:var(--exercise-light);color:var(--exercise-text);}
   .range-picker{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:14px;margin:4px 0 18px;}
   .range-picker-title{font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:10px;text-align:center;}
-  .range-picker-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .range-picker-value{text-align:center;font-family:var(--font-display);font-weight:800;font-size:30px;color:var(--sky-dark);margin-bottom:6px;}
+  .range-picker-slider{width:100%;height:36px;accent-color:var(--sky-dark);margin-bottom:4px;}
+  .range-picker-bounds{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:12px;}
+  .range-picker-number-row{display:flex;gap:10px;align-items:center;margin-bottom:12px;}
+  .range-picker-number-row input[type=number]{flex:1;padding:12px 14px;border-radius:14px;border:2px solid var(--border);background:#FFFEFB;font-family:var(--font-body);font-size:16px;color:var(--text);outline:none;min-height:46px;text-align:center;}
   .range-pick-btn{background:var(--sky-light);color:var(--sky-dark);border:none;border-radius:12px;padding:10px 16px;font-weight:800;font-family:var(--font-display);font-size:15px;cursor:pointer;min-width:52px;}
   .cal-summary-card{background:var(--card);border:2px solid var(--border);border-radius:20px;padding:18px;margin-bottom:18px;}
   .cal-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin:12px 0 4px;}
@@ -321,6 +325,7 @@ zh: {
   pointsModeLabel:'计分方式', pointsModeFixed:'固定分值', pointsModeRange:'浮动区间', pointsModeChecklist:'每日打卡(不计分)',
   rangeMinLabel:'最小值', rangeMaxLabel:'最大值', rangeHint:'打分时可以在这个区间里挑一个具体分值，做得好选高一点、一般般选低一点',
   checklistHint:'这是每天需要完成的固定项，只有"完成/未完成"两种状态，不计入积分', fillRangeFieldsToast:'请填写完整的区间范围',
+  confirmRangeLog:'确认打分', invalidRangeValue:'请输入有效的分值',
   noRewards:'还没有加分项，去"行为规则"里添加吧', noPenalties:'还没有扣分项',
   recentLogs:'最近记录', noLogs:'还没有积分记录',
   behaviorsTitle:'行为规则与积分', behaviorsTitleForChild:'{{name}} 的行为规则', behaviorsDesc:'这里的加减分项，会出现在这个孩子的"积分记录"页面里，方便随手打分。每个孩子的规则可以各不相同。',
@@ -475,6 +480,7 @@ en: {
   pointsModeLabel:'Scoring type', pointsModeFixed:'Fixed value', pointsModeRange:'Flexible range', pointsModeChecklist:'Daily checklist (no points)',
   rangeMinLabel:'Minimum', rangeMaxLabel:'Maximum', rangeHint:'When logging, pick an exact value in this range — higher for a great job, lower for so-so effort',
   checklistHint:"A fixed daily item — just done/not-done, doesn't affect points", fillRangeFieldsToast:'Please fill in the full range',
+  confirmRangeLog:'Confirm score', invalidRangeValue:'Please enter a valid value',
   noRewards:'No reward items yet — add some in "Behavior rules"', noPenalties:'No deduction items yet',
   recentLogs:'Recent activity', noLogs:'No points logged yet',
   behaviorsTitle:"Behavior rules & points", behaviorsTitleForChild:"{{name}}'s behavior rules", behaviorsDesc:"These items show up on this child's Points tab for quick tapping. Each child can have their own set of rules.",
@@ -600,8 +606,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.11.4';
-var APP_BUILD_DATE = '2026-09-01';
+var APP_VERSION = '3.11.5';
+var APP_BUILD_DATE = '2026-09-04';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -896,7 +902,12 @@ function addPointLog(childId, behaviorId, overridePoints){
   if(b.pointsMode==='checklist'){
     pts = 0;
   } else if(b.pointsMode==='range'){
-    pts = (overridePoints!=null) ? Math.round(overridePoints*10)/10 : b.pointsMin;
+    if(overridePoints!=null){
+      var rmn = Math.min(b.pointsMin, b.pointsMax), rmx = Math.max(b.pointsMin, b.pointsMax);
+      pts = Math.max(rmn, Math.min(rmx, Math.round(overridePoints*10)/10));
+    } else {
+      pts = b.pointsMin;
+    }
   } else {
     pts = (b.points < 0 && b.escalate) ? nextEscalatedPoints(child, b) : b.points;
   }
@@ -1589,18 +1600,24 @@ function renderPointChip(child, b){
 }
 // 浮动区间行为规则的快速选点：在 min~max 之间按 0.5 为步长列出可选分值（步长细一点方便"做得一般般"选中间值）
 function renderRangePicker(child, b){
-  var vals = [];
-  var step = (b.pointsMax - b.pointsMin) <= 3 ? 0.5 : 1;
-  for(var v = b.pointsMin; v <= b.pointsMax + 1e-9; v += step){
-    vals.push(Math.round(v*10)/10);
-  }
   var nm = behaviorDisplayName(b);
-  var btns = vals.map(function(v){
-    return '<button type="button" class="range-pick-btn tap" data-act="log-range-point" data-id="'+child.id+'" data-value="'+b.id+'" data-points="'+v+'">'+(v>=0?'+':'')+fmtPts(v)+'</button>';
-  }).join('');
+  var mn = Math.min(b.pointsMin, b.pointsMax), mx = Math.max(b.pointsMin, b.pointsMax);
+  var initVal = Math.round(((mn+mx)/2)*10)/10;
+  initVal = Math.max(mn, Math.min(mx, initVal));
+  var uidSuffix = b.id;
+  var sliderId = 'rangeSlider_'+uidSuffix, numberId = 'rangeNum_'+uidSuffix, dispId = 'rangeDisp_'+uidSuffix;
+  var syncJs = "var v=parseFloat(this.value); if(isNaN(v))return; "+
+    "document.getElementById('"+sliderId+"').value=v; document.getElementById('"+numberId+"').value=v; "+
+    "document.getElementById('"+dispId+"').textContent=(v>=0?'+':'')+v;";
   return '<div class="range-picker">'+
     '<div class="range-picker-title">'+esc(b.icon)+' '+esc(nm)+'</div>'+
-    '<div class="range-picker-btns">'+btns+'</div>'+
+    '<div class="range-picker-value" id="'+dispId+'">'+(initVal>=0?'+':'')+fmtPts(initVal)+'</div>'+
+    '<input type="range" class="range-picker-slider" id="'+sliderId+'" min="'+mn+'" max="'+mx+'" step="0.1" value="'+initVal+'" oninput="'+esc(syncJs)+'">'+
+    '<div class="range-picker-bounds"><span>'+(mn>=0?'+':'')+fmtPts(mn)+'</span><span>'+(mx>=0?'+':'')+fmtPts(mx)+'</span></div>'+
+    '<div class="range-picker-number-row">'+
+      '<input type="number" id="'+numberId+'" min="'+mn+'" max="'+mx+'" step="0.1" value="'+initVal+'" oninput="'+esc(syncJs)+'">'+
+    '</div>'+
+    '<button type="button" class="btn-primary tap" data-act="log-range-point" data-id="'+child.id+'" data-value="'+b.id+'" data-input-id="'+numberId+'">'+t('confirmRangeLog')+'</button>'+
   '</div>';
 }
 // 一位小数的积分显示：整数就不带小数点，比如 3 而不是 3.0；有小数才显示到小数点后一位
@@ -1676,7 +1693,7 @@ function renderCalendar(child){
 
   var selLogs = data.pointLogs.filter(function(l){ return l.childId===child.id && l.date===cs.sel; })
     .slice().sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
-  var selSum = selLogs.reduce(function(s,l){ return s + l.points; }, 0);
+  var selSum = Math.round(selLogs.reduce(function(s,l){ return s + l.points; }, 0) * 100) / 100;
   var parentMode = isParentMode();
   var selRows = selLogs.map(function(l){
     var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
@@ -1695,7 +1712,7 @@ function renderCalendar(child){
       '<div class="cal-weekdays">'+weekdaysHtml+'</div>'+
       '<div class="cal-grid">'+cellsHtml+'</div>'+
       '<div class="cal-day-detail">'+
-        '<div class="cal-day-title"><span>'+calDayLabel(cs.sel)+'</span><span class="cal-day-sum" style="color:'+(selSum>=0?'var(--sky-dark)':'var(--danger)')+';">'+(selSum>=0?'+':'')+selSum+'</span></div>'+
+        '<div class="cal-day-title"><span>'+calDayLabel(cs.sel)+'</span><span class="cal-day-sum" style="color:'+(selSum>=0?'var(--sky-dark)':'var(--danger)')+';">'+(selSum>=0?'+':'')+fmtPts(selSum)+'</span></div>'+
         selRows+
       '</div>'+
     '</div>';
@@ -2451,7 +2468,6 @@ function renderChildHome(){
   var rewards = childBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; });
   var penalties = childBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; });
   var checklist = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; });
-  var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,10);
 
   var html = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px;">'+
     '<button class="icon-btn-round tap" data-act="open-settings">⚙️</button>'+
@@ -2477,13 +2493,6 @@ function renderChildHome(){
   }
 
   html += renderCalendar(c);
-
-  var logRows = logs.map(function(l){
-    var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-    return '<div class="log-row"><div class="left"><span style="font-size:20px;">'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
-      '<span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+l.points+'</span></div>';
-  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noLogs')+'</div>';
-  html += '<div class="section-title">'+t('recentLogs')+'</div><div>'+logRows+'</div>';
 
   html += '<div style="margin-top:22px;">'+
     '<button class="btn-ghost tap" data-act="open-child-health" data-id="'+c.id+'" style="margin-bottom:10px;">🍎 '+t('healthTab')+'</button>'+
@@ -2579,17 +2588,10 @@ function renderEditChildScreen(scr){
     var rewards = childBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; });
     var penalties = childBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; });
     var checklist = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; });
-    var logs = data.pointLogs.filter(function(l){ return l.childId===c.id; }).slice().reverse().slice(0,12);
 
     var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
     var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
     var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('');
-    var logRows = logs.map(function(l){
-      var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-      return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
-        '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
-        (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
-    }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noLogs')+'</div>';
 
     body = ''+
       '<div style="text-align:center;background:var(--sky-light);border-radius:18px;padding:18px;margin-bottom:18px;">'+
@@ -2612,9 +2614,7 @@ function renderEditChildScreen(scr){
       '<div class="chip-grid" style="margin-bottom:18px;">'+penaltyChips+'</div>'+
       (checklist.length ? ('<div class="section-title">'+t('checklistSection')+'</div><div class="chip-grid" style="margin-bottom:18px;">'+checklistChips+'</div>') : '')+
       (selectedRangeBehaviorId && childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; }) ? renderRangePicker(c, childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; })) : '')+
-      renderCalendar(c)+
-      '<div class="section-title">'+t('recentLogs')+'</div>'+
-      '<div>'+logRows+'</div>';
+      renderCalendar(c);
   } else if(tab === 'health'){
     body = renderHealthTabBody(c, parentMode);
   } else if(tab === 'redeem'){
@@ -3017,7 +3017,10 @@ function handleAction(act, id, value, el){
   }
   else if(act==='pick-range-behavior'){ selectedRangeBehaviorId = (selectedRangeBehaviorId===value) ? null : value; render(); }
   else if(act==='log-range-point'){
-    var chosenPts = parseFloat(el.getAttribute('data-points'));
+    var inputId = el.getAttribute('data-input-id');
+    var inputEl = document.getElementById(inputId);
+    var chosenPts = inputEl ? parseFloat(inputEl.value) : NaN;
+    if(isNaN(chosenPts)){ toast(t('invalidRangeValue')); return; }
     var loggedEntry2 = addPointLog(id, value, chosenPts);
     selectedRangeBehaviorId = null;
     toast(loggedEntry2 ? ((loggedEntry2.points>=0?'+':'')+fmtPts(loggedEntry2.points)+' '+t('pointsRecordedToast')) : '');
