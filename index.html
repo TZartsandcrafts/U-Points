@@ -405,6 +405,7 @@ zh: {
   noFoodMatchHint:'没有找到匹配的食物，换个关键词试试，或直接添加自定义食物',
   noCustomFoodYetHint:'还没有添加过食物，点下面"+自定义食物"加第一个吧',
   noExerciseMatchHint:'没有找到匹配的运动，换个关键词试试，或直接添加自定义运动',
+  noCustomExerciseYetHint:'还没有添加过运动，点下面"+自定义运动"加第一个吧',
   customFoodsLabel:'自定义食物', customExercisesLabel:'自定义运动',
   showMoreFoodsBtn:'展开更多（还有 {{n}} 个）', showLessFoodsBtn:'收起',
   showMoreExercisesBtn:'展开更多（还有 {{n}} 个）', showLessExercisesBtn:'收起',
@@ -567,6 +568,7 @@ en: {
   noFoodMatchHint:'No matching foods — try another search, or add a custom food',
   noCustomFoodYetHint:'No foods added yet — tap "+ Custom food" below to add your first one',
   noExerciseMatchHint:'No matching exercises — try another search, or add a custom exercise',
+  noCustomExerciseYetHint:'No exercises added yet — tap "+ Custom exercise" below to add your first one',
   customFoodsLabel:'Custom foods', customExercisesLabel:'Custom exercises',
   showMoreFoodsBtn:'Show {{n}} more', showLessFoodsBtn:'Show less',
   showMoreExercisesBtn:'Show {{n}} more', showLessExercisesBtn:'Show less',
@@ -622,7 +624,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.12.2';
+var APP_VERSION = '3.13.0';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -691,16 +693,7 @@ function behaviorDisplayName(b){
 
 /* ---------------- 健康打卡：内置食物库 / 运动库（精简版，先覆盖常见项） ---------------- */
 var FOOD_LIBRARY = []; // 预置食物库已按需求清空，只保留自定义食物
-var EXERCISE_LIBRARY = [
-  {id:'run', name:'跑步', name_en:'Running', icon:'🏃', caloriesPerMin:10},
-  {id:'walk', name:'散步', name_en:'Walking', icon:'🚶', caloriesPerMin:4},
-  {id:'jumprope', name:'跳绳', name_en:'Jump rope', icon:'🤾', caloriesPerMin:12},
-  {id:'ball', name:'球类运动', name_en:'Ball sports', icon:'⚽', caloriesPerMin:8},
-  {id:'swim', name:'游泳', name_en:'Swimming', icon:'🏊', caloriesPerMin:9},
-  {id:'bike', name:'骑车', name_en:'Cycling', icon:'🚴', caloriesPerMin:7},
-  {id:'dance', name:'跳舞', name_en:'Dancing', icon:'💃', caloriesPerMin:6},
-  {id:'yoga', name:'瑜伽/拉伸', name_en:'Yoga / stretching', icon:'🧘', caloriesPerMin:3}
-];
+var EXERCISE_LIBRARY = []; // 预置运动项目库已按需求清空，只保留自定义运动
 function foodLibraryAll(){
   return FOOD_LIBRARY.map(function(f){ return {refId:'lib:'+f.id, name:f.name, name_en:f.name_en, icon:f.icon, unit:f.unit||'count', baseAmount:f.baseAmount||1, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; })
     .concat((data.customFoods||[]).map(function(f){ return {refId:'custom:'+f.id, name:f.name, name_en:f.name_en||f.name, icon:f.icon||'🍽️', unit:f.unit||'count', baseAmount:f.baseAmount||1, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; }));
@@ -1486,8 +1479,21 @@ function pushScreen(s){ screenStack.push(s); scrollAppTop(); render(); }
 function popScreen(){ screenStack.pop(); scrollAppTop(); render(); }
 function currentScreen(){ return screenStack.length ? screenStack[screenStack.length-1] : null; }
 function scrollAppTop(){ window.scrollTo(0,0); }
+// 切到孩子模式时：如果家里只有一个孩子，直接绑定这台设备，不用再选一次；
+// 有多个孩子才需要弹出"选择自己"的页面。
+function enterChildMode(){
+  if(!state.boundChildId){
+    if(data.children.length === 1){ state.boundChildId = data.children[0].id; saveState(); step='dashboard'; }
+    else { step = 'pickYourself'; }
+  } else { step = 'dashboard'; }
+  editChildTab = 'points';
+}
 
 var step = !data.setupDone ? 'welcome' : (state.deviceRole===null ? 'roleSelect' : 'dashboard');
+if(data.setupDone && state.deviceRole==='child' && !state.boundChildId){
+  if(data.children.length === 1){ state.boundChildId = data.children[0].id; saveState(); }
+  else { step = 'pickYourself'; }
+}
 var draft = {
   familyName: '',
   parents: [ {id:uid(), name:'', avatar:'sun'} ],
@@ -2015,6 +2021,9 @@ function renderExerciseChipList(c){
   if(query && !filtered.length){
     return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noExerciseMatchHint')+'</div>';
   }
+  if(!query && !filtered.length){
+    return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noCustomExerciseYetHint')+'</div>';
+  }
   var html = '<div class="chip-grid" style="margin-bottom:6px;">'+toShow.map(chipHtml).join('')+'</div>';
   if(!showAll && hiddenCount>0){
     html += '<button class="dashed-btn tap" data-act="toggle-exercise-show-all" style="margin-bottom:4px;">'+t('showMoreExercisesBtn',{n:hiddenCount})+'</button>';
@@ -2318,7 +2327,7 @@ function render(){
   else if(step === 'children') html = renderChildrenStep();
   else if(step === 'roleSelect') html = renderRoleSelect();
   else if(step === 'pickYourself') html = renderPickYourself();
-  else if(!isParentMode() && boundChild()) html = renderChildHome();
+  else if(!isParentMode() && boundChild()) html = renderEditChildScreen({type:'editChild', childId: boundChild().id}, true);
   else html = renderDashboard();
 
   // toast 是独立管理的 DOM 节点，不再拼进这里的整页 HTML 里（见 toast() 函数）
@@ -2522,57 +2531,6 @@ function renderDashboard(){
 }
 
 /* ---------------- 孩子端专属整页主视图 ---------------- */
-function renderChildHome(){
-  var c = boundChild();
-  if(!c) return renderPickYourself();
-  var bal = pointBalance(c.id);
-  var childBehaviors = c.behaviors || [];
-  var rewards = childBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; });
-  var penalties = childBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; });
-  var checklist = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; });
-
-  var html = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px;">'+
-    '<button class="icon-btn-round tap" data-act="open-settings">⚙️</button>'+
-  '</div>';
-
-  html += '<div class="child-home-header">'+
-    avatarHtml(c.avatar, 88) +
-    '<div style="font-family:var(--font-display);font-weight:800;font-size:22px;margin-top:12px;">'+esc(c.name)+'</div>'+
-    '<div class="child-home-balance" style="color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+fmtPts(bal)+'</div>'+
-    '<div style="color:var(--muted);font-size:14px;">'+t('currentPoints')+'</div>'+
-  '</div>';
-
-  var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
-  var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
-  var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noChecklistYet')+'</div>';
-
-  html += renderCalendar(c, true);
-
-  var homeTab = childHomeCategoryTab || 'checklist';
-  html += segmentedHtml('child-home-category-tab', c.id, homeTab, [['checklist',t('childHomeTabCheckin')],['reward',t('childHomeTabReward')],['penalty',t('childHomeTabPenalty')]]);
-
-  if(homeTab==='checklist'){
-    html += '<div class="chip-grid">'+checklistChips+'</div>';
-  } else if(homeTab==='reward'){
-    html += '<div class="chip-grid">'+rewardChips+'</div>';
-  } else {
-    html += '<div class="chip-grid">'+penaltyChips+'</div>';
-  }
-  if(selectedRangeBehaviorId){
-    var selRB = childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; });
-    if(selRB) html += renderRangePicker(c, selRB);
-  }
-
-  html += '<div style="margin-top:22px;">'+
-    '<button class="btn-ghost tap" data-act="open-child-health" data-id="'+c.id+'" style="margin-bottom:10px;">🍎 '+t('healthTab')+'</button>'+
-    '<button class="btn-ghost tap" data-act="open-child-redeem" data-id="'+c.id+'" style="margin-bottom:10px;">🎁 '+t('redeemTab')+'</button>'+
-    '<button class="btn-ghost tap" data-act="open-child-ledger" data-id="'+c.id+'" style="margin-bottom:10px;">💰 '+t('ledgerTab')+'</button>'+
-    '<button class="btn-ghost tap" data-act="open-my-profile" data-id="'+c.id+'">✏️ '+t('editMyProfile')+'</button>'+
-  '</div>';
-  html += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>';
-  return html;
-}
-
 /* ---------------- 整页视图（设置/孩子档案/行为规则/阈值/添加家长孩子）---------------- */
 function renderScreen(scr){
   if(scr.type === 'settings') return renderSettingsScreen();
@@ -2606,9 +2564,9 @@ function renderAddChildScreen(){
     '<button class="btn-primary tap" data-act="save-add-child">'+t('save')+'</button>';
 }
 
-function renderEditChildScreen(scr){
+function renderEditChildScreen(scr, isRoot){
   var c = data.children.find(function(x){return x.id===scr.childId;});
-  if(!c){ popScreen(); return ''; }
+  if(!c){ if(isRoot){ state.boundChildId=null; saveState(); step='pickYourself'; } else { popScreen(); } return ''; }
   var parentMode = isParentMode();
   var tab = editChildTab;
   var body = '';
@@ -2698,9 +2656,12 @@ function renderEditChildScreen(scr){
     body = renderLedgerTabBody(c, parentMode);
   }
 
-  var tabs = segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['points',t('pointsTab')],['health',t('healthTab')],['ledger',t('ledgerTab')],['redeem',t('redeemTab')]], true);
+  var tabs = segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['health',t('healthTab')],['ledger',t('ledgerTab')],['redeem',t('redeemTab')],['info',t('infoTab')]], true);
 
-  return screenHeader(esc(c.name)) + tabs + body;
+  return (isRoot ? childRootHeader(c) : screenHeader(esc(c.name))) + tabs + body + (isRoot ? '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>' : '');
+}
+function childRootHeader(c){
+  return '<div class="screen-header"><div class="screen-title">'+esc(c.name)+'</div><button class="icon-btn-round tap" data-act="open-settings">⚙️</button></div>';
 }
 
 function renderManageBehaviorsScreen(scr){
@@ -3046,18 +3007,18 @@ function handleAction(act, id, value, el){
   else if(act==='confirm-role'){
     if(roleDraft){
       state.deviceRole = roleDraft; saveState();
-      if(roleDraft==='child'){ step='pickYourself'; } else { step='dashboard'; }
+      if(roleDraft==='child'){ enterChildMode(); } else { step='dashboard'; }
       render();
     }
   }
-  else if(act==='pick-yourself'){ state.boundChildId = id; saveState(); step='dashboard'; render(); }
+  else if(act==='pick-yourself'){ state.boundChildId = id; saveState(); editChildTab='points'; step='dashboard'; render(); }
   else if(act==='switch-child'){ state.boundChildId = null; saveState(); screenStack=[]; step='pickYourself'; render(); }
   else if(act==='open-my-profile'){ editChildTab='info'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
   else if(act==='open-settings'){ settingsJoinInput=false; settingsRoomCodeDraft=''; pushScreen({type:'settings'}); }
   else if(act==='set-device-role'){
     state.deviceRole = value; saveState();
-    if(value==='child' && !state.boundChildId){ screenStack=[]; step='pickYourself'; }
+    if(value==='child' && !state.boundChildId){ screenStack=[]; enterChildMode(); }
     render();
   }
   else if(act==='create-room'){ connectCloudSync(genRoomCode(), true); }
