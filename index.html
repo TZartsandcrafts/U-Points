@@ -239,10 +239,25 @@
 // 屏幕实际高度多 2px（见 CSS 里的 min-height:calc(100dvh + 2px)），让每一个页面
 // 无论内容多少都必定有一点点可以滚动的空间，这样不管内容长短，这套自动下拉的
 // 修复手法才能真正生效。
+var __nudgeInFlight = false;
 window.nudgeScroll = function(){
+  if(__nudgeInFlight) return;
+  __nudgeInFlight = true;
   var y = window.scrollY || window.pageYOffset || 0;
   window.scrollTo(0, y + 1);
-  requestAnimationFrame(function(){ window.scrollTo(0, y); });
+  requestAnimationFrame(function(){
+    window.scrollTo(0, y);
+    __nudgeInFlight = false;
+  });
+};
+// render() 每次重绘都会调用这个"防抖"版本——如果短时间内（比如加入房间后
+// 连续触发好几次重绘：加入成功→同步中→同步完成）反复调用，只在最后一次
+// 停下来之后才真正模拟一次下拉，避免每次重绘都挪 1px 叠加出"页面自己慢慢
+// 往下滑"的肉眼可见位移。
+var __nudgeDebounceTimer = null;
+window.nudgeScrollDebounced = function(){
+  clearTimeout(__nudgeDebounceTimer);
+  __nudgeDebounceTimer = setTimeout(function(){ window.nudgeScroll(); }, 160);
 };
 (function(){
   function nudgeScroll(){ window.nudgeScroll(); }
@@ -635,7 +650,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.5';
+var APP_VERSION = '3.13.6';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2345,8 +2360,8 @@ function render(){
 
   app.innerHTML = html;
 
-  if(window.nudgeScroll){
-    requestAnimationFrame(function(){ window.nudgeScroll(); });
+  if(window.nudgeScrollDebounced){
+    window.nudgeScrollDebounced();
   }
 
   // 恢复重绘前记下的输入内容（只在对应 id 的输入框仍然存在时才恢复）
