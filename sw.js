@@ -2,11 +2,10 @@
 // 简单的"离线优先"缓存：把 index.html 本体缓存下来，
 // 这样即使没有网络，重新打开 PWA 也能正常显示（数据仍在 localStorage 里，不受影响）。
 //
-// v3.11.5 更新：缓存名绑定当前 app 版本号，每次发新版本时把这个名字也改一下
-// （比如改成 u-points-cache-v3.12.0），旧缓存会在 activate 阶段自动清掉。
-// 同时 fetch 时显式加 cache:'no-store'，绕过浏览器自己的 HTTP 缓存，
-// 确保联网时始终拿到最新版本，不会出现"部署了新版但手机上还是旧版"的情况。
-var CACHE_NAME = 'u-points-cache-v3.11.5';
+// v3.11.6 更新：修复自定义食物"每次数量不同要重新建一个食物"的问题——
+// 现在自定义食物新增了编辑/删除功能（在"健康打卡→管理自定义食物"里），
+// 同名食物会被拦下并提示直接编辑已有的，不会再一路建出"番茄x80g""番茄x160g"这种重复项。
+var CACHE_NAME = 'u-points-cache-v3.11.6';
 var APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function(event){

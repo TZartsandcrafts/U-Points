@@ -373,7 +373,7 @@ zh: {
   mealsSubTab:'三餐', exerciseSubTab:'运动',
   breakfastLabel:'早餐', lunchLabel:'午餐', dinnerLabel:'晚餐', snackLabel:'加餐',
   addCustomFood:'+ 自定义食物', addCustomExercise:'+ 自定义运动',
-  foodNameLabel:'食物名称', foodNamePlaceholder:'例如：红烧肉(1份)', foodCaloriesLabel:'热量(kcal)',
+  foodNameLabel:'食物名称（不用带数量，比如写"西红柿"就行）', foodNamePlaceholder:'例如：西红柿', foodCaloriesLabel:'热量(kcal)',
   exerciseNameLabel:'运动名称', exerciseNamePlaceholder:'例如：轮滑', exerciseRateLabel:'每分钟消耗(kcal，估算)',
   exerciseDurationLabel:'时长(分钟)', logExerciseBtn:'记录这次运动', addAndLog:'添加并记录',
   noMealsToday:'今天还没有饮食记录', noExerciseToday:'今天还没有运动记录',
@@ -392,7 +392,11 @@ zh: {
   proteinGLabel:'蛋白质(g)', fatGLabel:'脂肪(g)', carbGLabel:'碳水(g)',
   foodAmountLabel:'数量', unitCount:'个', unitGrams:'克',
   logMealBtn:'记录这餐', foodUnitLabel:'计量单位', foodBaseAmountGLabel:'基准克重(g)', foodBaseAmountCountLabel:'基准个数',
-  customFoodBaseHint:'下面填的热量/碳水/蛋白质/脂肪是"这个基准数量"对应的值，以后再吃这个食物换了数量，会自动按比例折算',
+  customFoodBaseHint:'下面填的热量/碳水/蛋白质/脂肪是"这个基准数量"对应的值，保存后以后再吃这个食物，直接在食物列表里选它、改一下数量就会自动按比例折算——不用每次都新建一条',
+  addCustomFoodTitle:'添加自定义食物', editCustomFoodTitle:'编辑自定义食物', update:'更新',
+  manageCustomFoods:'管理自定义食物', hideManageCustomFoods:'收起管理列表',
+  deleteCustomFoodConfirm:'删除「{{name}}」？（不影响已经记录过的历史饮食）',
+  duplicateFoodNameToast:'已经有一个同名食物了，直接在列表里选它、改数量就行；如果要改基准值，用"管理自定义食物"里的编辑功能',
   searchFoodPlaceholder:'搜索食物…', searchExercisePlaceholder:'搜索运动…',
   noFoodMatchHint:'没有找到匹配的食物，换个关键词试试，或直接添加自定义食物',
   noExerciseMatchHint:'没有找到匹配的运动，换个关键词试试，或直接添加自定义运动',
@@ -528,7 +532,7 @@ en: {
   mealsSubTab:'Meals', exerciseSubTab:'Exercise',
   breakfastLabel:'Breakfast', lunchLabel:'Lunch', dinnerLabel:'Dinner', snackLabel:'Snack',
   addCustomFood:'+ Custom food', addCustomExercise:'+ Custom exercise',
-  foodNameLabel:'Food name', foodNamePlaceholder:'e.g. Braised pork (1 serving)', foodCaloriesLabel:'Calories (kcal)',
+  foodNameLabel:"Food name (no need to include amount, e.g. just \"Tomato\")", foodNamePlaceholder:'e.g. Tomato', foodCaloriesLabel:'Calories (kcal)',
   exerciseNameLabel:'Exercise name', exerciseNamePlaceholder:'e.g. Roller skating', exerciseRateLabel:'kcal per minute (estimate)',
   exerciseDurationLabel:'Duration (min)', logExerciseBtn:'Log this workout', addAndLog:'Add & log',
   noMealsToday:'No meals logged today', noExerciseToday:'No exercise logged today',
@@ -547,7 +551,11 @@ en: {
   proteinGLabel:'Protein (g)', fatGLabel:'Fat (g)', carbGLabel:'Carbs (g)',
   foodAmountLabel:'Amount', unitCount:'count', unitGrams:'grams',
   logMealBtn:'Log this meal', foodUnitLabel:'Unit', foodBaseAmountGLabel:'Base weight (g)', foodBaseAmountCountLabel:'Base count',
-  customFoodBaseHint:"The calories/carbs/protein/fat below are for this base amount — next time you log this food with a different amount, it'll scale automatically",
+  customFoodBaseHint:"The calories/carbs/protein/fat below are for this base amount. Next time you eat this food, just pick it from the list and change the amount — it scales automatically, no need to add a new entry each time",
+  addCustomFoodTitle:'Add custom food', editCustomFoodTitle:'Edit custom food', update:'Update',
+  manageCustomFoods:'Manage custom foods', hideManageCustomFoods:'Hide manage list',
+  deleteCustomFoodConfirm:'Delete "{{name}}"? (past meal logs are unaffected)',
+  duplicateFoodNameToast:"There's already a food with this name — pick it from the list and just change the amount. To change its base values, use the edit button in \"Manage custom foods\"",
   searchFoodPlaceholder:'Search foods…', searchExercisePlaceholder:'Search exercises…',
   noFoodMatchHint:'No matching foods — try another search, or add a custom food',
   noExerciseMatchHint:'No matching exercises — try another search, or add a custom exercise',
@@ -606,7 +614,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.11.5';
+var APP_VERSION = '3.11.6';
 var APP_BUILD_DATE = '2026-09-04';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1513,6 +1521,9 @@ var selectedRangeBehaviorId = null; // 浮动区间行为规则：当前选中�
 var showNutritionSettings = false; // 营养达标：是否展开"调整达标标准"表单
 var customFoodCategoryDraft = 'other'; // 自定义食物表单：当前选中的分类（蔬菜/水果/其他）
 var customFoodUnitDraft = 'g'; // 自定义食物表单：计量单位（g=按克重 / count=按个数）
+var editingCustomFoodId = null; // 自定义食物表单：正在编辑哪一条（null=新增）
+var showManageCustomFoods = false; // 是否展开"管理自定义食物"列表
+var confirmDeleteCustomFoodId = null; // 待二次确认删除的自定义食物 id
 var mealFoodSearch = ''; // 三餐食物库：搜索关键词
 var mealFoodShowAll = false; // 三餐食物库：是否展开显示全部（默认只显示最常吃的前8个）
 var exerciseSearch = ''; // 运动库：搜索关键词
@@ -1861,6 +1872,26 @@ function renderFoodChipList(c){
   return html;
 }
 
+function renderManageCustomFoodsList(){
+  var list = data.customFoods || [];
+  if(!list.length) return '';
+  var rows = list.map(function(f){
+    if(confirmDeleteCustomFoodId === f.id){
+      return '<div class="behavior-row"><div class="name" style="color:var(--danger);font-size:14px;">'+t('deleteCustomFoodConfirm',{name:esc(f.name)})+'</div>'+
+        '<button class="btn-ghost tap" style="width:auto;padding:8px 12px;min-height:auto;" data-act="cancel-delete-custom-food">'+t('reallyThink')+'</button>'+
+        '<button class="small-icon-btn" style="color:var(--danger);" data-act="confirm-delete-custom-food" data-id="'+f.id+'">✓</button></div>';
+    }
+    var unitLabel = f.unit==='g' ? t('unitGrams') : t('unitCount');
+    return '<div class="behavior-row">'+
+      '<span style="font-size:22px;">'+esc(f.icon||'🍽️')+'</span>'+
+      '<div class="name">'+esc(f.name)+' <span class="cat-tag">'+esc(f.baseAmount)+unitLabel+' · '+f.calories+'kcal</span></div>'+
+      '<button class="small-icon-btn" data-act="edit-custom-food" data-id="'+f.id+'">✏️</button>'+
+      '<button class="small-icon-btn" data-act="ask-delete-custom-food" data-id="'+f.id+'">🗑</button>'+
+    '</div>';
+  }).join('');
+  return '<div style="margin-bottom:14px;">'+rows+'</div>';
+}
+
 function renderMealsSubTab(c, parentMode){
   var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
   var html = segmentedHtml('set-meal-type', c.id, mealTypeDraft, mealTypeOpts);
@@ -1872,7 +1903,7 @@ function renderMealsSubTab(c, parentMode){
   if(selFood){
     var nm = (state.lang==='en' && selFood.name_en) ? selFood.name_en : selFood.name;
     var prefillAmt = lastFoodAmount(c.id, selFood.refId) || selFood.baseAmount;
-    var unitLabel = selFood.unit==='g' ? 'g' : t('unitCount');
+    var unitLabel = selFood.unit==='g' ? t('unitGrams') : t('unitCount');
     html += '<div class="exercise-log-form" style="background:var(--food-light);">'+
       '<div class="field" style="margin-bottom:8px;"><label>'+esc(nm)+' · '+t('foodAmountLabel')+' ('+unitLabel+')</label>'+
       '<input type="number" id="mFoodAmount" value="'+prefillAmt+'"></div>'+
@@ -1881,25 +1912,39 @@ function renderMealsSubTab(c, parentMode){
     '</div>';
   }
 
-  html += showCustomFoodForm ?
-    '<div class="inline-form">'+
-      '<div class="field"><label>'+t('foodNameLabel')+'</label><input id="mCustomFoodName" placeholder="'+t('foodNamePlaceholder')+'"></div>'+
+  var editingFood = editingCustomFoodId ? (data.customFoods||[]).find(function(f){ return f.id===editingCustomFoodId; }) : null;
+  if(showCustomFoodForm){
+    var dName = editingFood ? editingFood.name : '';
+    var dBase = editingFood ? editingFood.baseAmount : '';
+    var dCal = editingFood ? editingFood.calories : '';
+    var dCarb = editingFood ? editingFood.carb : '';
+    var dProtein = editingFood ? editingFood.protein : '';
+    var dFat = editingFood ? editingFood.fat : '';
+    html += '<div class="inline-form">'+
+      '<div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:10px;">'+(editingFood?t('editCustomFoodTitle'):t('addCustomFoodTitle'))+'</div>'+
+      '<div class="field"><label>'+t('foodNameLabel')+'</label><input id="mCustomFoodName" placeholder="'+t('foodNamePlaceholder')+'" value="'+esc(dName)+'"></div>'+
       '<div class="field"><label>'+t('foodUnitLabel')+'</label>'+segmentedHtml('draft-custom-food-unit', c.id, customFoodUnitDraft, [['g',t('unitGrams')],['count',t('unitCount')]])+'</div>'+
-      '<div class="field"><label>'+(customFoodUnitDraft==='g'?t('foodBaseAmountGLabel'):t('foodBaseAmountCountLabel'))+'</label><input type="number" id="mCustomFoodBaseAmount" placeholder="'+(customFoodUnitDraft==='g'?'100':'1')+'"></div>'+
-      '<div class="field"><label>'+t('foodCaloriesLabel')+'</label><input type="number" id="mCustomFoodCal" placeholder="200"></div>'+
+      '<div class="field"><label>'+(customFoodUnitDraft==='g'?t('foodBaseAmountGLabel'):t('foodBaseAmountCountLabel'))+'</label><input type="number" id="mCustomFoodBaseAmount" placeholder="'+(customFoodUnitDraft==='g'?'100':'1')+'" value="'+esc(dBase)+'"></div>'+
+      '<div class="field"><label>'+t('foodCaloriesLabel')+'</label><input type="number" id="mCustomFoodCal" placeholder="200" value="'+esc(dCal)+'"></div>'+
       '<div class="field"><label>'+t('foodCategoryLabel')+'</label>'+
         segmentedHtml('draft-custom-food-category', c.id, customFoodCategoryDraft, [['other',t('catOtherFood')],['veg',t('catVeg')],['fruit',t('catFruit')]])+
       '</div>'+
       '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'+
-        '<div><span style="font-size:12px;color:var(--muted);">'+t('carbGLabel')+'</span><input type="number" id="mCustomFoodCarb" placeholder="0"></div>'+
-        '<div><span style="font-size:12px;color:var(--muted);">'+t('proteinGLabel')+'</span><input type="number" id="mCustomFoodProtein" placeholder="0"></div>'+
-        '<div><span style="font-size:12px;color:var(--muted);">'+t('fatGLabel')+'</span><input type="number" id="mCustomFoodFat" placeholder="0"></div>'+
+        '<div><span style="font-size:12px;color:var(--muted);">'+t('carbGLabel')+'</span><input type="number" id="mCustomFoodCarb" placeholder="0" value="'+esc(dCarb)+'"></div>'+
+        '<div><span style="font-size:12px;color:var(--muted);">'+t('proteinGLabel')+'</span><input type="number" id="mCustomFoodProtein" placeholder="0" value="'+esc(dProtein)+'"></div>'+
+        '<div><span style="font-size:12px;color:var(--muted);">'+t('fatGLabel')+'</span><input type="number" id="mCustomFoodFat" placeholder="0" value="'+esc(dFat)+'"></div>'+
       '</div></div>'+
       '<div style="font-size:12px;color:var(--muted);margin:-6px 0 12px;">'+t('customFoodBaseHint')+'</div>'+
       '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-custom-food">'+t('cancel')+'</button>'+
-      '<button class="btn-primary tap" data-act="save-custom-food" data-id="'+c.id+'">'+t('save')+'</button></div>'+
-    '</div>'
-    : '<button class="dashed-btn tap" data-act="open-custom-food" style="margin-bottom:18px;">'+t('addCustomFood')+'</button>';
+      '<button class="btn-primary tap" data-act="save-custom-food" data-id="'+c.id+'">'+(editingFood?t('update'):t('save'))+'</button></div>'+
+    '</div>';
+  } else {
+    html += '<div style="display:flex;gap:10px;margin-bottom:18px;">'+
+      '<button class="dashed-btn tap" style="flex:1;" data-act="open-custom-food">'+t('addCustomFood')+'</button>'+
+      ((data.customFoods||[]).length ? '<button class="dashed-btn tap" style="flex:1;" data-act="toggle-manage-custom-foods">'+(showManageCustomFoods?t('hideManageCustomFoods'):t('manageCustomFoods'))+'</button>' : '')+
+    '</div>';
+    if(showManageCustomFoods) html += renderManageCustomFoodsList();
+  }
 
   var mealTypeOrder = ['breakfast','lunch','dinner','snack'];
   var mealTypeLabel = {breakfast:t('breakfastLabel'), lunch:t('lunchLabel'), dinner:t('dinnerLabel'), snack:t('snackLabel')};
@@ -3185,10 +3230,29 @@ function handleAction(act, id, value, el){
   }
   else if(act==='delete-meal-log'){ deleteMealLog(id); render(); }
   else if(act==='toggle-food-show-all'){ mealFoodShowAll = !mealFoodShowAll; render(); }
-  else if(act==='open-custom-food'){ showCustomFoodForm=true; customFoodCategoryDraft='other'; customFoodUnitDraft='g'; render(); }
-  else if(act==='cancel-custom-food'){ showCustomFoodForm=false; render(); }
+  else if(act==='open-custom-food'){ showCustomFoodForm=true; editingCustomFoodId=null; customFoodCategoryDraft='other'; customFoodUnitDraft='g'; showManageCustomFoods=false; render(); }
+  else if(act==='cancel-custom-food'){ showCustomFoodForm=false; editingCustomFoodId=null; render(); }
   else if(act==='draft-custom-food-category'){ customFoodCategoryDraft = value; render(); }
   else if(act==='draft-custom-food-unit'){ customFoodUnitDraft = value; render(); }
+  else if(act==='toggle-manage-custom-foods'){ showManageCustomFoods = !showManageCustomFoods; confirmDeleteCustomFoodId=null; render(); }
+  else if(act==='edit-custom-food'){
+    var foodToEdit = (data.customFoods||[]).find(function(f){ return f.id===id; });
+    if(!foodToEdit) return;
+    editingCustomFoodId = id;
+    customFoodUnitDraft = foodToEdit.unit || 'g';
+    customFoodCategoryDraft = foodToEdit.category || 'other';
+    showCustomFoodForm = true;
+    showManageCustomFoods = false;
+    render();
+  }
+  else if(act==='ask-delete-custom-food'){ confirmDeleteCustomFoodId = id; render(); }
+  else if(act==='cancel-delete-custom-food'){ confirmDeleteCustomFoodId = null; render(); }
+  else if(act==='confirm-delete-custom-food'){
+    persistDelete('customFoods', id);
+    if(selectedFoodRefId === 'custom:'+id) selectedFoodRefId = null;
+    confirmDeleteCustomFoodId = null;
+    render();
+  }
   else if(act==='save-custom-food'){
     var name = document.getElementById('mCustomFoodName').value.trim();
     var baseAmount = parseFloat(document.getElementById('mCustomFoodBaseAmount').value);
@@ -3197,9 +3261,23 @@ function handleAction(act, id, value, el){
     var carb = parseFloat(document.getElementById('mCustomFoodCarb').value) || 0;
     var protein = parseFloat(document.getElementById('mCustomFoodProtein').value) || 0;
     var fat = parseFloat(document.getElementById('mCustomFoodFat').value) || 0;
-    var food = addCustomFood(name, '', customFoodUnitDraft, baseAmount, cal, carb, protein, fat, customFoodCategoryDraft);
+    var dupFood = (data.customFoods||[]).find(function(f){ return f.id!==editingCustomFoodId && f.name.trim().toLowerCase()===name.toLowerCase(); });
+    if(dupFood){ toast(t('duplicateFoodNameToast')); return; }
+    var food;
+    if(editingCustomFoodId){
+      food = (data.customFoods||[]).find(function(f){ return f.id===editingCustomFoodId; });
+      if(food){
+        food.name = name; food.unit = customFoodUnitDraft; food.baseAmount = baseAmount;
+        food.calories = cal; food.carb = carb; food.protein = protein; food.fat = fat;
+        food.category = customFoodCategoryDraft;
+        persistEntity('customFoods', food);
+      }
+    } else {
+      food = addCustomFood(name, '', customFoodUnitDraft, baseAmount, cal, carb, protein, fat, customFoodCategoryDraft);
+    }
     showCustomFoodForm = false;
-    selectedFoodRefId = 'custom:'+food.id;
+    editingCustomFoodId = null;
+    if(food) selectedFoodRefId = 'custom:'+food.id;
     render();
   }
 
