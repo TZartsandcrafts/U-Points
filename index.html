@@ -65,6 +65,9 @@
 
   /* ---- 整页视图（取代原先的底部弹窗），带返回箭头的页头 ---- */
   .screen-header{display:flex;align-items:center;gap:10px;margin-bottom:22px;position:sticky;top:env(safe-area-inset-top);background:var(--bg);padding:4px 0 8px;z-index:5;margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px;}
+  .sticky-tabs-wrap{position:sticky;top:env(safe-area-inset-top);z-index:6;background:var(--bg);margin-left:-18px;margin-right:-18px;padding:4px 18px 10px;margin-bottom:14px;}
+  .sticky-tabs-wrap .screen-header{position:static;margin:0 0 14px;padding:0;background:transparent;z-index:auto;}
+  .sticky-tabs-wrap .segmented{margin-bottom:0;}
   .screen-back{background:var(--sky-light);border:none;border-radius:50%;width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--sky-dark);}
   .screen-title{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--text);flex:1;}
 
@@ -624,7 +627,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.0';
+var APP_VERSION = '3.13.1';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2658,7 +2661,7 @@ function renderEditChildScreen(scr, isRoot){
 
   var tabs = segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['health',t('healthTab')],['ledger',t('ledgerTab')],['redeem',t('redeemTab')],['info',t('infoTab')]], true);
 
-  return (isRoot ? childRootHeader(c) : screenHeader(esc(c.name))) + tabs + body + (isRoot ? '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>' : '');
+  return '<div class="sticky-tabs-wrap">'+(isRoot ? childRootHeader(c) : screenHeader(esc(c.name)))+tabs+'</div>' + body + (isRoot ? '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+'</div>' : '');
 }
 function childRootHeader(c){
   return '<div class="screen-header"><div class="screen-title">'+esc(c.name)+'</div><button class="icon-btn-round tap" data-act="open-settings">⚙️</button></div>';
