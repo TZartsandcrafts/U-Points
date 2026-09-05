@@ -315,7 +315,7 @@ zh: {
   createRoomBtn:'生成房间码并开启同步', joinRoomBtn:'输入房间码加入', disconnectRoomBtn:'断开同步',
   copyRoomCode:'复制房间码', roomCodeCopied:'房间码已复制',
   dataSectionTitle:'数据管理',
-  infoTab:'基本信息', growthTab:'身高体重', pointsTab:'积分记录',
+  infoTab:'档案', growthTab:'身高体重', pointsTab:'积分',
   avatarLabel:'选一个头像徽章', saveChanges:'✓ 保存修改', deleteChildProfile:'🗑 删除这个孩子的档案',
   deleteConfirmText:'确定要删除吗？这会清空 ta 的所有记录，且无法恢复。', reallyThink:'再想想', confirmDelete:'确认删除',
   addHeight:'新增身高', addWeight:'新增体重', record:'记录',
@@ -331,7 +331,7 @@ zh: {
   behaviorsTitle:'行为规则与积分', behaviorsTitleForChild:'{{name}} 的行为规则', behaviorsDesc:'这里的加减分项，会出现在这个孩子的"积分记录"页面里，方便随手打分。每个孩子的规则可以各不相同。',
   noBehaviors:'还没有行为规则，点下面添加一条吧', addBehaviorRule:'+ 添加行为规则',
   behaviorNameLabel:'行为名称', behaviorNamePlaceholder:'例如：主动分享玩具',
-  categoryLabel:'分类', catStudy:'学习', catLife:'生活', catManner:'礼貌', catChore:'家务', catOther:'其他',
+  categoryLabel:'分类', catStudy:'学习', catLife:'生活', catManner:'礼貌', catChore:'家务', catOther:'其他', allCategoriesTab:'全部',
   iconLabel:'图标', signLabel:'加分还是扣分', signReward:'加分 ✨', signPenalty:'扣分 ⚠️',
   pointValueLabel:'分值（正数即可）', pointValuePlaceholder:'例如：3', save:'保存', cancel:'取消',
   escalateModeLabel:'扣分方式', escalateModeFixed:'固定分值', escalateModeStep:'阶梯翻倍',
@@ -364,7 +364,7 @@ zh: {
   noChildrenYetHint:'还没有添加孩子，去设置页添加一个吧', familyMembersTitle:'家庭成员',
   addParentBtn:'+ 添加家长', addChildBtn:'+ 添加孩子',
   calendarTitle:'积分月历', calNoLogsForDay:'这天还没有加减分记录',
-  healthTab:'健康打卡',
+  healthTab:'健康',
   calorieTargetTitle:'今日热量小结', calorieGoal:'目标', calorieFood:'摄入', calorieExercise:'运动消耗', calorieRemaining:'剩余可吃',
   macroSuggestion:'建议摄入（仅供参考，非医疗建议）', proteinLabel:'蛋白质', fatLabel:'脂肪', carbLabel:'碳水',
   activityLevelLabel:'活动量', calorieOverrideLabel:'手动设置目标热量', calorieOverridePlaceholder:'留空则按公式自动计算',
@@ -404,7 +404,7 @@ zh: {
   customFoodsLabel:'自定义食物', customExercisesLabel:'自定义运动',
   showMoreFoodsBtn:'展开更多（还有 {{n}} 个）', showLessFoodsBtn:'收起',
   showMoreExercisesBtn:'展开更多（还有 {{n}} 个）', showLessExercisesBtn:'收起',
-  redeemTab:'奖惩兑换', currentBalanceLabel:'当前总积分',
+  redeemTab:'兑换', currentBalanceLabel:'当前总积分',
   rewardsSubTab:'奖励', penaltiesSubTab:'惩罚', historySubTab:'兑换记录',
   scopeTotal:'总积分', scopeBehavior:'单项累计',
   scopeLabelTotal:'按：总积分', scopeLabelBehavior:'按：{{behavior}} 累计分',
@@ -491,7 +491,7 @@ en: {
   behaviorsTitle:"Behavior rules & points", behaviorsTitleForChild:"{{name}}'s behavior rules", behaviorsDesc:"These items show up on this child's Points tab for quick tapping. Each child can have their own set of rules.",
   noBehaviors:'No rules yet — add one below', addBehaviorRule:'+ Add a behavior rule',
   behaviorNameLabel:'Behavior name', behaviorNamePlaceholder:'e.g. Shared toys nicely',
-  categoryLabel:'Category', catStudy:'Study', catLife:'Life', catManner:'Manners', catChore:'Chores', catOther:'Other',
+  categoryLabel:'Category', catStudy:'Study', catLife:'Life', catManner:'Manners', catChore:'Chores', catOther:'Other', allCategoriesTab:'All',
   iconLabel:'Icon', signLabel:'Reward or deduction', signReward:'Reward ✨', signPenalty:'Deduction ⚠️',
   pointValueLabel:'Points (positive number)', pointValuePlaceholder:'e.g. 3', save:'Save', cancel:'Cancel',
   escalateModeLabel:'Deduction style', escalateModeFixed:'Fixed amount', escalateModeStep:'Step-up (doubling)',
@@ -616,7 +616,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.11.7';
+var APP_VERSION = '3.12.0';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1492,6 +1492,7 @@ var roleDraft = null;
 var toastTimer = null;
 var behaviorForm = null;
 var confirmDeleteBehaviorId = null;
+var manageBehaviorsCategoryFilter = 'all'; // 管理行为规则页：当前选中查看哪个分类（all=全部）
 var thresholdForm = null;
 var settingsJoinInput = false;
 var settingsRoomCodeDraft = '';
@@ -2589,6 +2590,25 @@ function renderEditChildScreen(scr){
         '<div class="field"><label>'+t('ageLabel')+'</label><input type="number" id="mEditChildAge" value="'+esc(c.age)+'"></div>';
     }
     body += '<button class="btn-primary tap" data-act="save-edit-child-info" data-id="'+c.id+'">'+t('saveChanges')+'</button>';
+
+    var heightRows = (c.heightHistory||[]).slice().reverse().map(function(h){
+      return '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);"><span>'+esc(h.date)+'</span><span style="color:var(--text);font-weight:700;">'+h.value+' cm</span></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noHeightYet')+'</div>';
+    var weightRows = (c.weightHistory||[]).slice().reverse().map(function(w){
+      return '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);"><span>'+esc(w.date)+'</span><span style="color:var(--text);font-weight:700;">'+w.value+' kg</span></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noWeightYet')+'</div>';
+    body += '<div class="section-title" style="margin-top:22px;">'+t('growthTab')+'</div>'+
+      '<div style="display:flex;gap:10px;margin-bottom:8px;">'+
+        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addHeight')+'</label><input type="number" id="mNewHeight" placeholder="cm"></div>'+
+        '<div style="flex:0 0 96px;padding-top:29px;"><button class="btn-primary tap" data-act="add-height" data-id="'+c.id+'" style="padding:14px 10px;font-size:14px;">'+t('record')+'</button></div>'+
+      '</div>'+
+      '<div style="margin-bottom:20px;">'+heightRows+'</div>'+
+      '<div style="display:flex;gap:10px;margin-bottom:8px;">'+
+        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addWeight')+'</label><input type="number" id="mNewWeight" placeholder="kg"></div>'+
+        '<div style="flex:0 0 96px;padding-top:29px;"><button class="btn-primary tap" data-act="add-weight" data-id="'+c.id+'" style="padding:14px 10px;font-size:14px;">'+t('record')+'</button></div>'+
+      '</div>'+
+      '<div>'+weightRows+'</div>';
+
     if(parentMode){
       body += '<div style="height:12px;"></div>'+
       (confirmDeleteChild ?
@@ -2601,24 +2621,6 @@ function renderEditChildScreen(scr){
         : '<button class="btn-ghost tap" style="color:var(--danger);border-color:#F6DCC9;" data-act="ask-delete-child">'+t('deleteChildProfile')+'</button>'
       );
     }
-  } else if(tab === 'growth'){
-    var heightRows = (c.heightHistory||[]).slice().reverse().map(function(h){
-      return '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);"><span>'+esc(h.date)+'</span><span style="color:var(--text);font-weight:700;">'+h.value+' cm</span></div>';
-    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noHeightYet')+'</div>';
-    var weightRows = (c.weightHistory||[]).slice().reverse().map(function(w){
-      return '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);"><span>'+esc(w.date)+'</span><span style="color:var(--text);font-weight:700;">'+w.value+' kg</span></div>';
-    }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noWeightYet')+'</div>';
-    body = ''+
-      '<div style="display:flex;gap:10px;margin-bottom:8px;">'+
-        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addHeight')+'</label><input type="number" id="mNewHeight" placeholder="cm"></div>'+
-        '<div style="flex:0 0 96px;padding-top:29px;"><button class="btn-primary tap" data-act="add-height" data-id="'+c.id+'" style="padding:14px 10px;font-size:14px;">'+t('record')+'</button></div>'+
-      '</div>'+
-      '<div style="margin-bottom:20px;">'+heightRows+'</div>'+
-      '<div style="display:flex;gap:10px;margin-bottom:8px;">'+
-        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('addWeight')+'</label><input type="number" id="mNewWeight" placeholder="kg"></div>'+
-        '<div style="flex:0 0 96px;padding-top:29px;"><button class="btn-primary tap" data-act="add-weight" data-id="'+c.id+'" style="padding:14px 10px;font-size:14px;">'+t('record')+'</button></div>'+
-      '</div>'+
-      '<div>'+weightRows+'</div>';
   } else if(tab === 'points'){
     var bal = pointBalance(c.id);
     var childBehaviors = c.behaviors || [];
@@ -2660,9 +2662,7 @@ function renderEditChildScreen(scr){
     body = renderLedgerTabBody(c, parentMode);
   }
 
-  var tabs = parentMode
-    ? segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['growth',t('growthTab')],['points',t('pointsTab')],['health',t('healthTab')],['redeem',t('redeemTab')],['ledger',t('ledgerTab')]], true)
-    : segmentedHtml('edit-child-tab', c.id, tab, [['points',t('pointsTab')],['health',t('healthTab')],['redeem',t('redeemTab')],['ledger',t('ledgerTab')],['info',t('infoTab')],['growth',t('growthTab')]], true);
+  var tabs = segmentedHtml('edit-child-tab', c.id, tab, [['info',t('infoTab')],['points',t('pointsTab')],['health',t('healthTab')],['ledger',t('ledgerTab')],['redeem',t('redeemTab')]], true);
 
   return screenHeader(esc(c.name)) + tabs + body;
 }
@@ -2671,7 +2671,16 @@ function renderManageBehaviorsScreen(scr){
   var child = childById(scr.childId);
   if(!child){ popScreen(); return ''; }
   var list = child.behaviors || [];
-  var rows = list.map(function(b){
+
+  var allCats = [['学习',t('catStudy')],['生活',t('catLife')],['礼貌',t('catManner')],['家务',t('catChore')],['其他',t('catOther')]];
+  var countOf = function(catKeyRaw){ return list.filter(function(b){ return (b.category||'其他')===catKeyRaw; }).length; };
+  var filterTabs = [['all', t('allCategoriesTab')+' ('+list.length+')']].concat(
+    allCats.map(function(pair){ return [pair[0], pair[1]+' ('+countOf(pair[0])+')']; })
+  );
+  var activeFilter = manageBehaviorsCategoryFilter || 'all';
+  var filteredList = activeFilter==='all' ? list : list.filter(function(b){ return (b.category||'其他')===activeFilter; });
+
+  var rows = filteredList.map(function(b){
     if(confirmDeleteBehaviorId === b.id){
       return '<div class="behavior-row"><div class="name" style="color:var(--danger);font-size:14px;">'+t('deleteBehaviorConfirm',{name:esc(behaviorDisplayName(b))})+'</div>'+
         '<button class="btn-ghost tap" style="width:auto;padding:8px 12px;min-height:auto;" data-act="cancel-delete-behavior">'+t('reallyThink')+'</button>'+
@@ -2689,7 +2698,7 @@ function renderManageBehaviorsScreen(scr){
     }
     return '<div class="behavior-row">'+
       '<span style="font-size:22px;">'+esc(b.icon)+'</span>'+
-      '<div class="name">'+esc(behaviorDisplayName(b))+' <span class="cat-tag">'+esc(t(catKey))+'</span>'+(b.escalate?' <span class="cat-tag" style="background:var(--sun-light);color:#8A6A2C;">🌱 '+esc(t('escalateModeStep'))+'</span>':'')+'</div>'+
+      '<div class="name">'+esc(behaviorDisplayName(b))+(activeFilter==='all' ? ' <span class="cat-tag">'+esc(t(catKey))+'</span>' : '')+(b.escalate?' <span class="cat-tag" style="background:var(--sun-light);color:#8A6A2C;">🌱 '+esc(t('escalateModeStep'))+'</span>':'')+'</div>'+
       valueHtml+
       '<button class="small-icon-btn" data-act="edit-behavior" data-id="'+b.id+'">✏️</button>'+
       '<button class="small-icon-btn" data-act="ask-delete-behavior" data-id="'+b.id+'">🗑</button>'+
@@ -2733,7 +2742,12 @@ function renderManageBehaviorsScreen(scr){
   }
   return screenHeader(t('behaviorsTitleForChild',{name:esc(child.name)})) +
     '<div style="font-size:14px;color:var(--muted);margin-bottom:14px;line-height:1.5;">'+t('behaviorsDesc')+'</div>'+
-    rows + (behaviorForm ? '' : '<button class="dashed-btn tap" style="margin-top:16px;" data-act="open-add-behavior-form">'+t('addBehaviorRule')+'</button>') + formHtml;
+    (behaviorForm ? '' : '<button class="dashed-btn tap" style="margin-bottom:16px;" data-act="open-add-behavior-form">'+t('addBehaviorRule')+'</button>') +
+    formHtml +
+    (behaviorForm ? '' : (
+      segmentedHtml('set-behavior-category-filter', '_', activeFilter, filterTabs, true) +
+      '<div style="margin-top:14px;">'+rows+'</div>'
+    ));
 }
 
 function renderManageThresholdsScreen(scr){
@@ -3338,7 +3352,7 @@ function handleAction(act, id, value, el){
   }
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
 
-  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; pushScreen({type:'manageBehaviors', childId:id}); }
+  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; manageBehaviorsCategoryFilter='all'; pushScreen({type:'manageBehaviors', childId:id}); }
   else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', pointsMode:'fixed', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14}; render(); }
   else if(act==='edit-behavior'){
     var scrB = currentScreen();
@@ -3363,6 +3377,7 @@ function handleAction(act, id, value, el){
   else if(act==='behavior-escalate-mode'){ if(behaviorForm) behaviorForm.escalate = (value==='step'); render(); }
   else if(act==='save-behavior'){ saveBehavior(id); }
   else if(act==='ask-delete-behavior'){ confirmDeleteBehaviorId = id; render(); }
+  else if(act==='set-behavior-category-filter'){ manageBehaviorsCategoryFilter = value; render(); }
   else if(act==='cancel-delete-behavior'){ confirmDeleteBehaviorId = null; render(); }
   else if(act==='confirm-delete-behavior'){
     var scrD = currentScreen();
