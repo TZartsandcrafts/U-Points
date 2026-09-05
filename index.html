@@ -399,6 +399,7 @@ zh: {
   duplicateFoodNameToast:'已经有一个同名食物了，直接在列表里选它、改数量就行；如果要改基准值，用"管理自定义食物"里的编辑功能',
   searchFoodPlaceholder:'搜索食物…', searchExercisePlaceholder:'搜索运动…',
   noFoodMatchHint:'没有找到匹配的食物，换个关键词试试，或直接添加自定义食物',
+  noCustomFoodYetHint:'还没有添加过食物，点下面"+自定义食物"加第一个吧',
   noExerciseMatchHint:'没有找到匹配的运动，换个关键词试试，或直接添加自定义运动',
   customFoodsLabel:'自定义食物', customExercisesLabel:'自定义运动',
   showMoreFoodsBtn:'展开更多（还有 {{n}} 个）', showLessFoodsBtn:'收起',
@@ -558,6 +559,7 @@ en: {
   duplicateFoodNameToast:"There's already a food with this name — pick it from the list and just change the amount. To change its base values, use the edit button in \"Manage custom foods\"",
   searchFoodPlaceholder:'Search foods…', searchExercisePlaceholder:'Search exercises…',
   noFoodMatchHint:'No matching foods — try another search, or add a custom food',
+  noCustomFoodYetHint:'No foods added yet — tap "+ Custom food" below to add your first one',
   noExerciseMatchHint:'No matching exercises — try another search, or add a custom exercise',
   customFoodsLabel:'Custom foods', customExercisesLabel:'Custom exercises',
   showMoreFoodsBtn:'Show {{n}} more', showLessFoodsBtn:'Show less',
@@ -614,8 +616,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.11.6';
-var APP_BUILD_DATE = '2026-09-04';
+var APP_VERSION = '3.11.7';
+var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -682,20 +684,7 @@ function behaviorDisplayName(b){
 }
 
 /* ---------------- 健康打卡：内置食物库 / 运动库（精简版，先覆盖常见项） ---------------- */
-var FOOD_LIBRARY = [
-  {id:'rice', name:'米饭(1碗)', name_en:'Rice (1 bowl)', icon:'🍚', unit:'g', baseAmount:150, calories:200, carb:44, protein:4, fat:0.4, category:'other'},
-  {id:'noodle', name:'面条(1碗)', name_en:'Noodles (1 bowl)', icon:'🍜', unit:'g', baseAmount:200, calories:350, carb:60, protein:12, fat:6, category:'other'},
-  {id:'bread', name:'面包(1片)', name_en:'Bread (1 slice)', icon:'🍞', unit:'g', baseAmount:30, calories:80, carb:15, protein:3, fat:1, category:'other'},
-  {id:'egg', name:'鸡蛋(1个)', name_en:'Egg (1)', icon:'🥚', unit:'count', baseAmount:1, calories:70, carb:0.5, protein:6, fat:5, category:'other'},
-  {id:'milk', name:'牛奶(1杯250ml)', name_en:'Milk (1 cup)', icon:'🥛', unit:'g', baseAmount:250, calories:150, carb:12, protein:8, fat:8, category:'other'},
-  {id:'chicken', name:'鸡胸肉(100g)', name_en:'Chicken breast (100g)', icon:'🍗', unit:'g', baseAmount:100, calories:165, carb:0, protein:31, fat:3.6, category:'other'},
-  {id:'fish', name:'鱼肉(100g)', name_en:'Fish (100g)', icon:'🐟', unit:'g', baseAmount:100, calories:120, carb:0, protein:22, fat:3, category:'other'},
-  {id:'vegetable', name:'蔬菜(100g)', name_en:'Vegetables (100g)', icon:'🥦', unit:'g', baseAmount:100, calories:50, carb:10, protein:2, fat:0.3, category:'veg'},
-  {id:'fruit', name:'水果(100g)', name_en:'Fruit (100g)', icon:'🍎', unit:'g', baseAmount:100, calories:80, carb:20, protein:1, fat:0.3, category:'fruit'},
-  {id:'yogurt', name:'酸奶(1杯)', name_en:'Yogurt (1 cup)', icon:'🍦', unit:'g', baseAmount:200, calories:120, carb:15, protein:6, fat:4, category:'other'},
-  {id:'soup', name:'汤(1碗)', name_en:'Soup (1 bowl)', icon:'🥣', unit:'g', baseAmount:250, calories:100, carb:8, protein:5, fat:5, category:'other'},
-  {id:'snack', name:'小零食(1份)', name_en:'Snack (1 serving)', icon:'🍪', unit:'count', baseAmount:1, calories:150, carb:20, protein:2, fat:6, category:'other'}
-];
+var FOOD_LIBRARY = []; // 预置食物库已按需求清空，只保留自定义食物
 var EXERCISE_LIBRARY = [
   {id:'run', name:'跑步', name_en:'Running', icon:'🏃', caloriesPerMin:10},
   {id:'walk', name:'散步', name_en:'Walking', icon:'🚶', caloriesPerMin:4},
@@ -1862,6 +1851,9 @@ function renderFoodChipList(c){
 
   if(query && !filtered.length){
     return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noFoodMatchHint')+'</div>';
+  }
+  if(!query && !filtered.length){
+    return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noCustomFoodYetHint')+'</div>';
   }
   var html = '<div class="chip-grid" style="margin-bottom:6px;">'+toShow.map(chipHtml).join('')+'</div>';
   if(!showAll && hiddenCount>0){
