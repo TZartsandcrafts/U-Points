@@ -289,8 +289,8 @@ function esc(s){
 /* ---------------- 双语 I18N ---------------- */
 var I18N = {
 zh: {
-  appName:'有分啦', appTagline1:'记录好习惯，攒下小星星', appTagline2:'全家一起，把日子过得亮堂堂',
-  startBuildingFamily:'开始搭建我们家', joinWithRoomCode:'用家庭房间码加入', restoreFromBackup:'从备份文件恢复',
+  appName:'有分啦', appTagline:'亲子互动 日常行为管理系统',
+  startBuildingFamily:'学习养成好习惯', joinWithRoomCode:'用家庭房间码加入', restoreFromBackup:'从备份文件恢复',
   welcomeTip:'💡 小提醒：数据保存在这台设备的浏览器里。建议把本应用「添加到主屏幕」，并开启云同步或不定期导出备份，避免 Safari 清理数据或换设备时丢失记录。',
   joinRoomTitle:'加入家庭同步', joinRoomDesc:'输入另一台设备上生成的 8 位房间码，就能实时同步同一个家庭的数据。',
   roomCodePlaceholder:'例如：AB3D7XQK', joinBtn:'加入', back:'返回', next:'下一步',
@@ -452,7 +452,7 @@ zh: {
   adjustInitialPointsBtn:'调整初始积分', initialPointsLabel:'初始积分', initialPointsLogName:'初始积分调整',
 },
 en: {
-  appName:'U-Points', appTagline1:'Track good habits, collect little stars', appTagline2:'Make everyday brighter, together as a family',
+  appName:'U-Points', appTagline:'Family Interaction & Daily Behavior Management',
   startBuildingFamily:'Start setting up our family', joinWithRoomCode:'Join with a family room code', restoreFromBackup:'Restore from backup file',
   welcomeTip:"💡 Tip: data is stored in this device's browser. Add this app to your home screen and turn on cloud sync (or export backups now and then) so nothing gets lost if Safari clears storage or you switch devices.",
   joinRoomTitle:'Join family sync', joinRoomDesc:'Enter the 8-character room code generated on another device to sync the same family data in real time.',
@@ -627,7 +627,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.2';
+var APP_VERSION = '3.13.4';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2353,7 +2353,7 @@ function renderWelcome(){
       '<img src="'+WELCOME_LOGO_SRC+'" alt="U-Points" style="width:96px;height:96px;border-radius:50%;box-shadow:0 8px 20px rgba(43,108,147,.25);">'+
     '</div>'+
     '<div style="font-family:var(--font-display);font-weight:800;font-size:30px;letter-spacing:0.5px;">'+t('appName')+'</div>'+
-    '<div style="color:var(--muted);font-size:16px;margin-top:8px;line-height:1.6;">'+t('appTagline1')+'<br>'+t('appTagline2')+'</div>'+
+    '<div style="color:var(--muted);font-size:18px;margin-top:8px;">'+t('appTagline')+'</div>'+
   '</div>'+
   '<div style="margin-top:40px;">'+
     '<button class="btn-primary tap" data-act="go-family">'+t('startBuildingFamily')+' →</button>'+
