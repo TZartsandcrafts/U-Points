@@ -64,8 +64,8 @@
   .dashed-btn{width:100%;border:2px dashed var(--sky);background:transparent;border-radius:18px;padding:16px;color:var(--sky-dark);font-family:var(--font-display);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px;min-height:52px;}
 
   /* ---- 整页视图（取代原先的底部弹窗），带返回箭头的页头 ---- */
-  .screen-header{display:flex;align-items:center;gap:10px;margin-bottom:22px;position:sticky;top:env(safe-area-inset-top);background:var(--bg);padding:4px 0 8px;z-index:5;margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px;}
-  .sticky-tabs-wrap{position:sticky;top:env(safe-area-inset-top);z-index:6;background:var(--bg);margin-left:-18px;margin-right:-18px;padding:4px 18px 10px;margin-bottom:14px;}
+  .screen-header{display:flex;align-items:center;gap:10px;position:sticky;top:0;background:var(--bg);z-index:5;margin:calc(-1 * max(22px, env(safe-area-inset-top))) -18px 22px;padding:calc(max(22px, env(safe-area-inset-top)) + 4px) 18px 8px;}
+  .sticky-tabs-wrap{position:sticky;top:0;z-index:6;background:var(--bg);margin:calc(-1 * max(22px, env(safe-area-inset-top))) -18px 14px;padding:calc(max(22px, env(safe-area-inset-top)) + 4px) 18px 10px;}
   .sticky-tabs-wrap .screen-header{position:static;margin:0 0 14px;padding:0;background:transparent;z-index:auto;}
   .sticky-tabs-wrap .segmented{margin-bottom:0;}
   .screen-back{background:var(--sky-light);border:none;border-radius:50%;width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--sky-dark);}
@@ -627,7 +627,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.1';
+var APP_VERSION = '3.13.2';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
