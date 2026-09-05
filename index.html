@@ -118,6 +118,8 @@
   .cal-dot.reward{background:var(--sky);}
   .cal-dot.penalty{background:var(--danger);}
   .cal-day-detail{margin-top:14px;border-top:1px solid var(--border);padding-top:14px;}
+  .cal-recent-scroll{max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .cal-recent-scroll .log-row:last-child{border-bottom:none;}
   .cal-day-title{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
   .cal-day-sum{font-family:var(--font-display);font-weight:800;font-size:16px;}
 
@@ -322,6 +324,8 @@ zh: {
   noHeightYet:'还没有身高记录', noWeightYet:'还没有体重记录',
   currentPoints:'当前积分', thresholdSettings:'⚠️ 预警阈值设置',
   rewardSection:'加分 ✨', penaltySection:'扣分 ⚠️', checklistSection:'每日打卡 ✔️',
+  childHomeTabCheckin:'打卡', childHomeTabReward:'加分', childHomeTabPenalty:'减分',
+  recentLogsScrollHint:'最新记录', noChecklistYet:'还没有每日打卡项',
   pointsModeLabel:'计分方式', pointsModeFixed:'固定分值', pointsModeRange:'浮动区间', pointsModeChecklist:'每日打卡(不计分)',
   rangeMinLabel:'最小值', rangeMaxLabel:'最大值', rangeHint:'打分时可以在这个区间里挑一个具体分值，做得好选高一点、一般般选低一点',
   checklistHint:'这是每天需要完成的固定项，只有"完成/未完成"两种状态，不计入积分', fillRangeFieldsToast:'请填写完整的区间范围',
@@ -482,6 +486,8 @@ en: {
   noHeightYet:'No height records yet', noWeightYet:'No weight records yet',
   currentPoints:'Current points', thresholdSettings:'⚠️ Alert thresholds',
   rewardSection:'Reward points ✨', penaltySection:'Deductions ⚠️', checklistSection:'Daily checklist ✔️',
+  childHomeTabCheckin:'Check-in', childHomeTabReward:'Earn', childHomeTabPenalty:'Lose',
+  recentLogsScrollHint:'Recent', noChecklistYet:'No daily check-in items yet',
   pointsModeLabel:'Scoring type', pointsModeFixed:'Fixed value', pointsModeRange:'Flexible range', pointsModeChecklist:'Daily checklist (no points)',
   rangeMinLabel:'Minimum', rangeMaxLabel:'Maximum', rangeHint:'When logging, pick an exact value in this range — higher for a great job, lower for so-so effort',
   checklistHint:"A fixed daily item — just done/not-done, doesn't affect points", fillRangeFieldsToast:'Please fill in the full range',
@@ -616,7 +622,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.12.0';
+var APP_VERSION = '3.12.2';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1493,6 +1499,7 @@ var toastTimer = null;
 var behaviorForm = null;
 var confirmDeleteBehaviorId = null;
 var manageBehaviorsCategoryFilter = 'all'; // 管理行为规则页：当前选中查看哪个分类（all=全部）
+var childHomeCategoryTab = 'checklist'; // 孩子首页：当前选中查看 打卡/加分/减分 中的哪一类
 var thresholdForm = null;
 var settingsJoinInput = false;
 var settingsRoomCodeDraft = '';
@@ -1655,7 +1662,7 @@ function shiftCalMonth(cs, delta){
   while(cs.m < 0){ cs.m += 12; cs.y -= 1; }
   while(cs.m > 11){ cs.m -= 12; cs.y += 1; }
 }
-function renderCalendar(child){
+function renderCalendar(child, recentMode){
   var cs = getCalState(child.id);
   var y = cs.y, m = cs.m;
   var dim = daysInMonth(y, m);
@@ -1692,16 +1699,36 @@ function renderCalendar(child){
     return '<div class="cal-cell'+(isToday?' today':'')+(isSel?' selected':'')+'" data-act="cal-select-day" data-id="'+child.id+'" data-value="'+ds+'"><span class="cal-daynum">'+d+'</span>'+dots+'</div>';
   }).join('');
 
-  var selLogs = data.pointLogs.filter(function(l){ return l.childId===child.id && l.date===cs.sel; })
-    .slice().sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
-  var selSum = Math.round(selLogs.reduce(function(s,l){ return s + l.points; }, 0) * 100) / 100;
   var parentMode = isParentMode();
-  var selRows = selLogs.map(function(l){
-    var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-    return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.time+'</span></div>'+
-      '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
-      (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
-  }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('calNoLogsForDay')+'</div>';
+  var detailHtml;
+  if(recentMode){
+    var recentLogs = data.pointLogs.filter(function(l){ return l.childId===child.id; })
+      .slice().sort(function(a,b){ var ka=(a.date||'')+' '+(a.time||''), kb=(b.date||'')+' '+(b.time||''); return ka<kb ? 1 : (ka>kb ? -1 : 0); });
+    var recentRows = recentLogs.map(function(l){
+      var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
+      return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.date+' '+l.time+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
+        (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('calNoLogsForDay')+'</div>';
+    detailHtml = '<div class="cal-day-detail">'+
+        '<div class="cal-day-title"><span>'+t('recentLogsScrollHint')+'</span></div>'+
+        '<div class="cal-recent-scroll">'+recentRows+'</div>'+
+      '</div>';
+  } else {
+    var selLogs = data.pointLogs.filter(function(l){ return l.childId===child.id && l.date===cs.sel; })
+      .slice().sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
+    var selSum = Math.round(selLogs.reduce(function(s,l){ return s + l.points; }, 0) * 100) / 100;
+    var selRows = selLogs.map(function(l){
+      var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
+      return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+l.time+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
+        (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
+    }).join('') || '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('calNoLogsForDay')+'</div>';
+    detailHtml = '<div class="cal-day-detail">'+
+        '<div class="cal-day-title"><span>'+calDayLabel(cs.sel)+'</span><span class="cal-day-sum" style="color:'+(selSum>=0?'var(--sky-dark)':'var(--danger)')+';">'+(selSum>=0?'+':'')+fmtPts(selSum)+'</span></div>'+
+        selRows+
+      '</div>';
+  }
 
   return '<div class="section-title">'+t('calendarTitle')+'</div>'+
     '<div class="cal-wrap" data-id="'+child.id+'">'+
@@ -1712,10 +1739,7 @@ function renderCalendar(child){
       '</div>'+
       '<div class="cal-weekdays">'+weekdaysHtml+'</div>'+
       '<div class="cal-grid">'+cellsHtml+'</div>'+
-      '<div class="cal-day-detail">'+
-        '<div class="cal-day-title"><span>'+calDayLabel(cs.sel)+'</span><span class="cal-day-sum" style="color:'+(selSum>=0?'var(--sky-dark)':'var(--danger)')+';">'+(selSum>=0?'+':'')+fmtPts(selSum)+'</span></div>'+
-        selRows+
-      '</div>'+
+      detailHtml+
     '</div>';
 }
 
@@ -2520,17 +2544,24 @@ function renderChildHome(){
 
   var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
   var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
-  var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('');
+  var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noChecklistYet')+'</div>';
 
-  html += '<div class="section-title">'+t('rewardSection')+'</div><div class="chip-grid">'+rewardChips+'</div>';
-  html += '<div class="section-title">'+t('penaltySection')+'</div><div class="chip-grid">'+penaltyChips+'</div>';
-  if(checklist.length){ html += '<div class="section-title">'+t('checklistSection')+'</div><div class="chip-grid">'+checklistChips+'</div>'; }
+  html += renderCalendar(c, true);
+
+  var homeTab = childHomeCategoryTab || 'checklist';
+  html += segmentedHtml('child-home-category-tab', c.id, homeTab, [['checklist',t('childHomeTabCheckin')],['reward',t('childHomeTabReward')],['penalty',t('childHomeTabPenalty')]]);
+
+  if(homeTab==='checklist'){
+    html += '<div class="chip-grid">'+checklistChips+'</div>';
+  } else if(homeTab==='reward'){
+    html += '<div class="chip-grid">'+rewardChips+'</div>';
+  } else {
+    html += '<div class="chip-grid">'+penaltyChips+'</div>';
+  }
   if(selectedRangeBehaviorId){
     var selRB = childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; });
     if(selRB) html += renderRangePicker(c, selRB);
   }
-
-  html += renderCalendar(c);
 
   html += '<div style="margin-top:22px;">'+
     '<button class="btn-ghost tap" data-act="open-child-health" data-id="'+c.id+'" style="margin-bottom:10px;">🍎 '+t('healthTab')+'</button>'+
@@ -2630,7 +2661,7 @@ function renderEditChildScreen(scr){
 
     var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
     var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
-    var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('');
+    var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noChecklistYet')+'</div>';
 
     body = ''+
       '<div style="text-align:center;background:var(--sky-light);border-radius:18px;padding:18px;margin-bottom:18px;">'+
@@ -2647,13 +2678,18 @@ function renderEditChildScreen(scr){
           '<button class="btn-primary tap" data-act="save-points-adjust" data-id="'+c.id+'">'+t('save')+'</button></div>'+
         '</div>') : '')+
       '</div>'+
-      '<div class="section-title" style="margin-top:0;">'+t('rewardSection')+'</div>'+
-      '<div class="chip-grid" style="margin-bottom:18px;">'+rewardChips+'</div>'+
-      '<div class="section-title">'+t('penaltySection')+'</div>'+
-      '<div class="chip-grid" style="margin-bottom:18px;">'+penaltyChips+'</div>'+
-      (checklist.length ? ('<div class="section-title">'+t('checklistSection')+'</div><div class="chip-grid" style="margin-bottom:18px;">'+checklistChips+'</div>') : '')+
-      (selectedRangeBehaviorId && childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; }) ? renderRangePicker(c, childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; })) : '')+
-      renderCalendar(c);
+      renderCalendar(c, true);
+
+    var homeTab = childHomeCategoryTab || 'checklist';
+    body += segmentedHtml('child-home-category-tab', c.id, homeTab, [['checklist',t('childHomeTabCheckin')],['reward',t('childHomeTabReward')],['penalty',t('childHomeTabPenalty')]]);
+    if(homeTab==='checklist'){
+      body += '<div class="chip-grid">'+checklistChips+'</div>';
+    } else if(homeTab==='reward'){
+      body += '<div class="chip-grid">'+rewardChips+'</div>';
+    } else {
+      body += '<div class="chip-grid">'+penaltyChips+'</div>';
+    }
+    body += (selectedRangeBehaviorId && childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; }) ? renderRangePicker(c, childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; })) : '');
   } else if(tab === 'health'){
     body = renderHealthTabBody(c, parentMode);
   } else if(tab === 'redeem'){
@@ -3378,6 +3414,7 @@ function handleAction(act, id, value, el){
   else if(act==='save-behavior'){ saveBehavior(id); }
   else if(act==='ask-delete-behavior'){ confirmDeleteBehaviorId = id; render(); }
   else if(act==='set-behavior-category-filter'){ manageBehaviorsCategoryFilter = value; render(); }
+  else if(act==='child-home-category-tab'){ childHomeCategoryTab = value; render(); }
   else if(act==='cancel-delete-behavior'){ confirmDeleteBehaviorId = null; render(); }
   else if(act==='confirm-delete-behavior'){
     var scrD = currentScreen();
