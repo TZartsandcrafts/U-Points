@@ -250,15 +250,6 @@ window.nudgeScroll = function(){
     __nudgeInFlight = false;
   });
 };
-// render() 每次重绘都会调用这个"防抖"版本——如果短时间内（比如加入房间后
-// 连续触发好几次重绘：加入成功→同步中→同步完成）反复调用，只在最后一次
-// 停下来之后才真正模拟一次下拉，避免每次重绘都挪 1px 叠加出"页面自己慢慢
-// 往下滑"的肉眼可见位移。
-var __nudgeDebounceTimer = null;
-window.nudgeScrollDebounced = function(){
-  clearTimeout(__nudgeDebounceTimer);
-  __nudgeDebounceTimer = setTimeout(function(){ window.nudgeScroll(); }, 160);
-};
 (function(){
   function nudgeScroll(){ window.nudgeScroll(); }
   window.addEventListener('load', function(){
@@ -650,7 +641,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.6';
+var APP_VERSION = '3.13.9';
 var APP_BUILD_DATE = '2026-09-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2360,9 +2351,13 @@ function render(){
 
   app.innerHTML = html;
 
-  if(window.nudgeScrollDebounced){
-    window.nudgeScrollDebounced();
-  }
+  // v3.13.7：之前这里每次重绘都顺手模拟一次下拉，用意是照顾"内容很短、
+  // 原本没有可滚动空间"的页面（配合 CSS 里 #app 强制多出 2px 的滚动余量）。
+  // 但云同步期间会在一两秒内连续触发很多次重绘，每次都嵌套地抢一次滚动位置，
+  // 相互打断后会变成肉眼可见的"页面自己一路滑到底"，而且做了防抖之后又变成
+  // 断断续续的顿挫感——两种都不理想。真正需要"自动模拟下拉"的场景其实只有
+  // 冷启动那一下，不需要每次重绘都做，所以这里去掉了，只保留下面 load 事件里
+  // 那几次固定时间点的模拟（配合 CSS 的滚动余量，对短页面同样有效）。
 
   // 恢复重绘前记下的输入内容（只在对应 id 的输入框仍然存在时才恢复）
   Object.keys(preserved).forEach(function(id){
@@ -2707,7 +2702,17 @@ function renderManageBehaviorsScreen(scr){
   var activeFilter = manageBehaviorsCategoryFilter || 'all';
   var filteredList = activeFilter==='all' ? list : list.filter(function(b){ return (b.category||'其他')===activeFilter; });
 
-  var rows = filteredList.map(function(b){
+  // 按 打卡→加分→减分 的类别顺序排列；同一类别内，最新添加的排在最前面
+  // （behaviors 数组里新加的项会 push 到末尾，所以原始顺序越靠后就是越新）。
+  var signRank = {checklist:0, reward:1, penalty:2};
+  var sortedList = filteredList.map(function(b, idx){ return {b:b, idx:idx}; }).sort(function(x, y){
+    var rx = signRank[behaviorSign(x.b)];
+    var ry = signRank[behaviorSign(y.b)];
+    if(rx !== ry) return rx - ry;
+    return y.idx - x.idx;
+  }).map(function(x){ return x.b; });
+
+  var rows = sortedList.map(function(b){
     if(confirmDeleteBehaviorId === b.id){
       return '<div class="behavior-row"><div class="name" style="color:var(--danger);font-size:14px;">'+t('deleteBehaviorConfirm',{name:esc(behaviorDisplayName(b))})+'</div>'+
         '<button class="btn-ghost tap" style="width:auto;padding:8px 12px;min-height:auto;" data-act="cancel-delete-behavior">'+t('reallyThink')+'</button>'+
@@ -3069,7 +3074,7 @@ function handleAction(act, id, value, el){
 
   else if(act==='open-add-parent'){ screenForm = {name:'', avatar:'cloud'}; pushScreen({type:'addParent'}); }
   else if(act==='open-add-child'){ screenForm = {name:'',gender:'保密',age:'',height:'',weight:'',avatar:'star'}; pushScreen({type:'addChild'}); }
-  else if(act==='open-child'){ editChildTab='info'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='open-child'){ editChildTab='points'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
   else if(act==='modal-add-parent-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-parent'){ saveAddParent(); }
