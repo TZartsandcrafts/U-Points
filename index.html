@@ -137,8 +137,6 @@
   .range-picker-value{text-align:center;font-family:var(--font-display);font-weight:800;font-size:30px;color:var(--sky-dark);margin-bottom:6px;}
   .range-picker-slider{width:100%;height:36px;accent-color:var(--sky-dark);margin-bottom:4px;}
   .range-picker-bounds{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:12px;}
-  .range-picker-number-row{display:flex;gap:10px;align-items:center;margin-bottom:12px;}
-  .range-picker-number-row input[type=number]{flex:1;padding:12px 14px;border-radius:14px;border:2px solid var(--border);background:#FFFEFB;font-family:var(--font-body);font-size:16px;color:var(--text);outline:none;min-height:46px;text-align:center;}
   .range-pick-btn{background:var(--sky-light);color:var(--sky-dark);border:none;border-radius:12px;padding:10px 16px;font-weight:800;font-family:var(--font-display);font-size:15px;cursor:pointer;min-width:52px;}
   .cal-summary-card{background:var(--card);border:2px solid var(--border);border-radius:20px;padding:18px;margin-bottom:18px;}
   .cal-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin:12px 0 4px;}
@@ -641,8 +639,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.9';
-var APP_BUILD_DATE = '2026-09-05';
+var APP_VERSION = '3.13.10';
+var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1636,19 +1634,15 @@ function renderRangePicker(child, b){
   var initVal = Math.round(((mn+mx)/2)*10)/10;
   initVal = Math.max(mn, Math.min(mx, initVal));
   var uidSuffix = b.id;
-  var sliderId = 'rangeSlider_'+uidSuffix, numberId = 'rangeNum_'+uidSuffix, dispId = 'rangeDisp_'+uidSuffix;
+  var sliderId = 'rangeSlider_'+uidSuffix, dispId = 'rangeDisp_'+uidSuffix;
   var syncJs = "var v=parseFloat(this.value); if(isNaN(v))return; "+
-    "document.getElementById('"+sliderId+"').value=v; document.getElementById('"+numberId+"').value=v; "+
     "document.getElementById('"+dispId+"').textContent=(v>=0?'+':'')+v;";
   return '<div class="range-picker">'+
     '<div class="range-picker-title">'+esc(b.icon)+' '+esc(nm)+'</div>'+
     '<div class="range-picker-value" id="'+dispId+'">'+(initVal>=0?'+':'')+fmtPts(initVal)+'</div>'+
     '<input type="range" class="range-picker-slider" id="'+sliderId+'" min="'+mn+'" max="'+mx+'" step="0.1" value="'+initVal+'" oninput="'+esc(syncJs)+'">'+
     '<div class="range-picker-bounds"><span>'+(mn>=0?'+':'')+fmtPts(mn)+'</span><span>'+(mx>=0?'+':'')+fmtPts(mx)+'</span></div>'+
-    '<div class="range-picker-number-row">'+
-      '<input type="number" id="'+numberId+'" min="'+mn+'" max="'+mx+'" step="0.1" value="'+initVal+'" oninput="'+esc(syncJs)+'">'+
-    '</div>'+
-    '<button type="button" class="btn-primary tap" data-act="log-range-point" data-id="'+child.id+'" data-value="'+b.id+'" data-input-id="'+numberId+'">'+t('confirmRangeLog')+'</button>'+
+    '<button type="button" class="btn-primary tap" data-act="log-range-point" data-id="'+child.id+'" data-value="'+b.id+'" data-input-id="'+sliderId+'">'+t('confirmRangeLog')+'</button>'+
   '</div>';
 }
 // 一位小数的积分显示：整数就不带小数点，比如 3 而不是 3.0；有小数才显示到小数点后一位
