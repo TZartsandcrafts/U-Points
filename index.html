@@ -401,11 +401,12 @@ zh: {
   selectExerciseFirst:'请先选一个运动类型', fillFoodFieldsToast:'请填写食物名称和热量', fillExerciseFieldsToast:'请填写运动名称和每分钟消耗',
   mealLoggedToast:'已记录', exerciseLoggedToast:'运动已记录', targetSavedToast:'目标已保存',
   perServing:'每份',
-  nutritionTitle:'营养达标', nutritionEnableLabel:'启用营养积分（与三餐达标情况自动挂钩加减分）',
+  nutritionTitle:'营养达标', nutritionEnableLabel:'启用营养积分（三餐达标时自动加分，未达标/超标不扣分）',
   nutritionEnabledOn:'已启用', nutritionEnabledOff:'未启用',
   nutritionSettingsBtn:'调整达标标准', carbLimitLabel:'碳水上限(g，留空按建议值)', proteinMinLabel:'蛋白质下限(g，留空按建议值)',
   fatLimitLabel:'脂肪上限(g，留空按建议值)', vegTargetLabel:'蔬菜克重目标(g)', fruitTargetLabel:'水果克重目标(g)',
-  pointsPerRuleTitle:'每项达标/超标的分值', calorieRulePoints:'热量', carbRulePoints:'碳水', proteinRulePoints:'蛋白质',
+  pointsPerRuleTitle:'每项达标奖励的分值', pointsPerRuleHint:'只在达标时加这么多分；没达标或超标都不扣分。留空或填 0 表示这一项不参与加分',
+  calorieRulePoints:'热量', carbRulePoints:'碳水', proteinRulePoints:'蛋白质',
   fatRulePoints:'脂肪', vegRulePoints:'蔬菜', fruitRulePoints:'水果',
   settleNutritionBtn:'结算今日营养积分', nutritionSettledToast:'今日营养积分已结算',
   metLabel:'达标', notMetLabel:'未达标', needHeightWeightForNutritionHint:'先记录身高体重，才能算出热量/碳水/蛋白质/脂肪的目标',
@@ -564,11 +565,12 @@ en: {
   selectExerciseFirst:'Pick an exercise type first', fillFoodFieldsToast:'Please fill in food name and calories', fillExerciseFieldsToast:'Please fill in exercise name and kcal/min',
   mealLoggedToast:'Logged', exerciseLoggedToast:'Workout logged', targetSavedToast:'Target saved',
   perServing:'per serving',
-  nutritionTitle:'Nutrition Goals', nutritionEnableLabel:'Enable nutrition points (auto reward/penalty based on meals)',
+  nutritionTitle:'Nutrition Goals', nutritionEnableLabel:'Enable nutrition points (bonus points when a target is met; missing or exceeding never deducts)',
   nutritionEnabledOn:'On', nutritionEnabledOff:'Off',
   nutritionSettingsBtn:'Adjust targets', carbLimitLabel:'Carb limit (g, blank = suggested)', proteinMinLabel:'Protein minimum (g, blank = suggested)',
   fatLimitLabel:'Fat limit (g, blank = suggested)', vegTargetLabel:'Veggie grams target (g)', fruitTargetLabel:'Fruit grams target (g)',
-  pointsPerRuleTitle:'Points per rule (met / missed)', calorieRulePoints:'Calories', carbRulePoints:'Carbs', proteinRulePoints:'Protein',
+  pointsPerRuleTitle:'Bonus points when target is met', pointsPerRuleHint:'Points are only awarded when the target is met; missing it or going over never deducts points. Leave blank or 0 to skip a category',
+  calorieRulePoints:'Calories', carbRulePoints:'Carbs', proteinRulePoints:'Protein',
   fatRulePoints:'Fat', vegRulePoints:'Veggies', fruitRulePoints:'Fruit',
   settleNutritionBtn:"Settle today's nutrition points", nutritionSettledToast:"Today's nutrition points settled",
   metLabel:'Met', notMetLabel:'Missed', needHeightWeightForNutritionHint:'Log height & weight first to calculate calorie/carb/protein/fat targets',
@@ -641,7 +643,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.12';
+var APP_VERSION = '3.13.13';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1085,13 +1087,16 @@ function settleNutritionToday(childId){
   data.pointLogs.filter(function(l){ return l.childId===childId && l.date===today && l.source==='nutrition'; })
     .forEach(function(l){ persistDelete('pointLogs', l.id); });
 
+  // 每项的分值现在是"只加不扣"：填了正数，达标当天就加这么多分；没达标或超标都不扣分、不加分。
+  // 留空（存成0）＝这一项完全不参与加分。
   var items = nutritionChecklist(child);
   items.forEach(function(it){
     var pts = nr.points[it.key] || 0;
     if(!pts) return;
+    if(!it.ok) return;
     var log = {
       id: uid(), childId: childId, behaviorId: null, source: 'nutrition',
-      name: it.name_zh, name_en: it.name_en, icon: it.icon, points: it.ok ? pts : -pts,
+      name: it.name_zh, name_en: it.name_en, icon: it.icon, points: pts,
       date: today, time: (new Date()).toTimeString().slice(0,5)
     };
     persistEntity('pointLogs', log);
@@ -1853,13 +1858,14 @@ function renderNutritionCard(c, parentMode){
         '<div class="field"><label>'+t('vegTargetLabel')+'</label><input type="number" id="mNutriVegTarget" value="'+nutritionTargets(c).veg+'"></div>'+
         '<div class="field"><label>'+t('fruitTargetLabel')+'</label><input type="number" id="mNutriFruitTarget" value="'+nutritionTargets(c).fruit+'"></div>'+
         '<div class="field"><label>'+t('pointsPerRuleTitle')+'</label>'+
+          '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">'+t('pointsPerRuleHint')+'</div>'+
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('calorieRulePoints')+'</span><input type="number" id="mNutriPtsCalorie" value="'+nr.points.calorie+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('carbRulePoints')+'</span><input type="number" id="mNutriPtsCarb" value="'+nr.points.carb+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('proteinRulePoints')+'</span><input type="number" id="mNutriPtsProtein" value="'+nr.points.protein+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('fatRulePoints')+'</span><input type="number" id="mNutriPtsFat" value="'+nr.points.fat+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('vegRulePoints')+'</span><input type="number" id="mNutriPtsVeg" value="'+nr.points.veg+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('fruitRulePoints')+'</span><input type="number" id="mNutriPtsFruit" value="'+nr.points.fruit+'"></div>'+
+            '<div><span style="font-size:12px;color:var(--muted);">'+t('calorieRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsCalorie" value="'+nr.points.calorie+'"></div>'+
+            '<div><span style="font-size:12px;color:var(--muted);">'+t('carbRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsCarb" value="'+nr.points.carb+'"></div>'+
+            '<div><span style="font-size:12px;color:var(--muted);">'+t('proteinRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsProtein" value="'+nr.points.protein+'"></div>'+
+            '<div><span style="font-size:12px;color:var(--muted);">'+t('fatRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsFat" value="'+nr.points.fat+'"></div>'+
+            '<div><span style="font-size:12px;color:var(--muted);">'+t('vegRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsVeg" value="'+nr.points.veg+'"></div>'+
+            '<div><span style="font-size:12px;color:var(--muted);">'+t('fruitRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsFruit" value="'+nr.points.fruit+'"></div>'+
           '</div>'+
         '</div>'+
         '<div style="display:flex;gap:10px;margin-top:4px;"><button class="btn-ghost tap" data-act="cancel-nutrition-settings">'+t('cancel')+'</button>'+
@@ -3375,13 +3381,15 @@ function handleAction(act, id, value, el){
       nr.vegGramsTarget = (vegV && vegV>=0) ? vegV : nutritionTargets(c).veg;
       nr.fruitGramsTarget = (fruitV && fruitV>=0) ? fruitV : nutritionTargets(c).fruit;
       delete nr.vegServingsTarget; delete nr.fruitServingsTarget;
+      // 分值现在是"达标才加分"，不接受负数：万一手动输入了负数，存的时候按 0（不参与加分）处理
+      var clampPts = function(v){ v = parseFloat(v) || 0; return v > 0 ? v : 0; };
       nr.points = {
-        calorie: parseFloat(document.getElementById('mNutriPtsCalorie').value) || 0,
-        carb: parseFloat(document.getElementById('mNutriPtsCarb').value) || 0,
-        protein: parseFloat(document.getElementById('mNutriPtsProtein').value) || 0,
-        fat: parseFloat(document.getElementById('mNutriPtsFat').value) || 0,
-        veg: parseFloat(document.getElementById('mNutriPtsVeg').value) || 0,
-        fruit: parseFloat(document.getElementById('mNutriPtsFruit').value) || 0
+        calorie: clampPts(document.getElementById('mNutriPtsCalorie').value),
+        carb: clampPts(document.getElementById('mNutriPtsCarb').value),
+        protein: clampPts(document.getElementById('mNutriPtsProtein').value),
+        fat: clampPts(document.getElementById('mNutriPtsFat').value),
+        veg: clampPts(document.getElementById('mNutriPtsVeg').value),
+        fruit: clampPts(document.getElementById('mNutriPtsFruit').value)
       };
       c.nutritionRules = nr;
       persistEntity('children', c);
