@@ -404,7 +404,7 @@ zh: {
   nutritionTitle:'营养达标', nutritionEnableLabel:'启用营养积分（三餐达标时自动加分，未达标/超标不扣分）',
   nutritionEnabledOn:'已启用', nutritionEnabledOff:'未启用',
   nutritionSettingsBtn:'调整达标标准', carbLimitLabel:'碳水上限(g，留空按建议值)', proteinMinLabel:'蛋白质下限(g，留空按建议值)',
-  fatLimitLabel:'脂肪上限(g，留空按建议值)', vegTargetLabel:'蔬菜克重目标(g)', fruitTargetLabel:'水果克重目标(g)',
+  fatLimitLabel:'脂肪上限(g，留空按建议值)', vegTargetLabel:'蔬菜克重目标(g，不少于)', fruitTargetLabel:'水果克重上限(g，不多于)',
   pointsPerRuleTitle:'每项达标奖励的分值', pointsPerRuleHint:'只在达标时加这么多分；没达标或超标都不扣分。留空或填 0 表示这一项不参与加分',
   calorieRulePoints:'热量', carbRulePoints:'碳水', proteinRulePoints:'蛋白质',
   fatRulePoints:'脂肪', vegRulePoints:'蔬菜', fruitRulePoints:'水果',
@@ -568,7 +568,7 @@ en: {
   nutritionTitle:'Nutrition Goals', nutritionEnableLabel:'Enable nutrition points (bonus points when a target is met; missing or exceeding never deducts)',
   nutritionEnabledOn:'On', nutritionEnabledOff:'Off',
   nutritionSettingsBtn:'Adjust targets', carbLimitLabel:'Carb limit (g, blank = suggested)', proteinMinLabel:'Protein minimum (g, blank = suggested)',
-  fatLimitLabel:'Fat limit (g, blank = suggested)', vegTargetLabel:'Veggie grams target (g)', fruitTargetLabel:'Fruit grams target (g)',
+  fatLimitLabel:'Fat limit (g, blank = suggested)', vegTargetLabel:'Veggie grams target (g, at least)', fruitTargetLabel:'Fruit grams limit (g, at most)',
   pointsPerRuleTitle:'Bonus points when target is met', pointsPerRuleHint:'Points are only awarded when the target is met; missing it or going over never deducts points. Leave blank or 0 to skip a category',
   calorieRulePoints:'Calories', carbRulePoints:'Carbs', proteinRulePoints:'Protein',
   fatRulePoints:'Fat', vegRulePoints:'Veggies', fruitRulePoints:'Fruit',
@@ -643,7 +643,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.13';
+var APP_VERSION = '3.13.15';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1075,7 +1075,7 @@ function nutritionChecklist(child){
   if(targets.protein!=null) items.push({key:'protein', icon:'🍗', name_zh:'蛋白质达标', name_en:'Protein target met', ok: totals.protein >= targets.protein, actual: Math.round(totals.protein*10)/10, target: targets.protein, dir:'min'});
   if(targets.fat!=null) items.push({key:'fat', icon:'🥑', name_zh:'脂肪不超标', name_en:'Fat within limit', ok: totals.fat <= targets.fat, actual: Math.round(totals.fat*10)/10, target: targets.fat, dir:'max'});
   items.push({key:'veg', icon:'🥦', name_zh:'蔬菜达标(g)', name_en:'Veggies target met (g)', ok: totals.veg >= targets.veg, actual: totals.veg, target: targets.veg, dir:'min'});
-  items.push({key:'fruit', icon:'🍎', name_zh:'水果达标(g)', name_en:'Fruit target met (g)', ok: totals.fruit >= targets.fruit, actual: totals.fruit, target: targets.fruit, dir:'min'});
+  items.push({key:'fruit', icon:'🍎', name_zh:'水果不超标(g)', name_en:'Fruit within limit (g)', ok: totals.fruit <= targets.fruit, actual: totals.fruit, target: targets.fruit, dir:'max'});
   return items;
 }
 function settleNutritionToday(childId){
@@ -2893,6 +2893,15 @@ function bindEvents(){
   });
   var fi = document.getElementById('importFile');
   if(fi) fi.addEventListener('change', handleImportFile);
+
+  // 横向可滚动的分类标签（比如行为规则页的"全部/学习/生活/礼貌/家务/其他"）：
+  // 每次 render() 都会重建整个 DOM，滚动位置会被重置回最左边，导致刚点开的、
+  // 原本滚到右边才能看到的标签（比如"家务"）点击后又被"弹"回右边看不全。
+  // 这里在每次渲染后，把当前选中的标签滚动到刚好完整可见的位置。
+  document.querySelectorAll('.segmented.scroll').forEach(function(seg){
+    var activeBtn = seg.querySelector('button.active');
+    if(activeBtn) activeBtn.scrollIntoView({block:'nearest', inline:'nearest'});
+  });
 
   // 浮动区间打分浮窗：点击浮窗外围的半透明背景关掉浮窗（点浮窗内部不受影响）
   var rpOverlay = document.getElementById('rangePickerOverlay');
