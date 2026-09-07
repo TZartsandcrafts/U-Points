@@ -643,7 +643,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.18';
+var APP_VERSION = '3.13.19';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2677,7 +2677,7 @@ function renderEditChildScreen(scr, isRoot){
         '<div class="chip-grid" style="margin-bottom:18px;">'+checklistBehaviors.map(function(b){ return renderPointChip(c, b); }).join('')+'</div>';
     }
 
-    body += renderCalendar(c, true);
+    body += renderCalendar(c, false);
 
     // 加减分规则列表：横向分类标签（跟家长端"管理行为规则"页一致）+ 组内按
     // 加分→减分排序、同组内新添加的排最前 —— 这样规则多的时候也不用在一条
