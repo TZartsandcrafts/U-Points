@@ -643,7 +643,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.15';
+var APP_VERSION = '3.13.18';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1369,6 +1369,14 @@ async function connectCloudSync(roomCode, isNewRoom){
     CLOUD.app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
     CLOUD.auth = firebase.auth();
     CLOUD.db = firebase.firestore();
+    // 开启离线持久化缓存：没有这行的话，Firestore 的"待发送队列"只存在内存里——
+    // 如果孩子连着点了好几个打卡项，但当时网络不好，还没发出去 App 就被切到后台
+    // /被系统回收，这些还没发出去的记录就会直接丢失，家长端永远收不到。开启后
+    // 待发送的写入会先存进本机的 IndexedDB，下次网络恢复、App 重新打开时会自动
+    // 补发，不会再无声丢失。（多个标签页/多开会导致这个调用失败，属于正常情况，
+    // 不影响能联网时的实时同步，只是退化成没有离线补发能力，所以这里静默忽略。）
+    try{ await CLOUD.db.enablePersistence({synchronizeTabs:true}); }
+    catch(persistErr){ console.warn('offline persistence not enabled', persistErr && persistErr.code); }
     var cred = await CLOUD.auth.signInAnonymously();
     CLOUD.uid = cred.user.uid;
 
@@ -1527,7 +1535,8 @@ var toastTimer = null;
 var behaviorForm = null;
 var confirmDeleteBehaviorId = null;
 var manageBehaviorsCategoryFilter = 'all'; // 管理行为规则页：当前选中查看哪个分类（all=全部）
-var childHomeCategoryTab = 'checklist'; // 孩子首页：当前选中查看 打卡/加分/减分 中的哪一类
+var childHomeCategoryTab = 'checklist'; // 孩子首页：当前选中查看 打卡/加分/减分 中的哪一类（已废弃，保留避免旧状态报错）
+var childPointsCategoryFilter = 'all'; // 孩子端积分页：当前选中查看哪个分类（学习/生活/礼貌/家务/其他，all=全部）
 var thresholdForm = null;
 var settingsJoinInput = false;
 var settingsRoomCodeDraft = '';
@@ -2643,13 +2652,6 @@ function renderEditChildScreen(scr, isRoot){
   } else if(tab === 'points'){
     var bal = pointBalance(c.id);
     var childBehaviors = c.behaviors || [];
-    var rewards = childBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; });
-    var penalties = childBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; });
-    var checklist = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; });
-
-    var rewardChips = rewards.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noRewards')+'</div>';
-    var penaltyChips = penalties.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noPenalties')+'</div>';
-    var checklistChips = checklist.map(function(b){ return renderPointChip(c, b); }).join('') || '<div style="font-size:14px;color:var(--muted);">'+t('noChecklistYet')+'</div>';
 
     body = ''+
       '<div style="text-align:center;background:var(--sky-light);border-radius:18px;padding:18px;margin-bottom:18px;">'+
@@ -2665,18 +2667,55 @@ function renderEditChildScreen(scr, isRoot){
           '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-points-adjust-form">'+t('cancel')+'</button>'+
           '<button class="btn-primary tap" data-act="save-points-adjust" data-id="'+c.id+'">'+t('save')+'</button></div>'+
         '</div>') : '')+
-      '</div>'+
-      renderCalendar(c, true);
+      '</div>';
 
-    var homeTab = childHomeCategoryTab || 'checklist';
-    body += segmentedHtml('child-home-category-tab', c.id, homeTab, [['checklist',t('childHomeTabCheckin')],['reward',t('childHomeTabReward')],['penalty',t('childHomeTabPenalty')]]);
-    if(homeTab==='checklist'){
-      body += '<div class="chip-grid">'+checklistChips+'</div>';
-    } else if(homeTab==='reward'){
-      body += '<div class="chip-grid">'+rewardChips+'</div>';
-    } else {
-      body += '<div class="chip-grid">'+penaltyChips+'</div>';
+    // 打卡类规则独立显示：不跟加减分混在一起、也不参与分类标签筛选，放在
+    // "当前积分"卡片下面、月历上面，方便孩子每天一眼看到当天要打卡的事项。
+    var checklistBehaviors = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; });
+    if(checklistBehaviors.length){
+      body += '<div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--text);margin-bottom:8px;">'+t('childHomeTabCheckin')+'</div>'+
+        '<div class="chip-grid" style="margin-bottom:18px;">'+checklistBehaviors.map(function(b){ return renderPointChip(c, b); }).join('')+'</div>';
     }
+
+    body += renderCalendar(c, true);
+
+    // 加减分规则列表：横向分类标签（跟家长端"管理行为规则"页一致）+ 组内按
+    // 加分→减分排序、同组内新添加的排最前 —— 这样规则多的时候也不用在一条
+    // 长列表里死翻。打卡类规则已经在上面单独显示，这里不再重复。
+    var allCats = [['学习',t('catStudy')],['生活',t('catLife')],['礼貌',t('catManner')],['家务',t('catChore')],['其他',t('catOther')]];
+    var pointBehaviors = childBehaviors.filter(function(b){ return behaviorSign(b)!=='checklist'; });
+    var countOfCat = function(catKeyRaw){ return pointBehaviors.filter(function(b){ return (b.category||'其他')===catKeyRaw; }).length; };
+    var pointsFilterTabs = [['all', t('allCategoriesTab')+' ('+pointBehaviors.length+')']].concat(
+      allCats.map(function(pair){ return [pair[0], pair[1]+' ('+countOfCat(pair[0])+')']; })
+    );
+    var activePointsFilter = childPointsCategoryFilter || 'all';
+    var filteredBehaviors = activePointsFilter==='all' ? pointBehaviors : pointBehaviors.filter(function(b){ return (b.category||'其他')===activePointsFilter; });
+
+    var pSignRank = {reward:0, penalty:1};
+    var sortedBehaviors = filteredBehaviors.map(function(b, idx){ return {b:b, idx:idx}; }).sort(function(x, y){
+      var rx = pSignRank[behaviorSign(x.b)], ry = pSignRank[behaviorSign(y.b)];
+      if(rx !== ry) return rx - ry;
+      return y.idx - x.idx; // 同组内新添加的排最前
+    }).map(function(x){ return x.b; });
+
+    var groupLabel = function(key){ return {reward:t('childHomeTabReward'), penalty:t('childHomeTabPenalty')}[key]; };
+    var pointsListHtml = '';
+    if(!sortedBehaviors.length){
+      pointsListHtml = '<div style="font-size:14px;color:var(--muted);padding:10px 0;">'+t('noRewards')+'</div>';
+    } else {
+      var lastSign = null;
+      sortedBehaviors.forEach(function(b){
+        var sign = behaviorSign(b);
+        if(sign !== lastSign){
+          pointsListHtml += '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--muted);margin:'+(lastSign===null?'0':'14px')+' 0 6px;">'+groupLabel(sign)+'</div><div class="chip-grid">';
+          lastSign = sign;
+        }
+        pointsListHtml += renderPointChip(c, b);
+      });
+      pointsListHtml += '</div>';
+    }
+
+    body += segmentedHtml('set-child-points-category-filter', c.id, activePointsFilter, pointsFilterTabs, true) + pointsListHtml;
     body += (selectedRangeBehaviorId && childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; }) ? renderRangePicker(c, childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; })) : '');
   } else if(tab === 'health'){
     body = renderHealthTabBody(c, parentMode);
@@ -3068,7 +3107,7 @@ function handleAction(act, id, value, el){
       render();
     }
   }
-  else if(act==='pick-yourself'){ state.boundChildId = id; saveState(); editChildTab='points'; step='dashboard'; render(); }
+  else if(act==='pick-yourself'){ state.boundChildId = id; saveState(); editChildTab='points'; childPointsCategoryFilter='all'; step='dashboard'; render(); }
   else if(act==='switch-child'){ state.boundChildId = null; saveState(); screenStack=[]; step='pickYourself'; render(); }
   else if(act==='open-my-profile'){ editChildTab='info'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
@@ -3096,7 +3135,7 @@ function handleAction(act, id, value, el){
 
   else if(act==='open-add-parent'){ screenForm = {name:'', avatar:'cloud'}; pushScreen({type:'addParent'}); }
   else if(act==='open-add-child'){ screenForm = {name:'',gender:'保密',age:'',height:'',weight:'',avatar:'star'}; pushScreen({type:'addChild'}); }
-  else if(act==='open-child'){ editChildTab='points'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='open-child'){ editChildTab='points'; childPointsCategoryFilter='all'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
   else if(act==='modal-add-parent-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-parent'){ saveAddParent(); }
@@ -3134,7 +3173,7 @@ function handleAction(act, id, value, el){
   }
   else if(act==='toggle-checklist'){ toggleChecklist(id, value); render(); }
   else if(act==='delete-log'){ deletePointLog(id); render(); }
-  else if(act==='open-child-points'){ editChildTab='points'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='open-child-points'){ editChildTab='points'; childPointsCategoryFilter='all'; confirmDeleteChild=false; pushScreen({type:'editChild', childId:id}); }
 
   else if(act==='cal-prev'){ shiftCalMonth(getCalState(id), -1); render(); }
   else if(act==='cal-next'){ shiftCalMonth(getCalState(id), 1); render(); }
@@ -3436,6 +3475,7 @@ function handleAction(act, id, value, el){
   else if(act==='ask-delete-behavior'){ confirmDeleteBehaviorId = id; render(); }
   else if(act==='set-behavior-category-filter'){ manageBehaviorsCategoryFilter = value; render(); }
   else if(act==='child-home-category-tab'){ childHomeCategoryTab = value; render(); }
+  else if(act==='set-child-points-category-filter'){ childPointsCategoryFilter = value; render(); }
   else if(act==='cancel-delete-behavior'){ confirmDeleteBehaviorId = null; render(); }
   else if(act==='confirm-delete-behavior'){
     var scrD = currentScreen();
@@ -3685,6 +3725,17 @@ render();
 if(state.cloudSync.enabled && state.cloudSync.roomCode){
   connectCloudSync(state.cloudSync.roomCode, false);
 }
+
+// 兜底补发：即使开了离线持久化，也可能因为各种边缘情况（比如那次连接建立失败、
+// 或者持久化本身没启用成功）导致个别记录没发出去。这里在"App 重新回到前台"和
+// "浏览器判定网络恢复"这两个时机各补一次 pushAllLocal()——它内部已经用
+// updatedAt 版本号去重，重复调用是安全的，不会重复写入或触发多余的网络请求。
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden && cloudSyncActive()) pushAllLocal();
+});
+window.addEventListener('online', function(){
+  if(cloudSyncActive()) pushAllLocal();
+});
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
