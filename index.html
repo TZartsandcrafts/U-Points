@@ -443,6 +443,9 @@ zh: {
   costPointsLabel:'兑换所需积分', offsetPointsLabel:'抵消的积分数',
   metricLabel:'统计方式', metricPoints:'按积分累计', metricCount:'按次数累计',
   countThresholdLabel:'达到次数', countUnit:'次',
+  escalateCountLabel:'达标门槛', escalateCountOff:'固定', escalateCountOn:'递增', escalateCycleLabel:'次执行',
+  escalateCountStepLabel:'每次执行后增加(次数)',
+  escalateCountHint:'每执行/兑换一次，下一次需要达到的次数会在起始次数基础上多加这个数（累计递增，不是翻倍）',
   redeemBtn:'兑换', executePenaltyBtn:'执行惩罚',
   metBadge:'达标', notMetBadge:'未达标',
   noRewardsYet:'还没有设置奖励，点下面的按钮加一个吧', noPenaltiesYet:'还没有设置惩罚，点下面的按钮加一个吧',
@@ -614,6 +617,9 @@ en: {
   costPointsLabel:'Points required', offsetPointsLabel:'Points offset',
   metricLabel:'Tracking method', metricPoints:'By points', metricCount:'By count',
   countThresholdLabel:'Times needed', countUnit:'times',
+  escalateCountLabel:'Goal threshold', escalateCountOff:'Fixed', escalateCountOn:'Growing', escalateCycleLabel:'time(s) triggered',
+  escalateCountStepLabel:'Increase per trigger (times)',
+  escalateCountHint:"Each time it's executed/redeemed, the next goal adds this many times to the starting count (grows linearly, not doubling)",
   redeemBtn:'Redeem', executePenaltyBtn:'Execute penalty',
   metBadge:'Eligible', notMetBadge:'Not yet',
   noRewardsYet:'No rewards set up yet — add one below', noPenaltiesYet:'No penalties set up yet — add one below',
@@ -657,7 +663,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.22';
+var APP_VERSION = '3.13.23';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1200,12 +1206,20 @@ function scopeCumulative(childId, item){
   }
   return pointBalance(childId);
 }
-function addReward(childId, name, name_en, scope, behaviorId, cost, metric){
+// 按次数累计时的"当前门槛"：baseVal 是新建时填的起始次数，如果开了"递增"，
+// 每执行/兑换一次门槛就加一次 escalateStep（线性递增，不是翻倍）——
+// 比如起始 3 次、增量 2，第一次门槛是 3，执行过一次后下一次门槛变 5，再执行一次变 7，以此类推。
+function currentCountThreshold(item, baseVal){
+  if(item.metric!=='count' || !item.escalate) return baseVal;
+  return baseVal + (Number(item.escalateStep)||0) * (item.cycleCount||0);
+}
+function addReward(childId, name, name_en, scope, behaviorId, cost, metric, escalate, escalateStep){
   var child = childById(childId);
   if(!child) return null;
   if(!child.rewards) child.rewards = [];
   var m = (scope==='behavior' && metric==='count') ? 'count' : 'points';
-  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🎁', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, cost: cost, metric: m, resetAt: null, updatedAt: nowIso() };
+  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🎁', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, cost: cost, metric: m, resetAt: null,
+    escalate: (m==='count' && !!escalate), escalateStep: (m==='count' && escalate) ? (Math.abs(Number(escalateStep))||1) : 0, cycleCount: 0, updatedAt: nowIso() };
   child.rewards.push(item);
   persistEntity('children', child);
   return item;
@@ -1216,12 +1230,13 @@ function deleteReward(childId, rewardId){
   child.rewards = child.rewards.filter(function(r){ return r.id!==rewardId; });
   persistEntity('children', child);
 }
-function addPenalty(childId, name, name_en, scope, behaviorId, offset, metric){
+function addPenalty(childId, name, name_en, scope, behaviorId, offset, metric, escalate, escalateStep){
   var child = childById(childId);
   if(!child) return null;
   if(!child.penalties) child.penalties = [];
   var m = (scope==='behavior' && metric==='count') ? 'count' : 'points';
-  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🚫', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, offset: offset, metric: m, resetAt: null, updatedAt: nowIso() };
+  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🚫', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, offset: offset, metric: m, resetAt: null,
+    escalate: (m==='count' && !!escalate), escalateStep: (m==='count' && escalate) ? (Math.abs(Number(escalateStep))||1) : 0, cycleCount: 0, updatedAt: nowIso() };
   child.penalties.push(item);
   persistEntity('children', child);
   return item;
@@ -1246,7 +1261,7 @@ function redeemReward(childId, rewardId){
     date: todayStr(), time: (new Date()).toTimeString().slice(0,5), ts: nowTs
   };
   persistEntity('pointLogs', log);
-  if(isCount){ item.resetAt = nowTs; persistEntity('children', child); }
+  if(isCount){ item.resetAt = nowTs; item.cycleCount = (item.cycleCount||0) + 1; persistEntity('children', child); }
   rearmThresholds(childId);
 }
 function executePenalty(childId, penaltyId){
@@ -1263,7 +1278,7 @@ function executePenalty(childId, penaltyId){
     date: todayStr(), time: (new Date()).toTimeString().slice(0,5), ts: nowTs
   };
   persistEntity('pointLogs', log);
-  if(isCount){ item.resetAt = nowTs; persistEntity('children', child); }
+  if(isCount){ item.resetAt = nowTs; item.cycleCount = (item.cycleCount||0) + 1; persistEntity('children', child); }
   rearmThresholds(childId);
 }
 function redemptionHistory(childId){
@@ -1659,8 +1674,12 @@ var showRewardForm = false;
 var showPenaltyForm = false;
 var rewardFormScope = 'total'; // 新建奖励表单：total(总积分) | behavior(单项累计)
 var rewardFormMetric = 'points'; // 单项累计的统计方式：points(按积分累计，默认) | count(按次数累计)
+var rewardFormEscalate = false; // 按次数累计时：达标门槛是否每次执行后递增（自定义增量，不是翻倍）
+var rewardFormEscalateStep = 1;
 var penaltyFormScope = 'total'; // 新建惩罚表单：total | behavior
 var penaltyFormMetric = 'points'; // 同上
+var penaltyFormEscalate = false;
+var penaltyFormEscalateStep = 1;
 var showExchangeRateForm = false; // 记账：是否展开"设置兑换汇率"表单
 var showSpecialOfferForm = false; // 记账：是否展开"新建限时优惠"表单
 var showManualLedgerForm = false; // 记账：是否展开"手动记一笔"表单
@@ -2226,14 +2245,15 @@ function renderRewardsSubTab(c, parentMode){
     html += rewards.map(function(item){
       var nm = (state.lang==='en' && item.name_en) ? item.name_en : item.name;
       var cumulative = scopeCumulative(c.id, item);
-      var eligible = cumulative >= item.cost;
+      var threshold = currentCountThreshold(item, item.cost);
+      var eligible = cumulative >= threshold;
       var scopeLabel = item.scope==='behavior' ? t('scopeLabelBehavior',{behavior: behaviorNameFor(c, item.behaviorId)}) : t('scopeLabelTotal');
-      var progressText = item.metric==='count' ? (cumulative+' / '+item.cost+' '+t('countUnit')) : (fmtPts(cumulative)+' / '+fmtPts(item.cost));
+      var progressText = item.metric==='count' ? (cumulative+' / '+threshold+' '+t('countUnit')) : (fmtPts(cumulative)+' / '+fmtPts(item.cost));
       return '<div class="redeem-card">'+
         '<div class="redeem-head"><div class="redeem-title"><span>'+item.icon+'</span><span>'+esc(nm)+'</span></div>'+
         (parentMode ? '<button class="small-icon-btn" data-act="delete-reward" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
         '</div>'+
-        '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+'</div>'+
+        '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+(item.metric==='count' && item.escalate?' · 🌱 +'+item.escalateStep+' '+t('countUnit')+'/'+t('escalateCycleLabel'):'')+'</div>'+
         '<div class="redeem-progress"><span>'+progressText+'</span><span class="nutri-badge '+(eligible?'ok':'bad')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
         '<div class="redeem-actions"><button class="btn-primary tap" data-act="redeem-reward" data-id="'+c.id+'" data-value="'+item.id+'"'+((!parentMode && !eligible)?' disabled':'')+'>'+t('redeemBtn')+'</button></div>'+
       '</div>';
@@ -2250,6 +2270,11 @@ function renderRewardsSubTab(c, parentMode){
         (rewardFormScope==='behavior' && rewardFormMetric==='count'
           ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mRewardCost" placeholder="3"></div>'
           : '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50"></div>')+
+        (rewardFormScope==='behavior' && rewardFormMetric==='count' ? (''+
+          '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-reward-escalate', c.id, rewardFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
+          (rewardFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mRewardEscalateStep" value="'+rewardFormEscalateStep+'"></div>'+
+            '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">🌱 '+t('escalateCountHint')+'</div>' : '')
+        ) : '')+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-reward-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-reward" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
@@ -2267,14 +2292,15 @@ function renderPenaltiesSubTab(c, parentMode){
     html += penalties.map(function(item){
       var nm = (state.lang==='en' && item.name_en) ? item.name_en : item.name;
       var cumulative = scopeCumulative(c.id, item);
-      var eligible = item.metric==='count' ? (cumulative >= Math.abs(item.offset)) : (cumulative <= -Math.abs(item.offset));
+      var threshold = currentCountThreshold(item, item.offset);
+      var eligible = item.metric==='count' ? (cumulative >= threshold) : (cumulative <= -Math.abs(item.offset));
       var scopeLabel = item.scope==='behavior' ? t('scopeLabelBehavior',{behavior: behaviorNameFor(c, item.behaviorId)}) : t('scopeLabelTotal');
-      var progressText = item.metric==='count' ? (cumulative+' / '+Math.abs(item.offset)+' '+t('countUnit')) : (fmtPts(cumulative)+' / -'+fmtPts(item.offset));
+      var progressText = item.metric==='count' ? (cumulative+' / '+threshold+' '+t('countUnit')) : (fmtPts(cumulative)+' / -'+fmtPts(item.offset));
       return '<div class="redeem-card">'+
         '<div class="redeem-head"><div class="redeem-title"><span>'+item.icon+'</span><span>'+esc(nm)+'</span></div>'+
         (parentMode ? '<button class="small-icon-btn" data-act="delete-penalty" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
         '</div>'+
-        '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+'</div>'+
+        '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+(item.metric==='count' && item.escalate?' · 🌱 +'+item.escalateStep+' '+t('countUnit')+'/'+t('escalateCycleLabel'):'')+'</div>'+
         '<div class="redeem-progress"><span>'+progressText+'</span><span class="nutri-badge '+(eligible?'bad':'ok')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
         (parentMode ? '<div class="redeem-actions"><button class="btn-primary tap" data-act="execute-penalty" data-id="'+c.id+'" data-value="'+item.id+'" style="background:var(--danger);box-shadow:0 6px 14px rgba(224,138,90,.35);">'+t('executePenaltyBtn')+'</button></div>' : '')+
       '</div>';
@@ -2291,6 +2317,11 @@ function renderPenaltiesSubTab(c, parentMode){
         (penaltyFormScope==='behavior' && penaltyFormMetric==='count'
           ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyOffset" placeholder="3"></div>'
           : '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20"></div>')+
+        (penaltyFormScope==='behavior' && penaltyFormMetric==='count' ? (''+
+          '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-penalty-escalate', c.id, penaltyFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
+          (penaltyFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyEscalateStep" value="'+penaltyFormEscalateStep+'"></div>'+
+            '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">🌱 '+t('escalateCountHint')+'</div>' : '')
+        ) : '')+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-penalty-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-penalty" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
@@ -3313,10 +3344,11 @@ function handleAction(act, id, value, el){
 
   else if(act==='open-child-redeem'){ editChildTab='redeem'; confirmDeleteChild=false; redeemSubTab='rewards'; showRewardForm=false; showPenaltyForm=false; pushScreen({type:'editChild', childId:id}); }
   else if(act==='redeem-sub-tab'){ redeemSubTab = value; showRewardForm=false; showPenaltyForm=false; render(); }
-  else if(act==='open-reward-form'){ showRewardForm=true; rewardFormScope='total'; rewardFormMetric='points'; render(); }
+  else if(act==='open-reward-form'){ showRewardForm=true; rewardFormScope='total'; rewardFormMetric='points'; rewardFormEscalate=false; rewardFormEscalateStep=1; render(); }
   else if(act==='cancel-reward-form'){ showRewardForm=false; render(); }
-  else if(act==='draft-reward-scope'){ rewardFormScope = value; if(value==='total') rewardFormMetric='points'; render(); }
-  else if(act==='draft-reward-metric'){ rewardFormMetric = value; render(); }
+  else if(act==='draft-reward-scope'){ rewardFormScope = value; if(value==='total'){ rewardFormMetric='points'; rewardFormEscalate=false; } render(); }
+  else if(act==='draft-reward-metric'){ rewardFormMetric = value; if(value!=='count') rewardFormEscalate=false; render(); }
+  else if(act==='toggle-reward-escalate'){ rewardFormEscalate = (value==='on'); render(); }
   else if(act==='save-reward'){
     var name = document.getElementById('mRewardName').value.trim();
     var isCountReward = rewardFormScope==='behavior' && rewardFormMetric==='count';
@@ -3329,17 +3361,20 @@ function handleAction(act, id, value, el){
       behaviorId = sel ? sel.value : null;
       if(!behaviorId){ toast(t('selectBehaviorFirstToast')); return; }
     }
-    addReward(id, name, '', rewardFormScope, behaviorId, cost, rewardFormMetric);
+    var stepInp = document.getElementById('mRewardEscalateStep');
+    var escalateStep = (isCountReward && rewardFormEscalate && stepInp) ? (Math.round(Math.abs(Number(stepInp.value)))||1) : 1;
+    addReward(id, name, '', rewardFormScope, behaviorId, cost, rewardFormMetric, isCountReward && rewardFormEscalate, escalateStep);
     showRewardForm = false;
     render();
   }
   else if(act==='delete-reward'){ deleteReward(id, value); render(); }
   else if(act==='redeem-reward'){ redeemReward(id, value); toast(t('redeemedRewardToast')); render(); }
 
-  else if(act==='open-penalty-form'){ showPenaltyForm=true; penaltyFormScope='total'; penaltyFormMetric='points'; render(); }
+  else if(act==='open-penalty-form'){ showPenaltyForm=true; penaltyFormScope='total'; penaltyFormMetric='points'; penaltyFormEscalate=false; penaltyFormEscalateStep=1; render(); }
   else if(act==='cancel-penalty-form'){ showPenaltyForm=false; render(); }
-  else if(act==='draft-penalty-scope'){ penaltyFormScope = value; if(value==='total') penaltyFormMetric='points'; render(); }
-  else if(act==='draft-penalty-metric'){ penaltyFormMetric = value; render(); }
+  else if(act==='draft-penalty-scope'){ penaltyFormScope = value; if(value==='total'){ penaltyFormMetric='points'; penaltyFormEscalate=false; } render(); }
+  else if(act==='draft-penalty-metric'){ penaltyFormMetric = value; if(value!=='count') penaltyFormEscalate=false; render(); }
+  else if(act==='toggle-penalty-escalate'){ penaltyFormEscalate = (value==='on'); render(); }
   else if(act==='save-penalty'){
     var name2 = document.getElementById('mPenaltyName').value.trim();
     var isCountPenalty = penaltyFormScope==='behavior' && penaltyFormMetric==='count';
@@ -3352,7 +3387,9 @@ function handleAction(act, id, value, el){
       behaviorId2 = sel2 ? sel2.value : null;
       if(!behaviorId2){ toast(t('selectBehaviorFirstToast')); return; }
     }
-    addPenalty(id, name2, '', penaltyFormScope, behaviorId2, offset, penaltyFormMetric);
+    var stepInp2 = document.getElementById('mPenaltyEscalateStep');
+    var escalateStep2 = (isCountPenalty && penaltyFormEscalate && stepInp2) ? (Math.round(Math.abs(Number(stepInp2.value)))||1) : 1;
+    addPenalty(id, name2, '', penaltyFormScope, behaviorId2, offset, penaltyFormMetric, isCountPenalty && penaltyFormEscalate, escalateStep2);
     showPenaltyForm = false;
     render();
   }
