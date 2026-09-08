@@ -663,7 +663,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.23';
+var APP_VERSION = '3.13.24';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2059,6 +2059,22 @@ function renderManageCustomFoodsList(){
   return '<div style="margin-bottom:14px;">'+rows+'</div>';
 }
 
+// 选食物之后的"输入数量"改成弹窗，点哪个食物都是同一个居中浮窗，不用再滚到列表最下面去找输入框
+function renderFoodQtyPicker(child, f){
+  var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
+  var prefillAmt = lastFoodAmount(child.id, f.refId) || f.baseAmount;
+  var unitLabel = f.unit==='g' ? t('unitGrams') : t('unitCount');
+  return '<div class="range-picker-overlay" id="foodQtyOverlay">'+
+    '<div class="range-picker">'+
+      '<button type="button" class="range-picker-close tap" data-act="close-food-qty-picker">×</button>'+
+      '<div class="range-picker-title">'+esc(f.icon)+' '+esc(nm)+'</div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+t('foodAmountLabel')+' ('+unitLabel+')</label>'+
+      '<input type="number" id="mFoodAmount" value="'+prefillAmt+'" autofocus></div>'+
+      '<div class="calorie-preview" id="mFoodAmountPreview" style="color:var(--food-text);margin-bottom:12px;"></div>'+
+      '<button type="button" class="btn-primary tap" data-act="log-meal" data-id="'+child.id+'" style="background:var(--food);box-shadow:0 6px 14px rgba(242,169,59,.35);">'+t('logMealBtn')+'</button>'+
+    '</div>'+
+  '</div>';
+}
 function renderMealsSubTab(c, parentMode){
   var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
   var html = segmentedHtml('set-meal-type', c.id, mealTypeDraft, mealTypeOpts);
@@ -2068,15 +2084,7 @@ function renderMealsSubTab(c, parentMode){
 
   var selFood = selectedFoodRefId ? foodLibraryAll().find(function(f){ return f.refId===selectedFoodRefId; }) : null;
   if(selFood){
-    var nm = (state.lang==='en' && selFood.name_en) ? selFood.name_en : selFood.name;
-    var prefillAmt = lastFoodAmount(c.id, selFood.refId) || selFood.baseAmount;
-    var unitLabel = selFood.unit==='g' ? t('unitGrams') : t('unitCount');
-    html += '<div class="exercise-log-form" style="background:var(--food-light);">'+
-      '<div class="field" style="margin-bottom:8px;"><label>'+esc(nm)+' · '+t('foodAmountLabel')+' ('+unitLabel+')</label>'+
-      '<input type="number" id="mFoodAmount" value="'+prefillAmt+'"></div>'+
-      '<div class="calorie-preview" id="mFoodAmountPreview" style="color:var(--food-text);"></div>'+
-      '<button class="btn-primary tap" data-act="log-meal" data-id="'+c.id+'" style="background:var(--food);box-shadow:0 6px 14px rgba(242,169,59,.35);">'+t('logMealBtn')+'</button>'+
-    '</div>';
+    html += renderFoodQtyPicker(c, selFood);
   }
 
   var editingFood = editingCustomFoodId ? (data.customFoods||[]).find(function(f){ return f.id===editingCustomFoodId; }) : null;
@@ -3097,6 +3105,14 @@ function bindEvents(){
     });
   }
 
+  // 食物数量浮窗：同样点背景关掉
+  var fqOverlay = document.getElementById('foodQtyOverlay');
+  if(fqOverlay){
+    fqOverlay.addEventListener('click', function(e){
+      if(e.target === fqOverlay){ selectedFoodRefId = null; render(); }
+    });
+  }
+
   var fni = document.getElementById('familyNameInput');
   if(fni) fni.addEventListener('input', function(){ draft.familyName = fni.value; });
 
@@ -3490,6 +3506,7 @@ function handleAction(act, id, value, el){
 
   else if(act==='set-meal-type'){ mealTypeDraft = value; render(); }
   else if(act==='pick-food'){ selectedFoodRefId = (selectedFoodRefId===value) ? null : value; render(); }
+  else if(act==='close-food-qty-picker'){ selectedFoodRefId = null; render(); }
   else if(act==='log-meal'){
     var f = foodLibraryAll().find(function(x){ return x.refId===selectedFoodRefId; });
     var amtEl = document.getElementById('mFoodAmount');
