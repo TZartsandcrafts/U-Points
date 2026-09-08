@@ -398,6 +398,7 @@ zh: {
   needHeightWeightHint:'先在"身高体重"里记一次身高和体重，才能自动算出热量目标',
   mealsSubTab:'三餐', exerciseSubTab:'运动',
   breakfastLabel:'早餐', lunchLabel:'午餐', dinnerLabel:'晚餐', snackLabel:'加餐',
+  mealTypeFieldLabel:'这是哪一顿',
   addCustomFood:'+ 自定义食物', addCustomExercise:'+ 自定义运动',
   foodNameLabel:'食物名称（不用带数量，比如写"西红柿"就行）', foodNamePlaceholder:'例如：西红柿', foodCaloriesLabel:'热量(kcal)',
   exerciseNameLabel:'运动名称', exerciseNamePlaceholder:'例如：轮滑', exerciseRateLabel:'每分钟消耗(kcal，估算)',
@@ -572,6 +573,7 @@ en: {
   needHeightWeightHint:'Log a height and weight first so the target can be calculated automatically',
   mealsSubTab:'Meals', exerciseSubTab:'Exercise',
   breakfastLabel:'Breakfast', lunchLabel:'Lunch', dinnerLabel:'Dinner', snackLabel:'Snack',
+  mealTypeFieldLabel:'Which meal is this',
   addCustomFood:'+ Custom food', addCustomExercise:'+ Custom exercise',
   foodNameLabel:"Food name (no need to include amount, e.g. just \"Tomato\")", foodNamePlaceholder:'e.g. Tomato', foodCaloriesLabel:'Calories (kcal)',
   exerciseNameLabel:'Exercise name', exerciseNamePlaceholder:'e.g. Roller skating', exerciseRateLabel:'kcal per minute (estimate)',
@@ -663,7 +665,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.24';
+var APP_VERSION = '3.13.25';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2059,15 +2061,19 @@ function renderManageCustomFoodsList(){
   return '<div style="margin-bottom:14px;">'+rows+'</div>';
 }
 
-// 选食物之后的"输入数量"改成弹窗，点哪个食物都是同一个居中浮窗，不用再滚到列表最下面去找输入框
+// 选食物之后的"输入数量"改成弹窗，点哪个食物都是同一个居中浮窗，不用再滚到列表最下面去找输入框；
+// 早中晚/加餐的选择也放进这个浮窗里——因为每次重新打开 App 三餐会默认回到"早餐"标签，孩子经常忘记切换，
+// 放进浮窗后每次登记食物都会顺手看一眼/选一下，不容易记错顿数
 function renderFoodQtyPicker(child, f){
   var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
   var prefillAmt = lastFoodAmount(child.id, f.refId) || f.baseAmount;
   var unitLabel = f.unit==='g' ? t('unitGrams') : t('unitCount');
+  var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
   return '<div class="range-picker-overlay" id="foodQtyOverlay">'+
     '<div class="range-picker">'+
       '<button type="button" class="range-picker-close tap" data-act="close-food-qty-picker">×</button>'+
       '<div class="range-picker-title">'+esc(f.icon)+' '+esc(nm)+'</div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+t('mealTypeFieldLabel')+'</label>'+segmentedHtml('set-meal-type', child.id, mealTypeDraft, mealTypeOpts)+'</div>'+
       '<div class="field" style="margin-bottom:8px;"><label>'+t('foodAmountLabel')+' ('+unitLabel+')</label>'+
       '<input type="number" id="mFoodAmount" value="'+prefillAmt+'" autofocus></div>'+
       '<div class="calorie-preview" id="mFoodAmountPreview" style="color:var(--food-text);margin-bottom:12px;"></div>'+
@@ -2076,10 +2082,7 @@ function renderFoodQtyPicker(child, f){
   '</div>';
 }
 function renderMealsSubTab(c, parentMode){
-  var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
-  var html = segmentedHtml('set-meal-type', c.id, mealTypeDraft, mealTypeOpts);
-
-  html += '<div class="field" style="margin:10px 0;"><input type="text" id="mFoodSearch" placeholder="'+t('searchFoodPlaceholder')+'" value="'+esc(mealFoodSearch)+'"></div>';
+  var html = '<div class="field" style="margin:0 0 10px;"><input type="text" id="mFoodSearch" placeholder="'+t('searchFoodPlaceholder')+'" value="'+esc(mealFoodSearch)+'"></div>';
   html += '<div id="mealFoodListWrap">'+renderFoodChipList(c)+'</div>';
 
   var selFood = selectedFoodRefId ? foodLibraryAll().find(function(f){ return f.refId===selectedFoodRefId; }) : null;
