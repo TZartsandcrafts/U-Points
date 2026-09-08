@@ -346,6 +346,11 @@ zh: {
   pointsModeLabel:'计分方式', pointsModeFixed:'固定分值', pointsModeRange:'浮动区间', pointsModeChecklist:'每日打卡(不计分)',
   rangeMinLabel:'最小值', rangeMaxLabel:'最大值', rangeHint:'打分时可以在这个区间里挑一个具体分值，做得好选高一点、一般般选低一点',
   checklistHint:'这是每天需要完成的固定项，只有"完成/未完成"两种状态，不计入积分', fillRangeFieldsToast:'请填写完整的区间范围',
+  checklistWeekendItemLabel:'周末达标项', checklistWeekendItemHint:'勾选后，这一项会算进"周末自动加分"的达标范围（平日打卡不用勾选，平日看的是全部打卡项）',
+  checklistBonusSectionTitle:'打卡自动加分 🎉', checklistBonusHint:'平日（周一至周五）打卡项全部完成，或周末完成勾选的"周末达标项"，会自动加分并弹窗提醒；没完成不会扣分。',
+  checklistWeekdayBonusLabel:'平日加分值', checklistWeekendBonusLabel:'周末加分值',
+  checklistWeekdayBonusLogName:'每日打卡全勤奖', checklistWeekendBonusLogName:'周末打卡达标奖',
+  checklistWeekdayBonusToast:'🎉 今天打卡全勤，自动加 {{points}} 分！', checklistWeekendBonusToast:'🎉 周末打卡达标，自动加 {{points}} 分！',
   confirmRangeLog:'确认打分', invalidRangeValue:'请输入有效的分值',
   noRewards:'还没有加分项，去"行为规则"里添加吧', noPenalties:'还没有扣分项',
   recentLogs:'最近记录', noLogs:'还没有积分记录',
@@ -436,6 +441,8 @@ zh: {
   penaltyNameLabel:'惩罚名称', penaltyNamePlaceholder:'例如：今天不能看电视',
   scopeLabel:'累计方式', trackedBehaviorLabel:'追踪哪条行为规则',
   costPointsLabel:'兑换所需积分', offsetPointsLabel:'抵消的积分数',
+  metricLabel:'统计方式', metricPoints:'按积分累计', metricCount:'按次数累计',
+  countThresholdLabel:'达到次数', countUnit:'次',
   redeemBtn:'兑换', executePenaltyBtn:'执行惩罚',
   metBadge:'达标', notMetBadge:'未达标',
   noRewardsYet:'还没有设置奖励，点下面的按钮加一个吧', noPenaltiesYet:'还没有设置惩罚，点下面的按钮加一个吧',
@@ -510,6 +517,11 @@ en: {
   pointsModeLabel:'Scoring type', pointsModeFixed:'Fixed value', pointsModeRange:'Flexible range', pointsModeChecklist:'Daily checklist (no points)',
   rangeMinLabel:'Minimum', rangeMaxLabel:'Maximum', rangeHint:'When logging, pick an exact value in this range — higher for a great job, lower for so-so effort',
   checklistHint:"A fixed daily item — just done/not-done, doesn't affect points", fillRangeFieldsToast:'Please fill in the full range',
+  checklistWeekendItemLabel:'Counts on weekends', checklistWeekendItemHint:"If checked, this item counts toward the weekend auto-bonus (weekdays always look at all checklist items, no need to check this)",
+  checklistBonusSectionTitle:'Checklist auto-bonus 🎉', checklistBonusHint:"On weekdays (Mon–Fri), completing every checklist item — or on weekends, completing the items marked 'counts on weekends' — automatically awards bonus points with a popup reminder. Not finishing never deducts points.",
+  checklistWeekdayBonusLabel:'Weekday bonus', checklistWeekendBonusLabel:'Weekend bonus',
+  checklistWeekdayBonusLogName:'Daily checklist bonus', checklistWeekendBonusLogName:'Weekend checklist bonus',
+  checklistWeekdayBonusToast:'🎉 Checklist complete today — +{{points}} bonus!', checklistWeekendBonusToast:'🎉 Weekend checklist goal met — +{{points}} bonus!',
   confirmRangeLog:'Confirm score', invalidRangeValue:'Please enter a valid value',
   noRewards:'No reward items yet — add some in "Behavior rules"', noPenalties:'No deduction items yet',
   recentLogs:'Recent activity', noLogs:'No points logged yet',
@@ -600,6 +612,8 @@ en: {
   penaltyNameLabel:'Penalty name', penaltyNamePlaceholder:'e.g. No TV today',
   scopeLabel:'Tracking basis', trackedBehaviorLabel:'Which rule to track',
   costPointsLabel:'Points required', offsetPointsLabel:'Points offset',
+  metricLabel:'Tracking method', metricPoints:'By points', metricCount:'By count',
+  countThresholdLabel:'Times needed', countUnit:'times',
   redeemBtn:'Redeem', executePenaltyBtn:'Execute penalty',
   metBadge:'Eligible', notMetBadge:'Not yet',
   noRewardsYet:'No rewards set up yet — add one below', noPenaltiesYet:'No penalties set up yet — add one below',
@@ -643,7 +657,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.20';
+var APP_VERSION = '3.13.22';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -783,6 +797,10 @@ function loadData(){
     if(!d.customFoods) d.customFoods = [];
     if(!d.customExercises) d.customExercises = [];
     if(!d.ledgerLogs) d.ledgerLogs = [];
+    if(d.family){
+      if(d.family.checklistWeekdayBonus === undefined) d.family.checklistWeekdayBonus = 2;
+      if(d.family.checklistWeekendBonus === undefined) d.family.checklistWeekendBonus = 2;
+    }
     // 迁移：行为规则从"全家共享一份"改成"每个孩子各自一份"。
     // 老数据里孩子还没有 behaviors 字段的，用原来的全局规则（或默认规则）复制一份给它。
     (d.children||[]).forEach(function(c){
@@ -947,6 +965,65 @@ function toggleChecklist(childId, behaviorId){
   } else {
     addPointLog(childId, behaviorId);
   }
+  evaluateChecklistBonus(childId);
+}
+
+/* ---------------- 打卡自动加分：平日全部完成 / 周末完成"周末达标项"，自动加分并弹窗提醒 ----------------
+   规则：
+   - 平日（周一至周五）：孩子当天的全部打卡项都完成 -> 自动加"平日加分值"
+   - 周末（周六/周日）：孩子当天被标记为"周末达标项"的打卡项都完成 -> 自动加"周末加分值"
+     （如果一个孩子没有任何打卡项被标记为周末达标项，周末就不自动加分）
+   - 没有全部完成，不扣分，什么都不做
+   - 每天每个孩子最多加一次；如果之前已经达标加过分，后来又把打卡项取消勾选导致不再达标了，
+     会把这条自动加分记录撤销（避免"先凑齐拿到奖励分，再取消打卡"的漏洞）
+   - 加分点数为 0 时（家长把加分值设为 0）不生成记录、不弹窗 */
+function isWeekendDate(dateStr){
+  var d = new Date(dateStr+'T00:00:00');
+  var day = d.getDay();
+  return day===0 || day===6;
+}
+function checklistBonusAmount(weekend){
+  var f = data.family || {};
+  var v = weekend ? f.checklistWeekendBonus : f.checklistWeekdayBonus;
+  return (v==null || isNaN(v)) ? 2 : Number(v);
+}
+function todayChecklistBonusLog(childId, dateStr){
+  return data.pointLogs.find(function(l){ return l.childId===childId && l.date===dateStr && l.source==='checklist-bonus'; });
+}
+function checklistBonusEligible(child, dateStr){
+  var items = (child.behaviors||[]).filter(function(b){ return b.pointsMode==='checklist'; });
+  if(!items.length) return false;
+  var weekend = isWeekendDate(dateStr);
+  var relevant = weekend ? items.filter(function(b){ return b.weekendItem; }) : items;
+  if(!relevant.length) return false;
+  return relevant.every(function(b){
+    return data.pointLogs.some(function(l){ return l.childId===child.id && l.behaviorId===b.id && l.date===dateStr && l.source==='checklist'; });
+  });
+}
+function evaluateChecklistBonus(childId){
+  var child = childById(childId);
+  if(!child) return;
+  var dateStr = todayStr();
+  var existing = todayChecklistBonusLog(childId, dateStr);
+  var eligible = checklistBonusEligible(child, dateStr);
+  if(eligible && !existing){
+    var weekend = isWeekendDate(dateStr);
+    var amt = checklistBonusAmount(weekend);
+    if(amt > 0){
+      var log = {
+        id: uid(), childId: childId, behaviorId: null,
+        name: weekend ? t('checklistWeekendBonusLogName') : t('checklistWeekdayBonusLogName'),
+        name_en: weekend ? 'Weekend checklist bonus' : 'Daily checklist bonus',
+        icon: '🎉', points: amt, date: dateStr, time: (new Date()).toTimeString().slice(0,5), ts: Date.now(),
+        source: 'checklist-bonus'
+      };
+      persistEntity('pointLogs', log);
+      rearmThresholds(childId);
+      toast(t(weekend ? 'checklistWeekendBonusToast' : 'checklistWeekdayBonusToast', {points: fmtPts(amt)}));
+    }
+  } else if(!eligible && existing){
+    persistDelete('pointLogs', existing.id);
+  }
 }
 function deletePointLog(logId){
   var log = data.pointLogs.find(function(l){ return l.id===logId; });
@@ -1107,20 +1184,28 @@ function settleNutritionToday(childId){
 /* ---------------- 奖惩兑换：积分系统的"出口" ---------------- */
 // 累计分：scope='total' 用整体积分余额；scope='behavior' 只统计跟这条行为规则相关的分数
 // （包括这条行为本身产生的加减分 + 之前用这条规则兑换/执行过的记录），互相独立、天然会在兑换后回落，不用额外记状态
-function scopeCumulative(childId, scope, behaviorId){
-  if(scope==='behavior' && behaviorId){
+// metric='count' 时改成数"这条行为规则被触发了多少次"（不看分值），执行/兑换一次后从 item.resetAt 这个时间点重新计数
+function scopeCumulative(childId, item){
+  if(item.scope==='behavior' && item.behaviorId){
+    if(item.metric==='count'){
+      var resetTs = item.resetAt || 0;
+      return data.pointLogs.filter(function(l){
+        return l.childId===childId && l.behaviorId===item.behaviorId && (l.ts||0) > resetTs;
+      }).length;
+    }
     var sum = data.pointLogs
-      .filter(function(l){ return l.childId===childId && (l.behaviorId===behaviorId || l.linkedBehaviorId===behaviorId); })
+      .filter(function(l){ return l.childId===childId && (l.behaviorId===item.behaviorId || l.linkedBehaviorId===item.behaviorId); })
       .reduce(function(s,l){ return s+l.points; }, 0);
     return Math.round(sum*10)/10;
   }
   return pointBalance(childId);
 }
-function addReward(childId, name, name_en, scope, behaviorId, cost){
+function addReward(childId, name, name_en, scope, behaviorId, cost, metric){
   var child = childById(childId);
   if(!child) return null;
   if(!child.rewards) child.rewards = [];
-  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🎁', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, cost: cost, updatedAt: nowIso() };
+  var m = (scope==='behavior' && metric==='count') ? 'count' : 'points';
+  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🎁', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, cost: cost, metric: m, resetAt: null, updatedAt: nowIso() };
   child.rewards.push(item);
   persistEntity('children', child);
   return item;
@@ -1131,11 +1216,12 @@ function deleteReward(childId, rewardId){
   child.rewards = child.rewards.filter(function(r){ return r.id!==rewardId; });
   persistEntity('children', child);
 }
-function addPenalty(childId, name, name_en, scope, behaviorId, offset){
+function addPenalty(childId, name, name_en, scope, behaviorId, offset, metric){
   var child = childById(childId);
   if(!child) return null;
   if(!child.penalties) child.penalties = [];
-  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🚫', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, offset: offset, updatedAt: nowIso() };
+  var m = (scope==='behavior' && metric==='count') ? 'count' : 'points';
+  var item = { id: uid(), name: name, name_en: name_en||'', icon: '🚫', scope: scope, behaviorId: scope==='behavior' ? behaviorId : null, offset: offset, metric: m, resetAt: null, updatedAt: nowIso() };
   child.penalties.push(item);
   persistEntity('children', child);
   return item;
@@ -1151,13 +1237,16 @@ function redeemReward(childId, rewardId){
   if(!child) return;
   var item = (child.rewards||[]).find(function(r){ return r.id===rewardId; });
   if(!item) return;
+  var isCount = item.metric==='count';
+  var nowTs = Date.now();
   var log = {
     id: uid(), childId: childId, behaviorId: null, source: 'redemption', redemptionKind: 'reward', catalogItemId: item.id,
-    linkedBehaviorId: item.scope==='behavior' ? item.behaviorId : null,
-    name: item.name, name_en: item.name_en||'', icon: item.icon, points: -Math.abs(item.cost),
-    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+    linkedBehaviorId: (item.scope==='behavior' && !isCount) ? item.behaviorId : null,
+    name: item.name, name_en: item.name_en||'', icon: item.icon, points: isCount ? 0 : -Math.abs(item.cost),
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5), ts: nowTs
   };
   persistEntity('pointLogs', log);
+  if(isCount){ item.resetAt = nowTs; persistEntity('children', child); }
   rearmThresholds(childId);
 }
 function executePenalty(childId, penaltyId){
@@ -1165,13 +1254,16 @@ function executePenalty(childId, penaltyId){
   if(!child) return;
   var item = (child.penalties||[]).find(function(p){ return p.id===penaltyId; });
   if(!item) return;
+  var isCount = item.metric==='count';
+  var nowTs = Date.now();
   var log = {
     id: uid(), childId: childId, behaviorId: null, source: 'redemption', redemptionKind: 'penalty', catalogItemId: item.id,
-    linkedBehaviorId: item.scope==='behavior' ? item.behaviorId : null,
-    name: item.name, name_en: item.name_en||'', icon: item.icon, points: Math.abs(item.offset),
-    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+    linkedBehaviorId: (item.scope==='behavior' && !isCount) ? item.behaviorId : null,
+    name: item.name, name_en: item.name_en||'', icon: item.icon, points: isCount ? 0 : Math.abs(item.offset),
+    date: todayStr(), time: (new Date()).toTimeString().slice(0,5), ts: nowTs
   };
   persistEntity('pointLogs', log);
+  if(isCount){ item.resetAt = nowTs; persistEntity('children', child); }
   rearmThresholds(childId);
 }
 function redemptionHistory(childId){
@@ -1566,7 +1658,9 @@ var redeemSubTab = 'rewards'; // 奖惩兑换子页签：rewards | penalties | h
 var showRewardForm = false;
 var showPenaltyForm = false;
 var rewardFormScope = 'total'; // 新建奖励表单：total(总积分) | behavior(单项累计)
+var rewardFormMetric = 'points'; // 单项累计的统计方式：points(按积分累计，默认) | count(按次数累计)
 var penaltyFormScope = 'total'; // 新建惩罚表单：total | behavior
+var penaltyFormMetric = 'points'; // 同上
 var showExchangeRateForm = false; // 记账：是否展开"设置兑换汇率"表单
 var showSpecialOfferForm = false; // 记账：是否展开"新建限时优惠"表单
 var showManualLedgerForm = false; // 记账：是否展开"手动记一笔"表单
@@ -2131,15 +2225,16 @@ function renderRewardsSubTab(c, parentMode){
   } else {
     html += rewards.map(function(item){
       var nm = (state.lang==='en' && item.name_en) ? item.name_en : item.name;
-      var cumulative = scopeCumulative(c.id, item.scope, item.behaviorId);
+      var cumulative = scopeCumulative(c.id, item);
       var eligible = cumulative >= item.cost;
       var scopeLabel = item.scope==='behavior' ? t('scopeLabelBehavior',{behavior: behaviorNameFor(c, item.behaviorId)}) : t('scopeLabelTotal');
+      var progressText = item.metric==='count' ? (cumulative+' / '+item.cost+' '+t('countUnit')) : (fmtPts(cumulative)+' / '+fmtPts(item.cost));
       return '<div class="redeem-card">'+
         '<div class="redeem-head"><div class="redeem-title"><span>'+item.icon+'</span><span>'+esc(nm)+'</span></div>'+
         (parentMode ? '<button class="small-icon-btn" data-act="delete-reward" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
         '</div>'+
-        '<div class="redeem-scope">'+scopeLabel+'</div>'+
-        '<div class="redeem-progress"><span>'+fmtPts(cumulative)+' / '+fmtPts(item.cost)+'</span><span class="nutri-badge '+(eligible?'ok':'bad')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
+        '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+'</div>'+
+        '<div class="redeem-progress"><span>'+progressText+'</span><span class="nutri-badge '+(eligible?'ok':'bad')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
         '<div class="redeem-actions"><button class="btn-primary tap" data-act="redeem-reward" data-id="'+c.id+'" data-value="'+item.id+'"'+((!parentMode && !eligible)?' disabled':'')+'>'+t('redeemBtn')+'</button></div>'+
       '</div>';
     }).join('');
@@ -2151,7 +2246,10 @@ function renderRewardsSubTab(c, parentMode){
         '<div class="field"><label>'+t('rewardNameLabel')+'</label><input id="mRewardName" placeholder="'+t('rewardNamePlaceholder')+'"></div>'+
         '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-reward-scope', c.id, rewardFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
         (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mRewardBehaviorSelect', c)+'</div>' : '')+
-        '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50"></div>'+
+        (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-reward-metric', c.id, rewardFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
+        (rewardFormScope==='behavior' && rewardFormMetric==='count'
+          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mRewardCost" placeholder="3"></div>'
+          : '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50"></div>')+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-reward-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-reward" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
@@ -2168,15 +2266,16 @@ function renderPenaltiesSubTab(c, parentMode){
   } else {
     html += penalties.map(function(item){
       var nm = (state.lang==='en' && item.name_en) ? item.name_en : item.name;
-      var cumulative = scopeCumulative(c.id, item.scope, item.behaviorId);
-      var eligible = cumulative <= -Math.abs(item.offset);
+      var cumulative = scopeCumulative(c.id, item);
+      var eligible = item.metric==='count' ? (cumulative >= Math.abs(item.offset)) : (cumulative <= -Math.abs(item.offset));
       var scopeLabel = item.scope==='behavior' ? t('scopeLabelBehavior',{behavior: behaviorNameFor(c, item.behaviorId)}) : t('scopeLabelTotal');
+      var progressText = item.metric==='count' ? (cumulative+' / '+Math.abs(item.offset)+' '+t('countUnit')) : (fmtPts(cumulative)+' / -'+fmtPts(item.offset));
       return '<div class="redeem-card">'+
         '<div class="redeem-head"><div class="redeem-title"><span>'+item.icon+'</span><span>'+esc(nm)+'</span></div>'+
         (parentMode ? '<button class="small-icon-btn" data-act="delete-penalty" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
         '</div>'+
-        '<div class="redeem-scope">'+scopeLabel+'</div>'+
-        '<div class="redeem-progress"><span>'+fmtPts(cumulative)+' / -'+fmtPts(item.offset)+'</span><span class="nutri-badge '+(eligible?'bad':'ok')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
+        '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+'</div>'+
+        '<div class="redeem-progress"><span>'+progressText+'</span><span class="nutri-badge '+(eligible?'bad':'ok')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
         (parentMode ? '<div class="redeem-actions"><button class="btn-primary tap" data-act="execute-penalty" data-id="'+c.id+'" data-value="'+item.id+'" style="background:var(--danger);box-shadow:0 6px 14px rgba(224,138,90,.35);">'+t('executePenaltyBtn')+'</button></div>' : '')+
       '</div>';
     }).join('');
@@ -2188,7 +2287,10 @@ function renderPenaltiesSubTab(c, parentMode){
         '<div class="field"><label>'+t('penaltyNameLabel')+'</label><input id="mPenaltyName" placeholder="'+t('penaltyNamePlaceholder')+'"></div>'+
         '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-penalty-scope', c.id, penaltyFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
         (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mPenaltyBehaviorSelect', c)+'</div>' : '')+
-        '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20"></div>'+
+        (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-penalty-metric', c.id, penaltyFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
+        (penaltyFormScope==='behavior' && penaltyFormMetric==='count'
+          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyOffset" placeholder="3"></div>'
+          : '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20"></div>')+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-penalty-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-penalty" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
@@ -2803,6 +2905,13 @@ function renderManageBehaviorsScreen(scr){
         '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">'+t('rangeHint')+'</div>'
       ) : '')+
       (pm==='checklist' ? '<div style="font-size:13px;color:var(--muted);margin:-6px 0 16px;line-height:1.5;">'+t('checklistHint')+'</div>' : '')+
+      (pm==='checklist' ? (''+
+        '<button type="button" class="tap" data-act="toggle-behavior-weekend-item" style="display:flex;align-items:center;gap:8px;background:none;border:none;padding:0;margin:-6px 0 16px;cursor:pointer;text-align:left;">'+
+          '<span style="width:22px;height:22px;border-radius:7px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex:none;'+(f.weekendItem?'background:var(--sky);border-color:var(--sky);color:#fff;':'')+'">'+(f.weekendItem?'✓':'')+'</span>'+
+          '<span style="font-size:14px;font-weight:700;">'+t('checklistWeekendItemLabel')+'</span>'+
+        '</button>'+
+        '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">'+t('checklistWeekendItemHint')+'</div>'
+      ) : '')+
       (pm==='fixed' && f.sign==='penalty' ? (''+
         '<div class="field"><label>'+t('escalateModeLabel')+'</label>'+segmentedHtml('behavior-escalate-mode', '_', f.escalate?'step':'fixed', [['fixed',t('escalateModeFixed')],['step',t('escalateModeStep')]])+'</div>'+
         (f.escalate ? (''+
@@ -2910,6 +3019,13 @@ function renderSettingsScreen(){
       '</div>';
     }
 
+    body += '<div class="settings-row" style="margin-top:20px;"><div class="label">'+t('checklistBonusSectionTitle')+'</div></div>'+
+      '<div style="font-size:13px;color:var(--muted);margin:-4px 0 12px;line-height:1.5;">'+t('checklistBonusHint')+'</div>'+
+      '<div style="display:flex;gap:10px;margin-bottom:18px;">'+
+        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('checklistWeekdayBonusLabel')+'</label><input type="number" step="0.1" id="mChecklistWeekdayBonus" value="'+esc((data.family&&data.family.checklistWeekdayBonus!=null)?data.family.checklistWeekdayBonus:2)+'"></div>'+
+        '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('checklistWeekendBonusLabel')+'</label><input type="number" step="0.1" id="mChecklistWeekendBonus" value="'+esc((data.family&&data.family.checklistWeekendBonus!=null)?data.family.checklistWeekendBonus:2)+'"></div>'+
+      '</div>';
+
     body += '<div class="settings-row"><div class="label">'+t('dataSectionTitle')+'</div></div>'+
       '<div style="display:flex;gap:10px;margin-top:10px;">'+
         '<button class="btn-ghost tap" data-act="export-backup">⬇ '+t('exportBackup')+'</button>'+
@@ -2958,6 +3074,19 @@ function bindEvents(){
 
   var sci = document.getElementById('settingsRoomCodeInput');
   if(sci) sci.addEventListener('input', function(){ settingsRoomCodeDraft = sci.value; });
+
+  var wdBonusInp = document.getElementById('mChecklistWeekdayBonus');
+  if(wdBonusInp) wdBonusInp.addEventListener('change', function(){
+    if(!data.family) return;
+    data.family.checklistWeekdayBonus = Math.abs(Number(wdBonusInp.value)) || 0;
+    persistFamily();
+  });
+  var weBonusInp = document.getElementById('mChecklistWeekendBonus');
+  if(weBonusInp) weBonusInp.addEventListener('change', function(){
+    if(!data.family) return;
+    data.family.checklistWeekendBonus = Math.abs(Number(weBonusInp.value)) || 0;
+    persistFamily();
+  });
 
   document.querySelectorAll('[data-act="draft-parent-name"]').forEach(function(inp){
     inp.addEventListener('input', function(){
@@ -3184,12 +3313,15 @@ function handleAction(act, id, value, el){
 
   else if(act==='open-child-redeem'){ editChildTab='redeem'; confirmDeleteChild=false; redeemSubTab='rewards'; showRewardForm=false; showPenaltyForm=false; pushScreen({type:'editChild', childId:id}); }
   else if(act==='redeem-sub-tab'){ redeemSubTab = value; showRewardForm=false; showPenaltyForm=false; render(); }
-  else if(act==='open-reward-form'){ showRewardForm=true; rewardFormScope='total'; render(); }
+  else if(act==='open-reward-form'){ showRewardForm=true; rewardFormScope='total'; rewardFormMetric='points'; render(); }
   else if(act==='cancel-reward-form'){ showRewardForm=false; render(); }
-  else if(act==='draft-reward-scope'){ rewardFormScope = value; render(); }
+  else if(act==='draft-reward-scope'){ rewardFormScope = value; if(value==='total') rewardFormMetric='points'; render(); }
+  else if(act==='draft-reward-metric'){ rewardFormMetric = value; render(); }
   else if(act==='save-reward'){
     var name = document.getElementById('mRewardName').value.trim();
-    var cost = parseFloat(document.getElementById('mRewardCost').value);
+    var isCountReward = rewardFormScope==='behavior' && rewardFormMetric==='count';
+    var costRaw = document.getElementById('mRewardCost').value;
+    var cost = isCountReward ? Math.round(Math.abs(Number(costRaw))) : parseFloat(costRaw);
     if(!name || !cost){ toast(t('fillRewardFieldsToast')); return; }
     var behaviorId = null;
     if(rewardFormScope==='behavior'){
@@ -3197,19 +3329,22 @@ function handleAction(act, id, value, el){
       behaviorId = sel ? sel.value : null;
       if(!behaviorId){ toast(t('selectBehaviorFirstToast')); return; }
     }
-    addReward(id, name, '', rewardFormScope, behaviorId, cost);
+    addReward(id, name, '', rewardFormScope, behaviorId, cost, rewardFormMetric);
     showRewardForm = false;
     render();
   }
   else if(act==='delete-reward'){ deleteReward(id, value); render(); }
   else if(act==='redeem-reward'){ redeemReward(id, value); toast(t('redeemedRewardToast')); render(); }
 
-  else if(act==='open-penalty-form'){ showPenaltyForm=true; penaltyFormScope='total'; render(); }
+  else if(act==='open-penalty-form'){ showPenaltyForm=true; penaltyFormScope='total'; penaltyFormMetric='points'; render(); }
   else if(act==='cancel-penalty-form'){ showPenaltyForm=false; render(); }
-  else if(act==='draft-penalty-scope'){ penaltyFormScope = value; render(); }
+  else if(act==='draft-penalty-scope'){ penaltyFormScope = value; if(value==='total') penaltyFormMetric='points'; render(); }
+  else if(act==='draft-penalty-metric'){ penaltyFormMetric = value; render(); }
   else if(act==='save-penalty'){
     var name2 = document.getElementById('mPenaltyName').value.trim();
-    var offset = parseFloat(document.getElementById('mPenaltyOffset').value);
+    var isCountPenalty = penaltyFormScope==='behavior' && penaltyFormMetric==='count';
+    var offsetRaw = document.getElementById('mPenaltyOffset').value;
+    var offset = isCountPenalty ? Math.round(Math.abs(Number(offsetRaw))) : parseFloat(offsetRaw);
     if(!name2 || !offset){ toast(t('fillPenaltyFieldsToast')); return; }
     var behaviorId2 = null;
     if(penaltyFormScope==='behavior'){
@@ -3217,7 +3352,7 @@ function handleAction(act, id, value, el){
       behaviorId2 = sel2 ? sel2.value : null;
       if(!behaviorId2){ toast(t('selectBehaviorFirstToast')); return; }
     }
-    addPenalty(id, name2, '', penaltyFormScope, behaviorId2, offset);
+    addPenalty(id, name2, '', penaltyFormScope, behaviorId2, offset, penaltyFormMetric);
     showPenaltyForm = false;
     render();
   }
@@ -3449,7 +3584,7 @@ function handleAction(act, id, value, el){
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
 
   else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; manageBehaviorsCategoryFilter='all'; pushScreen({type:'manageBehaviors', childId:id}); }
-  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', pointsMode:'fixed', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14}; render(); }
+  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', pointsMode:'fixed', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14, weekendItem:false}; render(); }
   else if(act==='edit-behavior'){
     var scrB = currentScreen();
     var b = scrB ? behaviorById(scrB.childId, id) : null;
@@ -3458,13 +3593,14 @@ function handleAction(act, id, value, el){
       if(bMode==='range'){
         behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.pointsMax>=0?'reward':'penalty', pointsMode:'range', abs:'', rangeMin: Math.abs(b.pointsMin), rangeMax: Math.abs(b.pointsMax), escalate:false, growthDays:14};
       } else if(bMode==='checklist'){
-        behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign:'reward', pointsMode:'checklist', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14};
+        behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign:'reward', pointsMode:'checklist', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14, weekendItem: !!b.weekendItem};
       } else {
         behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.points>=0?'reward':'penalty', pointsMode:'fixed', abs: Math.abs(b.points), rangeMin:'', rangeMax:'', escalate: !!b.escalate, growthDays: b.growthDays || 14};
       }
     }
     render();
   }
+  else if(act==='toggle-behavior-weekend-item'){ if(behaviorForm) behaviorForm.weekendItem = !behaviorForm.weekendItem; render(); }
   else if(act==='cancel-behavior-form'){ behaviorForm=null; render(); }
   else if(act==='behavior-category'){ if(behaviorForm) behaviorForm.category=value; render(); }
   else if(act==='behavior-icon'){ if(behaviorForm) behaviorForm.icon=value; render(); }
@@ -3507,7 +3643,7 @@ function finishSetup(){
   });
   cleanParents.forEach(function(p){ p.updatedAt = ts; });
   data = {
-    family: {name: draft.familyName || t('appName'), createdAt: todayStr(), updatedAt: ts},
+    family: {name: draft.familyName || t('appName'), createdAt: todayStr(), updatedAt: ts, checklistWeekdayBonus:2, checklistWeekendBonus:2},
     parents: cleanParents,
     children: cleanChildren,
     pointLogs: [],
@@ -3611,6 +3747,7 @@ function saveBehavior(childId){
   if(pm==='checklist'){
     fields.points = 0;
     fields.escalate = false;
+    fields.weekendItem = !!behaviorForm.weekendItem;
   } else if(pm==='range'){
     var minEl = document.getElementById('mBehaviorRangeMin');
     var maxEl = document.getElementById('mBehaviorRangeMax');
@@ -3637,14 +3774,16 @@ function saveBehavior(childId){
     var b = child.behaviors.find(function(x){ return x.id===behaviorForm.id; });
     if(b){
       b.name=fields.name; b.icon=fields.icon; b.category=fields.category; b.pointsMode=fields.pointsMode;
-      delete b.points; delete b.pointsMin; delete b.pointsMax; delete b.growthDays;
+      delete b.points; delete b.pointsMin; delete b.pointsMax; delete b.growthDays; delete b.weekendItem;
       if(pm==='range'){ b.pointsMin=fields.pointsMin; b.pointsMax=fields.pointsMax; b.escalate=false; }
+      else if(pm==='checklist'){ b.points=fields.points; b.escalate=false; b.weekendItem=fields.weekendItem; }
       else { b.points=fields.points; b.escalate=fields.escalate; if(fields.escalate) b.growthDays=fields.growthDays; }
     }
     toast(t('behaviorSavedToast'));
   } else {
     var newB = {id:uid(), name:fields.name, icon:fields.icon, category:fields.category, pointsMode:fields.pointsMode, escalate: fields.escalate||false};
     if(pm==='range'){ newB.pointsMin=fields.pointsMin; newB.pointsMax=fields.pointsMax; }
+    else if(pm==='checklist'){ newB.points=fields.points; newB.weekendItem=fields.weekendItem; }
     else { newB.points=fields.points; if(fields.escalate) newB.growthDays=fields.growthDays; }
     child.behaviors.push(newB);
     toast(t('behaviorAddedToast'));
