@@ -671,7 +671,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.27';
+var APP_VERSION = '3.13.28';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1454,7 +1454,7 @@ var FIREBASE_CONFIG = {
   appId: "1:74569209805:web:70e1c1d5b1511a21b5d684"
 };
 var FIREBASE_SDK_VERSION = '10.13.0';
-var CLOUD = { app:null, auth:null, db:null, uid:null, sdkLoadPromise:null, unsubs:{}, pushMap: storageGet('cloudSyncPushMap', {}) };
+var CLOUD = { app:null, auth:null, db:null, uid:null, sdkLoadPromise:null, unsubs:{}, pushMap: storageGet('cloudSyncPushMap', {}), settingsApplied:false };
 var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds','mealLogs','exerciseLogs','customFoods','customExercises','ledgerLogs'];
 
 function cloudSyncActive(){ return state.cloudSync.enabled && !!state.cloudSync.roomCode && CLOUD.db; }
@@ -1508,6 +1508,18 @@ async function connectCloudSync(roomCode, isNewRoom){
     CLOUD.app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
     CLOUD.auth = firebase.auth();
     CLOUD.db = firebase.firestore();
+    // 加到主屏幕的 PWA 在 iOS 上用的是 WKWebView，Firestore 默认走的 WebChannel/gRPC-Web
+    // 流式连接在这种环境、以及很多家庭网络/路由器下并不总是稳定——连接一旦卡住，读写都会
+    // 表现得像"卡住了"，直到整个页面被彻底重新加载（强退再开）才会重新建立一条能用的连接。
+    // 这行强制换成基于普通 HTTP 请求的 long polling 传输方式，规避流式连接容易被 WebView/
+    // 网络中间设备掐断且不自动恢复的问题——这是 Firestore Web SDK 在 WebView 环境里最常见
+    // 的"同步卡住必须重启"问题的标准解法。必须在这条数据库实例还没做任何其他操作之前调用；
+    // 断开重连时 firebase.firestore() 拿到的是同一个已经在用的实例，重复调用 settings() 会
+    // 直接抛错，所以只在第一次连接时设置一次。
+    if(!CLOUD.settingsApplied){
+      CLOUD.db.settings({ experimentalAutoDetectLongPolling: true, useFetchStreams: false });
+      CLOUD.settingsApplied = true;
+    }
     // 开启离线持久化缓存：没有这行的话，Firestore 的"待发送队列"只存在内存里——
     // 如果孩子连着点了好几个打卡项，但当时网络不好，还没发出去 App 就被切到后台
     // /被系统回收，这些还没发出去的记录就会直接丢失，家长端永远收不到。开启后
@@ -1598,27 +1610,38 @@ function applyRemoteEntity(collectionName, remote){
   return false;
 }
 
-function pushEntity(collectionName, entity){
+function pushEntity(collectionName, entity, isRetry){
   if(!cloudSyncActive()) return;
   CLOUD.pushMap[collectionName] = CLOUD.pushMap[collectionName] || {};
   if(CLOUD.pushMap[collectionName][entity.id] === entity.updatedAt) return; // 已推送过这个版本，跳过（防回声）
   collRef(collectionName).doc(entity.id).set(entity, {merge:true}).then(function(){
     CLOUD.pushMap[collectionName][entity.id] = entity.updatedAt;
     savePushMap();
-  }).catch(function(e){ console.error('push failed', collectionName, e); });
+  }).catch(function(e){
+    console.error('push failed', collectionName, e);
+    // 失败重试一次（间隔5秒）：不用非要等到"切后台再回来"或者"浏览器判定网络恢复"这两个
+    // 时机才补发，很多时候只是网络抖了一下，很快自己就好了，重试一次能悄悄补上大部分情况
+    if(!isRetry) setTimeout(function(){ pushEntity(collectionName, entity, true); }, 5000);
+  });
 }
-function pushTombstone(collectionName, id){
+function pushTombstone(collectionName, id, isRetry){
   if(!cloudSyncActive()) return;
   var ts = nowIso();
   collRef(collectionName).doc(id).set({id:id, deleted:true, updatedAt:ts}, {merge:true}).then(function(){
     CLOUD.pushMap[collectionName] = CLOUD.pushMap[collectionName] || {};
     CLOUD.pushMap[collectionName][id] = ts;
     savePushMap();
-  }).catch(function(e){ console.error('push tombstone failed', collectionName, e); });
+  }).catch(function(e){
+    console.error('push tombstone failed', collectionName, e);
+    if(!isRetry) setTimeout(function(){ pushTombstone(collectionName, id, true); }, 5000);
+  });
 }
-function pushFamily(){
+function pushFamily(isRetry){
   if(!cloudSyncActive() || !data.family) return;
-  familyDocRef().set(data.family, {merge:true}).catch(function(e){ console.error('push family failed', e); });
+  familyDocRef().set(data.family, {merge:true}).catch(function(e){
+    console.error('push family failed', e);
+    if(!isRetry) setTimeout(function(){ pushFamily(true); }, 5000);
+  });
 }
 function pushAllLocal(){
   if(!cloudSyncActive()) return;
@@ -4073,6 +4096,13 @@ document.addEventListener('visibilitychange', function(){
 window.addEventListener('online', function(){
   if(cloudSyncActive()) pushAllLocal();
 });
+// 额外兜底：App 处于前台、正在被使用的这段时间里，每20秒也顺手补发一次——
+// 不是所有"写失败"都会走到 visibilitychange/online 这两个事件（比如网络连接
+// 本身没断，只是 Firestore 那条流式连接卡住了、请求发出去但一直没回音），
+// 定期兜底一次能在孩子还开着 App 的时候就把卡住的记录发出去，不用非等到切
+// 后台再回来或者强退重开。pushAllLocal 内部按版本号去重，没有待发送的东西
+// 时基本不产生任何网络请求，可以放心定期跑。
+setInterval(function(){ if(cloudSyncActive()) pushAllLocal(); }, 20000);
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
