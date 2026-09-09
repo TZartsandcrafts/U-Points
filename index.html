@@ -432,6 +432,9 @@ zh: {
   noCustomExerciseYetHint:'还没有添加过运动，点下面"+自定义运动"加第一个吧',
   customFoodsLabel:'自定义食物', customExercisesLabel:'自定义运动',
   showMoreFoodsBtn:'展开更多（还有 {{n}} 个）', showLessFoodsBtn:'收起',
+  expandFoodListBtn:'展开已有食物列表（共 {{n}} 个）', collapseFoodListBtn:'收起食物列表',
+  mealsCalendarTitle:'三餐月历', collapseCalendarBtn:'收起月历', expandCalendarBtn:'展开月历',
+  noMealsForThisType:'这一天这一餐还没有记录', updateMealBtn:'更新这条记录', mealFoodGoneToast:'这条食物已经被删除了，没法编辑',
   showMoreExercisesBtn:'展开更多（还有 {{n}} 个）', showLessExercisesBtn:'收起',
   redeemTab:'兑换', currentBalanceLabel:'当前总积分',
   rewardsSubTab:'奖励', penaltiesSubTab:'惩罚', historySubTab:'兑换记录',
@@ -607,6 +610,9 @@ en: {
   noCustomExerciseYetHint:'No exercises added yet — tap "+ Custom exercise" below to add your first one',
   customFoodsLabel:'Custom foods', customExercisesLabel:'Custom exercises',
   showMoreFoodsBtn:'Show {{n}} more', showLessFoodsBtn:'Show less',
+  expandFoodListBtn:'Show food list ({{n}} items)', collapseFoodListBtn:'Collapse food list',
+  mealsCalendarTitle:'Meals Calendar', collapseCalendarBtn:'Collapse', expandCalendarBtn:'Expand',
+  noMealsForThisType:'Nothing logged for this meal on this day', updateMealBtn:'Update entry', mealFoodGoneToast:"This food was deleted, can't edit it",
   showMoreExercisesBtn:'Show {{n}} more', showLessExercisesBtn:'Show less',
   redeemTab:'Rewards', currentBalanceLabel:'Current total points',
   rewardsSubTab:'Rewards', penaltiesSubTab:'Penalties', historySubTab:'History',
@@ -665,7 +671,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.25';
+var APP_VERSION = '3.13.26';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1083,7 +1089,7 @@ function todayMealLogs(childId){
 function todayExerciseLogs(childId){
   return data.exerciseLogs.filter(function(l){ return l.childId===childId && l.date===todayStr(); });
 }
-function addMealLog(childId, mealType, food, amount){
+function addMealLog(childId, mealType, food, amount, dateOverride){
   var scaled = scaleFoodValues(food, amount);
   var log = {
     id: uid(), childId: childId, mealType: mealType, ts: Date.now(),
@@ -1091,8 +1097,21 @@ function addMealLog(childId, mealType, food, amount){
     unit: food.unit || 'count', amount: scaled.amount,
     calories: scaled.calories, carb: scaled.carb, protein: scaled.protein, fat: scaled.fat,
     category: food.category || 'other',
-    date: todayStr(), time: (new Date()).toTimeString().slice(0,5)
+    date: dateOverride || todayStr(), time: (new Date()).toTimeString().slice(0,5)
   };
+  persistEntity('mealLogs', log);
+  return log;
+}
+// 修改已有的一条三餐记录（食物换了/数量改了/餐次改了），保留原来的日期不变——
+// 通过月历翻到别的日期看到的记录，改完还是留在那一天，不会因为编辑动作被挪到今天
+function updateMealLog(logId, mealType, food, amount){
+  var log = data.mealLogs.find(function(l){ return l.id===logId; });
+  if(!log) return null;
+  var scaled = scaleFoodValues(food, amount);
+  log.mealType = mealType; log.name = food.name; log.name_en = food.name_en||''; log.icon = food.icon;
+  log.refId = food.refId || null; log.unit = food.unit || 'count'; log.amount = scaled.amount;
+  log.calories = scaled.calories; log.carb = scaled.carb; log.protein = scaled.protein; log.fat = scaled.fat;
+  log.category = food.category || 'other';
   persistEntity('mealLogs', log);
   return log;
 }
@@ -1668,7 +1687,12 @@ var editingCustomFoodId = null; // 自定义食物表单：正在编辑哪一条
 var showManageCustomFoods = false; // 是否展开"管理自定义食物"列表
 var confirmDeleteCustomFoodId = null; // 待二次确认删除的自定义食物 id
 var mealFoodSearch = ''; // 三餐食物库：搜索关键词
-var mealFoodShowAll = false; // 三餐食物库：是否展开显示全部（默认只显示最常吃的前8个）
+var mealFoodShowAll = false; // 三餐食物库：搜到结果/展开浏览时，是否展开显示全部（默认只显示最常吃的前8个）
+var mealFoodListExpanded = false; // 没有搜索时，下面的"已有食物"浏览列表默认整个折叠，点了才展开
+var mealsCalendarState = {}; // 三餐月历：按孩子 id 各自记住当前查看的年月与选中日期（决定加/看/改哪一天的三餐）
+var showMealsCalendar = true; // 三餐月历默认展开
+var mealsViewTab = 'breakfast'; // 三餐月历下方：当前查看选中日期的哪一餐
+var editingMealLogId = null; // 正在修改哪一条已记录的三餐（点已有记录进来编辑；null=新增）
 var exerciseSearch = ''; // 运动库：搜索关键词
 var exerciseShowAll = false; // 运动库：是否展开显示全部（默认只显示最常做的前8个）
 var redeemSubTab = 'rewards'; // 奖惩兑换子页签：rewards | penalties | history
@@ -1894,6 +1918,58 @@ function renderCalendar(child, recentMode){
     '</div>';
 }
 
+/* ---------------- 三餐月历：跟积分月历同一套 UI（.cal-* 样式），单独一份状态，
+   翻到哪天、选中哪天，三餐页面顶部搜食物记录的时候就记到哪天，方便补记/查看别的日期 ---------------- */
+function getMealsCalState(childId){
+  var s = mealsCalendarState[childId];
+  if(!s){
+    var now = new Date();
+    s = { y: now.getFullYear(), m: now.getMonth(), sel: todayStr() };
+    mealsCalendarState[childId] = s;
+  }
+  return s;
+}
+function renderMealsCalendar(child){
+  var cs = getMealsCalState(child.id);
+  var y = cs.y, m = cs.m;
+  var dim = daysInMonth(y, m);
+  var fw = firstWeekdayOfMonth(y, m);
+  var todayS = todayStr();
+  var monthPrefix = y+'-'+String(m+1).padStart(2,'0')+'-';
+
+  var dayHas = {};
+  data.mealLogs.forEach(function(l){
+    if(l.childId===child.id && l.date.indexOf(monthPrefix)===0) dayHas[l.date] = true;
+  });
+
+  var weekdayNames = state.lang==='en' ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] : ['日','一','二','三','四','五','六'];
+  var weekdaysHtml = weekdayNames.map(function(w){ return '<div>'+w+'</div>'; }).join('');
+
+  var cells = [];
+  for(var i=0;i<fw;i++) cells.push(null);
+  for(var d=1; d<=dim; d++) cells.push(d);
+  while(cells.length % 7 !== 0) cells.push(null);
+
+  var cellsHtml = cells.map(function(d){
+    if(d===null) return '<div class="cal-cell empty"></div>';
+    var ds = monthPrefix + String(d).padStart(2,'0');
+    var isToday = ds===todayS;
+    var isSel = ds===cs.sel;
+    var dots = '<div class="cal-dots">'+(dayHas[ds] ? '<span class="cal-dot reward"></span>' : '')+'</div>';
+    return '<div class="cal-cell'+(isToday?' today':'')+(isSel?' selected':'')+'" data-act="meals-cal-select-day" data-id="'+child.id+'" data-value="'+ds+'"><span class="cal-daynum">'+d+'</span>'+dots+'</div>';
+  }).join('');
+
+  return '<div class="cal-wrap" data-id="'+child.id+'">'+
+      '<div class="cal-header">'+
+        '<button class="cal-nav-btn tap" data-act="meals-cal-prev" data-id="'+child.id+'">‹</button>'+
+        '<div class="cal-title">'+calMonthLabel(y,m)+'</div>'+
+        '<button class="cal-nav-btn tap" data-act="meals-cal-next" data-id="'+child.id+'">›</button>'+
+      '</div>'+
+      '<div class="cal-weekdays">'+weekdaysHtml+'</div>'+
+      '<div class="cal-grid">'+cellsHtml+'</div>'+
+    '</div>';
+}
+
 /* ---------------- 健康打卡：三餐 + 运动 ---------------- */
 function renderHealthTabBody(c, parentMode){
   var target = calorieTarget(c);
@@ -2012,6 +2088,16 @@ function renderFoodChipList(c){
     return nm.indexOf(query)>=0 || nmEn.indexOf(query)>=0;
   }
   var filtered = sorted.filter(matches);
+
+  if(!sorted.length){
+    return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noCustomFoodYetHint')+'</div>';
+  }
+  // 没有在搜索的时候：列表默认整个折叠，只显示一个"展开"按钮，点了才铺开浏览；
+  // 一旦搜索框里有关键词，说明是"要找某个食物"，直接把匹配结果亮出来，不用先展开
+  if(!query && !mealFoodListExpanded){
+    return '<button class="dashed-btn tap" data-act="toggle-food-list-expand" style="margin-bottom:6px;">'+t('expandFoodListBtn',{n:sorted.length})+'</button>';
+  }
+
   var LIMIT = 8;
   var showAll = !!query || mealFoodShowAll;
   var toShow = showAll ? filtered : filtered.slice(0, LIMIT);
@@ -2029,14 +2115,14 @@ function renderFoodChipList(c){
   if(query && !filtered.length){
     return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noFoodMatchHint')+'</div>';
   }
-  if(!query && !filtered.length){
-    return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noCustomFoodYetHint')+'</div>';
-  }
   var html = '<div class="chip-grid" style="margin-bottom:6px;">'+toShow.map(chipHtml).join('')+'</div>';
   if(!showAll && hiddenCount>0){
     html += '<button class="dashed-btn tap" data-act="toggle-food-show-all" style="margin-bottom:4px;">'+t('showMoreFoodsBtn',{n:hiddenCount})+'</button>';
   } else if(mealFoodShowAll && !query && filtered.length>LIMIT){
     html += '<button class="dashed-btn tap" data-act="toggle-food-show-all" style="margin-bottom:4px;">'+t('showLessFoodsBtn')+'</button>';
+  }
+  if(!query && mealFoodListExpanded){
+    html += '<button class="dashed-btn tap" data-act="toggle-food-list-expand" style="margin-top:2px;">'+t('collapseFoodListBtn')+'</button>';
   }
   return html;
 }
@@ -2062,11 +2148,11 @@ function renderManageCustomFoodsList(){
 }
 
 // 选食物之后的"输入数量"改成弹窗，点哪个食物都是同一个居中浮窗，不用再滚到列表最下面去找输入框；
-// 早中晚/加餐的选择也放进这个浮窗里——因为每次重新打开 App 三餐会默认回到"早餐"标签，孩子经常忘记切换，
-// 放进浮窗后每次登记食物都会顺手看一眼/选一下，不容易记错顿数
-function renderFoodQtyPicker(child, f){
+// 早中晚/加餐的选择也放进这个浮窗里；editingLog 有值时是"修改已有记录"（数量/餐次预填成原来的值，
+// 保存时更新这条记录而不是新建一条，日期保持不变）
+function renderFoodQtyPicker(child, f, editingLog){
   var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
-  var prefillAmt = lastFoodAmount(child.id, f.refId) || f.baseAmount;
+  var prefillAmt = editingLog ? editingLog.amount : (lastFoodAmount(child.id, f.refId) || f.baseAmount);
   var unitLabel = f.unit==='g' ? t('unitGrams') : t('unitCount');
   var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
   return '<div class="range-picker-overlay" id="foodQtyOverlay">'+
@@ -2077,17 +2163,19 @@ function renderFoodQtyPicker(child, f){
       '<div class="field" style="margin-bottom:8px;"><label>'+t('foodAmountLabel')+' ('+unitLabel+')</label>'+
       '<input type="number" id="mFoodAmount" value="'+prefillAmt+'" autofocus></div>'+
       '<div class="calorie-preview" id="mFoodAmountPreview" style="color:var(--food-text);margin-bottom:12px;"></div>'+
-      '<button type="button" class="btn-primary tap" data-act="log-meal" data-id="'+child.id+'" style="background:var(--food);box-shadow:0 6px 14px rgba(242,169,59,.35);">'+t('logMealBtn')+'</button>'+
+      '<button type="button" class="btn-primary tap" data-act="log-meal" data-id="'+child.id+'" style="background:var(--food);box-shadow:0 6px 14px rgba(242,169,59,.35);">'+(editingLog?t('updateMealBtn'):t('logMealBtn'))+'</button>'+
     '</div>'+
   '</div>';
 }
 function renderMealsSubTab(c, parentMode){
-  var html = '<div class="field" style="margin:0 0 10px;"><input type="text" id="mFoodSearch" placeholder="'+t('searchFoodPlaceholder')+'" value="'+esc(mealFoodSearch)+'"></div>';
+  var mcs = getMealsCalState(c.id);
+  var html = '<div class="field" style="margin:0 0 8px;"><input type="text" id="mFoodSearch" placeholder="'+t('searchFoodPlaceholder')+'" value="'+esc(mealFoodSearch)+'"></div>';
   html += '<div id="mealFoodListWrap">'+renderFoodChipList(c)+'</div>';
 
+  var editingLog = editingMealLogId ? data.mealLogs.find(function(l){ return l.id===editingMealLogId; }) : null;
   var selFood = selectedFoodRefId ? foodLibraryAll().find(function(f){ return f.refId===selectedFoodRefId; }) : null;
   if(selFood){
-    html += renderFoodQtyPicker(c, selFood);
+    html += renderFoodQtyPicker(c, selFood, editingLog);
   }
 
   var editingFood = editingCustomFoodId ? (data.customFoods||[]).find(function(f){ return f.id===editingCustomFoodId; }) : null;
@@ -2124,27 +2212,35 @@ function renderMealsSubTab(c, parentMode){
     if(showManageCustomFoods) html += renderManageCustomFoodsList();
   }
 
+  // 月历：决定"现在浏览/记录的是哪一天"，默认展开，也可以收起
+  html += '<div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">'+
+    '<span>'+t('mealsCalendarTitle')+'</span>'+
+    '<button class="cal-nav-btn tap" style="width:auto;border-radius:16px;padding:0 12px;font-size:12px;font-weight:700;" data-act="toggle-meals-calendar">'+(showMealsCalendar?t('collapseCalendarBtn'):t('expandCalendarBtn'))+'</button>'+
+  '</div>';
+  if(showMealsCalendar) html += renderMealsCalendar(c);
+
+  // 四餐标签行：点哪个显示选中日期那一餐的具体记录
   var mealTypeOrder = ['breakfast','lunch','dinner','snack'];
   var mealTypeLabel = {breakfast:t('breakfastLabel'), lunch:t('lunchLabel'), dinner:t('dinnerLabel'), snack:t('snackLabel')};
-  var allMeals = todayMealLogs(c.id);
-  html += '<div class="section-title">'+t('todayLabel')+'</div>';
-  var anyMeals = false;
-  mealTypeOrder.forEach(function(mt){
-    var group = allMeals.filter(function(l){ return l.mealType===mt; }).sort(function(a,b){ return (a.time||'')<(b.time||'')?-1:1; });
-    if(!group.length) return;
-    anyMeals = true;
-    var groupCal = group.reduce(function(s,l){ return s+l.calories; }, 0);
-    html += '<div class="meal-group-header"><span>'+mealTypeLabel[mt]+'</span><span class="meal-group-total">'+groupCal+' kcal</span></div>';
+  var dayMeals = data.mealLogs.filter(function(l){ return l.childId===c.id && l.date===mcs.sel; });
+  var tabOpts = mealTypeOrder.map(function(mt){
+    var cal = dayMeals.filter(function(l){ return l.mealType===mt; }).reduce(function(s,l){ return s+l.calories; }, 0);
+    return [mt, mealTypeLabel[mt] + (cal ? ' · '+cal : '')];
+  });
+  html += '<div class="section-title">'+calDayLabel(mcs.sel)+(mcs.sel===todayStr()?' · '+t('todayLabel'):'')+'</div>';
+  html += segmentedHtml('meals-view-tab', c.id, mealsViewTab, tabOpts, true);
+
+  var group = dayMeals.filter(function(l){ return l.mealType===mealsViewTab; }).sort(function(a,b){ return (a.time||'')<(b.time||'')?-1:1; });
+  if(!group.length){
+    html += '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noMealsForThisType')+'</div>';
+  } else {
     html += group.map(function(l){
       var nm2 = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
       var amtLabel = l.amount!=null ? (' · '+l.amount+(l.unit==='g'?'g':t('unitCount'))) : '';
       return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm2)+'</span><span class="meta">'+l.time+amtLabel+'</span></div>'+
         '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--food-light);color:var(--food-text);">'+l.calories+'</span>'+
-        (parentMode ? '<button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
+        (parentMode ? ('<button class="small-icon-btn" data-act="edit-meal-log" data-id="'+l.id+'">✏️</button><button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>') : '')+'</div></div>';
     }).join('');
-  });
-  if(!anyMeals){
-    html += '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noMealsToday')+'</div>';
   }
   return html;
 }
@@ -3112,7 +3208,7 @@ function bindEvents(){
   var fqOverlay = document.getElementById('foodQtyOverlay');
   if(fqOverlay){
     fqOverlay.addEventListener('click', function(e){
-      if(e.target === fqOverlay){ selectedFoodRefId = null; render(); }
+      if(e.target === fqOverlay){ selectedFoodRefId = null; editingMealLogId = null; render(); }
     });
   }
 
@@ -3190,21 +3286,36 @@ function bindEvents(){
   }
   var scr = currentScreen();
   var editingChild = (scr && scr.type==='editChild') ? childById(scr.childId) : null;
+  // 中文拼音输入法在"拼字过程中"（compositionstart~compositionend之间）也会连续触发 input 事件，
+  // 如果这时候就拿当前值去搜索，搜的其实是还没拼完的拼音字母，中文食物名/运动名当然搜不到——
+  // 拼字没结束之前先不搜，等 compositionend（拼字提交完成）再搜一次，避免"明明加过这个食物却搜不出来"
   var foodSearchInput = document.getElementById('mFoodSearch');
   if(foodSearchInput && editingChild){
-    foodSearchInput.addEventListener('input', function(){
+    var runFoodSearch = function(){
       mealFoodSearch = foodSearchInput.value;
       var wrap = document.getElementById('mealFoodListWrap');
       if(wrap){ wrap.innerHTML = renderFoodChipList(editingChild); bindScoped(wrap); }
+    };
+    foodSearchInput.addEventListener('input', function(){
+      if(foodSearchInput.dataset.composing==='1') return;
+      runFoodSearch();
     });
+    foodSearchInput.addEventListener('compositionstart', function(){ foodSearchInput.dataset.composing='1'; });
+    foodSearchInput.addEventListener('compositionend', function(){ foodSearchInput.dataset.composing=''; runFoodSearch(); });
   }
   var exerciseSearchInput = document.getElementById('mExerciseSearch');
   if(exerciseSearchInput && editingChild){
-    exerciseSearchInput.addEventListener('input', function(){
+    var runExerciseSearch = function(){
       exerciseSearch = exerciseSearchInput.value;
       var wrap = document.getElementById('exerciseListWrap');
       if(wrap){ wrap.innerHTML = renderExerciseChipList(editingChild); bindScoped(wrap); }
+    };
+    exerciseSearchInput.addEventListener('input', function(){
+      if(exerciseSearchInput.dataset.composing==='1') return;
+      runExerciseSearch();
     });
+    exerciseSearchInput.addEventListener('compositionstart', function(){ exerciseSearchInput.dataset.composing='1'; });
+    exerciseSearchInput.addEventListener('compositionend', function(){ exerciseSearchInput.dataset.composing=''; runExerciseSearch(); });
   }
   var exchangePointsInput = document.getElementById('mExchangePoints');
   if(exchangePointsInput && editingChild){
@@ -3323,7 +3434,7 @@ function handleAction(act, id, value, el){
   else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; selectedFoodRefId=null; selectedRangeBehaviorId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showPointsAdjustForm=false; render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; selectedFoodRefId=null; selectedRangeBehaviorId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showPointsAdjustForm=false; render(); }
   else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
@@ -3359,7 +3470,7 @@ function handleAction(act, id, value, el){
   else if(act==='cal-select-day'){ getCalState(id).sel = value; render(); }
 
   else if(act==='open-child-health'){ editChildTab='health'; confirmDeleteChild=false; healthSubTab='meals'; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; selectedExerciseRefId=null; pushScreen({type:'editChild', childId:id}); }
-  else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; selectedFoodRefId=null; mealFoodSearch=''; mealFoodShowAll=false; exerciseSearch=''; exerciseShowAll=false; render(); }
+  else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; selectedFoodRefId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; render(); }
 
   else if(act==='open-child-redeem'){ editChildTab='redeem'; confirmDeleteChild=false; redeemSubTab='rewards'; showRewardForm=false; showPenaltyForm=false; pushScreen({type:'editChild', childId:id}); }
   else if(act==='redeem-sub-tab'){ redeemSubTab = value; showRewardForm=false; showPenaltyForm=false; render(); }
@@ -3508,20 +3619,40 @@ function handleAction(act, id, value, el){
   }
 
   else if(act==='set-meal-type'){ mealTypeDraft = value; render(); }
-  else if(act==='pick-food'){ selectedFoodRefId = (selectedFoodRefId===value) ? null : value; render(); }
-  else if(act==='close-food-qty-picker'){ selectedFoodRefId = null; render(); }
+  else if(act==='pick-food'){ selectedFoodRefId = (selectedFoodRefId===value) ? null : value; editingMealLogId = null; render(); }
+  else if(act==='close-food-qty-picker'){ selectedFoodRefId = null; editingMealLogId = null; render(); }
+  else if(act==='edit-meal-log'){
+    var editLog = data.mealLogs.find(function(l){ return l.id===value; });
+    var refFood = editLog ? foodLibraryAll().find(function(x){ return x.refId===editLog.refId; }) : null;
+    if(!editLog || !refFood){ toast(t('mealFoodGoneToast')); return; }
+    editingMealLogId = editLog.id;
+    selectedFoodRefId = editLog.refId;
+    mealTypeDraft = editLog.mealType;
+    render();
+  }
   else if(act==='log-meal'){
     var f = foodLibraryAll().find(function(x){ return x.refId===selectedFoodRefId; });
     var amtEl = document.getElementById('mFoodAmount');
     var amt = amtEl ? parseFloat(amtEl.value) : NaN;
     if(!f || !amt || amt<=0){ return; }
-    addMealLog(id, mealTypeDraft, f, amt);
+    if(editingMealLogId){
+      updateMealLog(editingMealLogId, mealTypeDraft, f, amt);
+    } else {
+      addMealLog(id, mealTypeDraft, f, amt, getMealsCalState(id).sel);
+    }
     selectedFoodRefId = null;
+    editingMealLogId = null;
     toast(t('mealLoggedToast'));
     render();
   }
   else if(act==='delete-meal-log'){ deleteMealLog(id); render(); }
   else if(act==='toggle-food-show-all'){ mealFoodShowAll = !mealFoodShowAll; render(); }
+  else if(act==='toggle-food-list-expand'){ mealFoodListExpanded = !mealFoodListExpanded; render(); }
+  else if(act==='toggle-meals-calendar'){ showMealsCalendar = !showMealsCalendar; render(); }
+  else if(act==='meals-view-tab'){ mealsViewTab = value; render(); }
+  else if(act==='meals-cal-prev'){ shiftCalMonth(getMealsCalState(id), -1); render(); }
+  else if(act==='meals-cal-next'){ shiftCalMonth(getMealsCalState(id), 1); render(); }
+  else if(act==='meals-cal-select-day'){ getMealsCalState(id).sel = value; render(); }
   else if(act==='open-custom-food'){ showCustomFoodForm=true; editingCustomFoodId=null; customFoodCategoryDraft='other'; customFoodUnitDraft='g'; showManageCustomFoods=false; render(); }
   else if(act==='cancel-custom-food'){ showCustomFoodForm=false; editingCustomFoodId=null; render(); }
   else if(act==='draft-custom-food-category'){ customFoodCategoryDraft = value; render(); }
