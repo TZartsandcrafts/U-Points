@@ -671,7 +671,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.26';
+var APP_VERSION = '3.13.27';
 var APP_BUILD_DATE = '2026-09-06';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -691,6 +691,17 @@ function isParentMode(){ return state.deviceRole !== 'child'; } // 默认（未�
 function boundChild(){
   if(!state.boundChildId) return null;
   return data.children.find(function(c){ return c.id === state.boundChildId; }) || null;
+}
+// 孩子自己的设备（child 模式）渲染"我的xxx"页面时，是直接调用 renderEditChildScreen(...) 画出来的，
+// 并没有真的 pushScreen 到 screenStack 里（孩子端只有这一个固定页面，不需要导航栈）——
+// 所以像"搜索框绑定事件"这种依赖 currentScreen().type==='editChild' 来判断"当前是不是在看某个孩子的详情页"
+// 的逻辑，在孩子模式下永远拿不到，会导致搜索框看着能打字、但完全没反应（bug：中英文都搜不出结果）。
+// 这个函数统一处理两种情况：家长模式走 screenStack，孩子模式直接认自己绑定的孩子。
+function currentEditingChild(){
+  var scr = currentScreen();
+  if(scr && scr.type==='editChild') return childById(scr.childId);
+  if(!isParentMode() && boundChild()) return boundChild();
+  return null;
 }
 
 /* ---------------- 头像 ---------------- */
@@ -3284,8 +3295,7 @@ function bindEvents(){
       });
     });
   }
-  var scr = currentScreen();
-  var editingChild = (scr && scr.type==='editChild') ? childById(scr.childId) : null;
+  var editingChild = currentEditingChild();
   // 中文拼音输入法在"拼字过程中"（compositionstart~compositionend之间）也会连续触发 input 事件，
   // 如果这时候就拿当前值去搜索，搜的其实是还没拼完的拼音字母，中文食物名/运动名当然搜不到——
   // 拼字没结束之前先不搜，等 compositionend（拼字提交完成）再搜一次，避免"明明加过这个食物却搜不出来"
