@@ -435,6 +435,7 @@ zh: {
   expandFoodListBtn:'展开已有食物列表（共 {{n}} 个）', collapseFoodListBtn:'收起食物列表',
   mealsCalendarTitle:'三餐月历', collapseCalendarBtn:'收起月历', expandCalendarBtn:'展开月历',
   noMealsForThisType:'这一天这一餐还没有记录', updateMealBtn:'更新这条记录', mealFoodGoneToast:'这条食物已经被删除了，没法编辑',
+  mealPastDateLockedToast:'只能改今天及以后的记录，之前的日子改不了哦，找爸爸妈妈帮忙吧', mealPastDateHint:'📌 以前的记录只有家长能改，你可以改今天和以后的',
   showMoreExercisesBtn:'展开更多（还有 {{n}} 个）', showLessExercisesBtn:'收起',
   redeemTab:'兑换', currentBalanceLabel:'当前总积分',
   rewardsSubTab:'奖励', penaltiesSubTab:'惩罚', historySubTab:'兑换记录',
@@ -613,6 +614,7 @@ en: {
   expandFoodListBtn:'Show food list ({{n}} items)', collapseFoodListBtn:'Collapse food list',
   mealsCalendarTitle:'Meals Calendar', collapseCalendarBtn:'Collapse', expandCalendarBtn:'Expand',
   noMealsForThisType:'Nothing logged for this meal on this day', updateMealBtn:'Update entry', mealFoodGoneToast:"This food was deleted, can't edit it",
+  mealPastDateLockedToast:"Only today and future entries can be changed — ask a parent for older ones", mealPastDateHint:"📌 Past entries can only be changed by a parent. You can edit today and future dates.",
   showMoreExercisesBtn:'Show {{n}} more', showLessExercisesBtn:'Show less',
   redeemTab:'Rewards', currentBalanceLabel:'Current total points',
   rewardsSubTab:'Rewards', penaltiesSubTab:'Penalties', historySubTab:'History',
@@ -671,8 +673,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.28';
-var APP_BUILD_DATE = '2026-09-06';
+var APP_VERSION = '3.13.30';
+var APP_BUILD_DATE = '2026-09-10';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1127,6 +1129,11 @@ function updateMealLog(logId, mealType, food, amount){
   return log;
 }
 function deleteMealLog(logId){ persistDelete('mealLogs', logId); }
+// 孩子端只能改当天及以后的三餐记录，之前的日子只读（防止事后随便改历史记录）；
+// 家长端不受此限制，任何日期都能改
+function canEditMealDate(dateStr, parentMode){
+  return parentMode || dateStr >= todayStr();
+}
 function addExerciseLog(childId, ex, durationMin){
   var cal = Math.round((ex.caloriesPerMin || 0) * durationMin);
   var log = {
@@ -1262,6 +1269,24 @@ function deleteReward(childId, rewardId){
   child.rewards = child.rewards.filter(function(r){ return r.id!==rewardId; });
   persistEntity('children', child);
 }
+function updateReward(childId, rewardId, name, name_en, scope, behaviorId, cost, metric, escalate, escalateStep){
+  var child = childById(childId);
+  if(!child) return null;
+  var item = (child.rewards||[]).find(function(r){ return r.id===rewardId; });
+  if(!item) return null;
+  var m = (scope==='behavior' && metric==='count') ? 'count' : 'points';
+  // 统计口径（总分/单项、按分/按次）变了的话，旧的累计进度和门槛周期就不再适用，重新起算
+  var statsChanged = (item.scope!==scope) || (item.behaviorId!==(scope==='behavior'?behaviorId:null)) || (item.metric!==m);
+  item.name = name; item.name_en = name_en||'';
+  item.scope = scope; item.behaviorId = scope==='behavior' ? behaviorId : null;
+  item.cost = cost; item.metric = m;
+  item.escalate = (m==='count' && !!escalate);
+  item.escalateStep = (m==='count' && escalate) ? (Math.abs(Number(escalateStep))||1) : 0;
+  if(statsChanged){ item.resetAt = null; item.cycleCount = 0; }
+  item.updatedAt = nowIso();
+  persistEntity('children', child);
+  return item;
+}
 function addPenalty(childId, name, name_en, scope, behaviorId, offset, metric, escalate, escalateStep){
   var child = childById(childId);
   if(!child) return null;
@@ -1278,6 +1303,23 @@ function deletePenalty(childId, penaltyId){
   if(!child || !child.penalties) return;
   child.penalties = child.penalties.filter(function(p){ return p.id!==penaltyId; });
   persistEntity('children', child);
+}
+function updatePenalty(childId, penaltyId, name, name_en, scope, behaviorId, offset, metric, escalate, escalateStep){
+  var child = childById(childId);
+  if(!child) return null;
+  var item = (child.penalties||[]).find(function(p){ return p.id===penaltyId; });
+  if(!item) return null;
+  var m = (scope==='behavior' && metric==='count') ? 'count' : 'points';
+  var statsChanged = (item.scope!==scope) || (item.behaviorId!==(scope==='behavior'?behaviorId:null)) || (item.metric!==m);
+  item.name = name; item.name_en = name_en||'';
+  item.scope = scope; item.behaviorId = scope==='behavior' ? behaviorId : null;
+  item.offset = offset; item.metric = m;
+  item.escalate = (m==='count' && !!escalate);
+  item.escalateStep = (m==='count' && escalate) ? (Math.abs(Number(escalateStep))||1) : 0;
+  if(statsChanged){ item.resetAt = null; item.cycleCount = 0; }
+  item.updatedAt = nowIso();
+  persistEntity('children', child);
+  return item;
 }
 function redeemReward(childId, rewardId){
   var child = childById(childId);
@@ -1732,11 +1774,13 @@ var exerciseShowAll = false; // 运动库：是否展开显示全部（默认只
 var redeemSubTab = 'rewards'; // 奖惩兑换子页签：rewards | penalties | history
 var showRewardForm = false;
 var showPenaltyForm = false;
-var rewardFormScope = 'total'; // 新建奖励表单：total(总积分) | behavior(单项累计)
+var editingRewardId = null; // 正在修改哪一条已设置的奖励（点已有奖励的 ✎ 进来编辑；null=新增）
+var editingPenaltyId = null; // 同上，惩罚
+var rewardFormScope = 'total'; // 新建/编辑奖励表单：total(总积分) | behavior(单项累计)
 var rewardFormMetric = 'points'; // 单项累计的统计方式：points(按积分累计，默认) | count(按次数累计)
 var rewardFormEscalate = false; // 按次数累计时：达标门槛是否每次执行后递增（自定义增量，不是翻倍）
 var rewardFormEscalateStep = 1;
-var penaltyFormScope = 'total'; // 新建惩罚表单：total | behavior
+var penaltyFormScope = 'total'; // 新建/编辑惩罚表单：total | behavior
 var penaltyFormMetric = 'points'; // 同上
 var penaltyFormEscalate = false;
 var penaltyFormEscalateStep = 1;
@@ -2264,6 +2308,7 @@ function renderMealsSubTab(c, parentMode){
   html += '<div class="section-title">'+calDayLabel(mcs.sel)+(mcs.sel===todayStr()?' · '+t('todayLabel'):'')+'</div>';
   html += segmentedHtml('meals-view-tab', c.id, mealsViewTab, tabOpts, true);
 
+  var dayEditable = canEditMealDate(mcs.sel, parentMode);
   var group = dayMeals.filter(function(l){ return l.mealType===mealsViewTab; }).sort(function(a,b){ return (a.time||'')<(b.time||'')?-1:1; });
   if(!group.length){
     html += '<div style="font-size:14px;color:var(--muted);padding:8px 0;">'+t('noMealsForThisType')+'</div>';
@@ -2273,8 +2318,11 @@ function renderMealsSubTab(c, parentMode){
       var amtLabel = l.amount!=null ? (' · '+l.amount+(l.unit==='g'?'g':t('unitCount'))) : '';
       return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm2)+'</span><span class="meta">'+l.time+amtLabel+'</span></div>'+
         '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--food-light);color:var(--food-text);">'+l.calories+'</span>'+
-        (parentMode ? ('<button class="small-icon-btn" data-act="edit-meal-log" data-id="'+l.id+'">✏️</button><button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>') : '')+'</div></div>';
+        (dayEditable ? ('<button class="small-icon-btn" data-act="edit-meal-log" data-id="'+l.id+'">✏️</button><button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>') : '')+'</div></div>';
     }).join('');
+  }
+  if(!parentMode && !dayEditable && dayMeals.length){
+    html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;">'+t('mealPastDateHint')+'</div>';
   }
   return html;
 }
@@ -2359,10 +2407,10 @@ function behaviorNameFor(c, behaviorId){
   if(!b) return '';
   return (state.lang==='en' && b.name_en) ? b.name_en : b.name;
 }
-function renderBehaviorSelectHtml(id, c){
+function renderBehaviorSelectHtml(id, c, selectedId){
   var opts = (c.behaviors||[]).map(function(b){
     var nm = (state.lang==='en' && b.name_en) ? b.name_en : b.name;
-    return '<option value="'+b.id+'">'+esc(nm)+'</option>';
+    return '<option value="'+b.id+'"'+(selectedId===b.id?' selected':'')+'>'+esc(nm)+'</option>';
   }).join('');
   return '<select id="'+id+'">'+opts+'</select>';
 }
@@ -2379,6 +2427,7 @@ function renderRedeemTabBody(c, parentMode){
 
 function renderRewardsSubTab(c, parentMode){
   var rewards = c.rewards || [];
+  var editingItem = editingRewardId ? rewards.find(function(r){ return r.id===editingRewardId; }) : null;
   var html = '';
   if(!rewards.length){
     html += '<div style="font-size:14px;color:var(--muted);padding:14px 2px;text-align:center;">'+t('noRewardsYet')+'</div>';
@@ -2392,7 +2441,7 @@ function renderRewardsSubTab(c, parentMode){
       var progressText = item.metric==='count' ? (cumulative+' / '+threshold+' '+t('countUnit')) : (fmtPts(cumulative)+' / '+fmtPts(item.cost));
       return '<div class="redeem-card">'+
         '<div class="redeem-head"><div class="redeem-title"><span>'+item.icon+'</span><span>'+esc(nm)+'</span></div>'+
-        (parentMode ? '<button class="small-icon-btn" data-act="delete-reward" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
+        (parentMode ? '<div style="display:flex;gap:6px;"><button class="small-icon-btn" data-act="edit-reward-form" data-id="'+c.id+'" data-value="'+item.id+'">✎</button><button class="small-icon-btn" data-act="delete-reward" data-id="'+c.id+'" data-value="'+item.id+'">✕</button></div>' : '')+
         '</div>'+
         '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+(item.metric==='count' && item.escalate?' · 🌱 +'+item.escalateStep+' '+t('countUnit')+'/'+t('escalateCycleLabel'):'')+'</div>'+
         '<div class="redeem-progress"><span>'+progressText+'</span><span class="nutri-badge '+(eligible?'ok':'bad')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
@@ -2404,13 +2453,13 @@ function renderRewardsSubTab(c, parentMode){
   if(parentMode){
     html += showRewardForm ?
       '<div class="inline-form">'+
-        '<div class="field"><label>'+t('rewardNameLabel')+'</label><input id="mRewardName" placeholder="'+t('rewardNamePlaceholder')+'"></div>'+
+        '<div class="field"><label>'+t('rewardNameLabel')+'</label><input id="mRewardName" placeholder="'+t('rewardNamePlaceholder')+'" value="'+(editingItem?esc(editingItem.name):'')+'"></div>'+
         '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-reward-scope', c.id, rewardFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
-        (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mRewardBehaviorSelect', c)+'</div>' : '')+
+        (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mRewardBehaviorSelect', c, editingItem?editingItem.behaviorId:null)+'</div>' : '')+
         (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-reward-metric', c.id, rewardFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
         (rewardFormScope==='behavior' && rewardFormMetric==='count'
-          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mRewardCost" placeholder="3"></div>'
-          : '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50"></div>')+
+          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mRewardCost" placeholder="3" value="'+(editingItem?esc(editingItem.cost):'')+'"></div>'
+          : '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50" value="'+(editingItem?esc(editingItem.cost):'')+'"></div>')+
         (rewardFormScope==='behavior' && rewardFormMetric==='count' ? (''+
           '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-reward-escalate', c.id, rewardFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
           (rewardFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mRewardEscalateStep" value="'+rewardFormEscalateStep+'"></div>'+
@@ -2426,6 +2475,7 @@ function renderRewardsSubTab(c, parentMode){
 
 function renderPenaltiesSubTab(c, parentMode){
   var penalties = c.penalties || [];
+  var editingItem = editingPenaltyId ? penalties.find(function(p){ return p.id===editingPenaltyId; }) : null;
   var html = '';
   if(!penalties.length){
     html += '<div style="font-size:14px;color:var(--muted);padding:14px 2px;text-align:center;">'+t('noPenaltiesYet')+'</div>';
@@ -2439,7 +2489,7 @@ function renderPenaltiesSubTab(c, parentMode){
       var progressText = item.metric==='count' ? (cumulative+' / '+threshold+' '+t('countUnit')) : (fmtPts(cumulative)+' / -'+fmtPts(item.offset));
       return '<div class="redeem-card">'+
         '<div class="redeem-head"><div class="redeem-title"><span>'+item.icon+'</span><span>'+esc(nm)+'</span></div>'+
-        (parentMode ? '<button class="small-icon-btn" data-act="delete-penalty" data-id="'+c.id+'" data-value="'+item.id+'">✕</button>' : '')+
+        (parentMode ? '<div style="display:flex;gap:6px;"><button class="small-icon-btn" data-act="edit-penalty-form" data-id="'+c.id+'" data-value="'+item.id+'">✎</button><button class="small-icon-btn" data-act="delete-penalty" data-id="'+c.id+'" data-value="'+item.id+'">✕</button></div>' : '')+
         '</div>'+
         '<div class="redeem-scope">'+scopeLabel+(item.metric==='count'?' · '+t('metricCount'):'')+(item.metric==='count' && item.escalate?' · 🌱 +'+item.escalateStep+' '+t('countUnit')+'/'+t('escalateCycleLabel'):'')+'</div>'+
         '<div class="redeem-progress"><span>'+progressText+'</span><span class="nutri-badge '+(eligible?'bad':'ok')+'">'+(eligible?t('metBadge'):t('notMetBadge'))+'</span></div>'+
@@ -2451,13 +2501,13 @@ function renderPenaltiesSubTab(c, parentMode){
   if(parentMode){
     html += showPenaltyForm ?
       '<div class="inline-form">'+
-        '<div class="field"><label>'+t('penaltyNameLabel')+'</label><input id="mPenaltyName" placeholder="'+t('penaltyNamePlaceholder')+'"></div>'+
+        '<div class="field"><label>'+t('penaltyNameLabel')+'</label><input id="mPenaltyName" placeholder="'+t('penaltyNamePlaceholder')+'" value="'+(editingItem?esc(editingItem.name):'')+'"></div>'+
         '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-penalty-scope', c.id, penaltyFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
-        (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mPenaltyBehaviorSelect', c)+'</div>' : '')+
+        (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mPenaltyBehaviorSelect', c, editingItem?editingItem.behaviorId:null)+'</div>' : '')+
         (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-penalty-metric', c.id, penaltyFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
         (penaltyFormScope==='behavior' && penaltyFormMetric==='count'
-          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyOffset" placeholder="3"></div>'
-          : '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20"></div>')+
+          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyOffset" placeholder="3" value="'+(editingItem?esc(editingItem.offset):'')+'"></div>'
+          : '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20" value="'+(editingItem?esc(editingItem.offset):'')+'"></div>')+
         (penaltyFormScope==='behavior' && penaltyFormMetric==='count' ? (''+
           '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-penalty-escalate', c.id, penaltyFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
           (penaltyFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyEscalateStep" value="'+penaltyFormEscalateStep+'"></div>'+
@@ -3467,7 +3517,7 @@ function handleAction(act, id, value, el){
   else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; selectedFoodRefId=null; selectedRangeBehaviorId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showPointsAdjustForm=false; render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; selectedFoodRefId=null; selectedRangeBehaviorId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; editingRewardId=null; editingPenaltyId=null; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showPointsAdjustForm=false; render(); }
   else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
@@ -3505,10 +3555,22 @@ function handleAction(act, id, value, el){
   else if(act==='open-child-health'){ editChildTab='health'; confirmDeleteChild=false; healthSubTab='meals'; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; selectedExerciseRefId=null; pushScreen({type:'editChild', childId:id}); }
   else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; selectedFoodRefId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; render(); }
 
-  else if(act==='open-child-redeem'){ editChildTab='redeem'; confirmDeleteChild=false; redeemSubTab='rewards'; showRewardForm=false; showPenaltyForm=false; pushScreen({type:'editChild', childId:id}); }
-  else if(act==='redeem-sub-tab'){ redeemSubTab = value; showRewardForm=false; showPenaltyForm=false; render(); }
-  else if(act==='open-reward-form'){ showRewardForm=true; rewardFormScope='total'; rewardFormMetric='points'; rewardFormEscalate=false; rewardFormEscalateStep=1; render(); }
-  else if(act==='cancel-reward-form'){ showRewardForm=false; render(); }
+  else if(act==='open-child-redeem'){ editChildTab='redeem'; confirmDeleteChild=false; redeemSubTab='rewards'; showRewardForm=false; showPenaltyForm=false; editingRewardId=null; editingPenaltyId=null; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='redeem-sub-tab'){ redeemSubTab = value; showRewardForm=false; showPenaltyForm=false; editingRewardId=null; editingPenaltyId=null; render(); }
+  else if(act==='open-reward-form'){ showRewardForm=true; editingRewardId=null; rewardFormScope='total'; rewardFormMetric='points'; rewardFormEscalate=false; rewardFormEscalateStep=1; render(); }
+  else if(act==='edit-reward-form'){
+    var childR = childById(id);
+    var itemR = childR && (childR.rewards||[]).find(function(r){ return r.id===value; });
+    if(!itemR) return;
+    showRewardForm = true;
+    editingRewardId = itemR.id;
+    rewardFormScope = itemR.scope || 'total';
+    rewardFormMetric = itemR.metric || 'points';
+    rewardFormEscalate = !!itemR.escalate;
+    rewardFormEscalateStep = itemR.escalateStep || 1;
+    render();
+  }
+  else if(act==='cancel-reward-form'){ showRewardForm=false; editingRewardId=null; render(); }
   else if(act==='draft-reward-scope'){ rewardFormScope = value; if(value==='total'){ rewardFormMetric='points'; rewardFormEscalate=false; } render(); }
   else if(act==='draft-reward-metric'){ rewardFormMetric = value; if(value!=='count') rewardFormEscalate=false; render(); }
   else if(act==='toggle-reward-escalate'){ rewardFormEscalate = (value==='on'); render(); }
@@ -3526,15 +3588,29 @@ function handleAction(act, id, value, el){
     }
     var stepInp = document.getElementById('mRewardEscalateStep');
     var escalateStep = (isCountReward && rewardFormEscalate && stepInp) ? (Math.round(Math.abs(Number(stepInp.value)))||1) : 1;
-    addReward(id, name, '', rewardFormScope, behaviorId, cost, rewardFormMetric, isCountReward && rewardFormEscalate, escalateStep);
+    if(editingRewardId){ updateReward(id, editingRewardId, name, '', rewardFormScope, behaviorId, cost, rewardFormMetric, isCountReward && rewardFormEscalate, escalateStep); }
+    else { addReward(id, name, '', rewardFormScope, behaviorId, cost, rewardFormMetric, isCountReward && rewardFormEscalate, escalateStep); }
     showRewardForm = false;
+    editingRewardId = null;
     render();
   }
-  else if(act==='delete-reward'){ deleteReward(id, value); render(); }
+  else if(act==='delete-reward'){ if(editingRewardId===value) editingRewardId=null; deleteReward(id, value); render(); }
   else if(act==='redeem-reward'){ redeemReward(id, value); toast(t('redeemedRewardToast')); render(); }
 
-  else if(act==='open-penalty-form'){ showPenaltyForm=true; penaltyFormScope='total'; penaltyFormMetric='points'; penaltyFormEscalate=false; penaltyFormEscalateStep=1; render(); }
-  else if(act==='cancel-penalty-form'){ showPenaltyForm=false; render(); }
+  else if(act==='open-penalty-form'){ showPenaltyForm=true; editingPenaltyId=null; penaltyFormScope='total'; penaltyFormMetric='points'; penaltyFormEscalate=false; penaltyFormEscalateStep=1; render(); }
+  else if(act==='edit-penalty-form'){
+    var childP = childById(id);
+    var itemP = childP && (childP.penalties||[]).find(function(p){ return p.id===value; });
+    if(!itemP) return;
+    showPenaltyForm = true;
+    editingPenaltyId = itemP.id;
+    penaltyFormScope = itemP.scope || 'total';
+    penaltyFormMetric = itemP.metric || 'points';
+    penaltyFormEscalate = !!itemP.escalate;
+    penaltyFormEscalateStep = itemP.escalateStep || 1;
+    render();
+  }
+  else if(act==='cancel-penalty-form'){ showPenaltyForm=false; editingPenaltyId=null; render(); }
   else if(act==='draft-penalty-scope'){ penaltyFormScope = value; if(value==='total'){ penaltyFormMetric='points'; penaltyFormEscalate=false; } render(); }
   else if(act==='draft-penalty-metric'){ penaltyFormMetric = value; if(value!=='count') penaltyFormEscalate=false; render(); }
   else if(act==='toggle-penalty-escalate'){ penaltyFormEscalate = (value==='on'); render(); }
@@ -3552,11 +3628,13 @@ function handleAction(act, id, value, el){
     }
     var stepInp2 = document.getElementById('mPenaltyEscalateStep');
     var escalateStep2 = (isCountPenalty && penaltyFormEscalate && stepInp2) ? (Math.round(Math.abs(Number(stepInp2.value)))||1) : 1;
-    addPenalty(id, name2, '', penaltyFormScope, behaviorId2, offset, penaltyFormMetric, isCountPenalty && penaltyFormEscalate, escalateStep2);
+    if(editingPenaltyId){ updatePenalty(id, editingPenaltyId, name2, '', penaltyFormScope, behaviorId2, offset, penaltyFormMetric, isCountPenalty && penaltyFormEscalate, escalateStep2); }
+    else { addPenalty(id, name2, '', penaltyFormScope, behaviorId2, offset, penaltyFormMetric, isCountPenalty && penaltyFormEscalate, escalateStep2); }
     showPenaltyForm = false;
+    editingPenaltyId = null;
     render();
   }
-  else if(act==='delete-penalty'){ deletePenalty(id, value); render(); }
+  else if(act==='delete-penalty'){ if(editingPenaltyId===value) editingPenaltyId=null; deletePenalty(id, value); render(); }
   else if(act==='execute-penalty'){ executePenalty(id, value); toast(t('penaltyExecutedToast')); render(); }
 
   else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; ledgerCurrency='CAD'; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; pushScreen({type:'editChild', childId:id}); }
@@ -3655,9 +3733,10 @@ function handleAction(act, id, value, el){
   else if(act==='pick-food'){ selectedFoodRefId = (selectedFoodRefId===value) ? null : value; editingMealLogId = null; render(); }
   else if(act==='close-food-qty-picker'){ selectedFoodRefId = null; editingMealLogId = null; render(); }
   else if(act==='edit-meal-log'){
-    var editLog = data.mealLogs.find(function(l){ return l.id===value; });
+    var editLog = data.mealLogs.find(function(l){ return l.id===id; });
     var refFood = editLog ? foodLibraryAll().find(function(x){ return x.refId===editLog.refId; }) : null;
     if(!editLog || !refFood){ toast(t('mealFoodGoneToast')); return; }
+    if(!canEditMealDate(editLog.date, isParentMode())){ toast(t('mealPastDateLockedToast')); return; }
     editingMealLogId = editLog.id;
     selectedFoodRefId = editLog.refId;
     mealTypeDraft = editLog.mealType;
@@ -3669,6 +3748,8 @@ function handleAction(act, id, value, el){
     var amt = amtEl ? parseFloat(amtEl.value) : NaN;
     if(!f || !amt || amt<=0){ return; }
     if(editingMealLogId){
+      var beingEdited = data.mealLogs.find(function(l){ return l.id===editingMealLogId; });
+      if(beingEdited && !canEditMealDate(beingEdited.date, isParentMode())){ toast(t('mealPastDateLockedToast')); selectedFoodRefId=null; editingMealLogId=null; render(); return; }
       updateMealLog(editingMealLogId, mealTypeDraft, f, amt);
     } else {
       addMealLog(id, mealTypeDraft, f, amt, getMealsCalState(id).sel);
@@ -3678,7 +3759,11 @@ function handleAction(act, id, value, el){
     toast(t('mealLoggedToast'));
     render();
   }
-  else if(act==='delete-meal-log'){ deleteMealLog(id); render(); }
+  else if(act==='delete-meal-log'){
+    var delLog = data.mealLogs.find(function(l){ return l.id===id; });
+    if(delLog && !canEditMealDate(delLog.date, isParentMode())){ toast(t('mealPastDateLockedToast')); return; }
+    deleteMealLog(id); render();
+  }
   else if(act==='toggle-food-show-all'){ mealFoodShowAll = !mealFoodShowAll; render(); }
   else if(act==='toggle-food-list-expand'){ mealFoodListExpanded = !mealFoodListExpanded; render(); }
   else if(act==='toggle-meals-calendar'){ showMealsCalendar = !showMealsCalendar; render(); }
