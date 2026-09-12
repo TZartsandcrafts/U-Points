@@ -299,6 +299,17 @@ function esc(s){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
+// 浮动区间行为规则的展示文案：不管内部存的 pointsMin/pointsMax 谁大谁小，
+// 统一按"幅度从小到大"排列——加分显示 +0.2~3，扣分显示 -0.1~-10，
+// 跟固定分值的正负号习惯保持一致，避免看着像输反了
+function rangeDisplayText(b){
+  var isPenalty = b.pointsMax < 0;
+  var loAbs = Math.min(Math.abs(b.pointsMin), Math.abs(b.pointsMax));
+  var hiAbs = Math.max(Math.abs(b.pointsMin), Math.abs(b.pointsMax));
+  var lo = isPenalty ? -loAbs : loAbs;
+  var hi = isPenalty ? -hiAbs : hiAbs;
+  return (isPenalty ? '' : '+')+fmtPts(lo)+'~'+fmtPts(hi);
+}
 
 /* ---------------- 双语 I18N ---------------- */
 var I18N = {
@@ -673,7 +684,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.30';
+var APP_VERSION = '3.13.31';
 var APP_BUILD_DATE = '2026-09-10';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1850,7 +1861,7 @@ function renderPointChip(child, b){
     var sel = selectedRangeBehaviorId === b.id;
     return '<button class="chip '+(b.pointsMax>=0?'reward':'penalty')+' tap'+(sel?' selected':'')+'" data-act="pick-range-behavior" data-id="'+child.id+'" data-value="'+b.id+'">'+
       '<span class="chip-left"><span class="chip-icon">'+esc(b.icon)+'</span><span class="chip-name">'+esc(behaviorDisplayName(b))+'</span></span>'+
-      '<span class="chip-value">'+(b.pointsMax>=0?'+':'')+fmtPts(b.pointsMin)+'~'+fmtPts(b.pointsMax)+'</span>'+
+      '<span class="chip-value">'+rangeDisplayText(b)+'</span>'+
     '</button>';
   }
   var pts = (b.points < 0 && b.escalate) ? nextEscalatedPoints(child, b) : b.points;
@@ -3092,7 +3103,7 @@ function renderManageBehaviorsScreen(scr){
     if(mode==='checklist'){
       valueHtml = '<span class="point-pill" style="background:var(--sky-light);color:var(--sky-dark);">✔️</span>';
     } else if(mode==='range'){
-      valueHtml = '<span class="point-pill '+(b.pointsMax>=0?'pos':'neg')+'">'+(b.pointsMax>=0?'+':'')+fmtPts(b.pointsMin)+'~'+fmtPts(b.pointsMax)+'</span>';
+      valueHtml = '<span class="point-pill '+(b.pointsMax>=0?'pos':'neg')+'">'+rangeDisplayText(b)+'</span>';
     } else {
       valueHtml = '<span class="point-pill '+(b.points>=0?'pos':'neg')+'">'+(b.points>=0?'+':'')+fmtPts(b.points)+'</span>';
     }
@@ -3897,7 +3908,13 @@ function handleAction(act, id, value, el){
     if(b){
       var bMode = b.pointsMode || 'fixed';
       if(bMode==='range'){
-        behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: b.pointsMax>=0?'reward':'penalty', pointsMode:'range', abs:'', rangeMin: Math.abs(b.pointsMin), rangeMax: Math.abs(b.pointsMax), escalate:false, growthDays:14};
+        // 扣分区间在存储里是 pointsMin=-较大幅度、pointsMax=-较小幅度（负数，数值上 pointsMin<pointsMax）；
+        // 但表单里"最小值/最大值"两个输入框给用户看的是幅度大小（正数），不能直接各自取绝对值对应过去，
+        // 否则大小会跟用户当初填的正好反过来——这里统一按幅度重新排序，取小的填最小值、大的填最大值
+        var isPenaltyB = b.pointsMax < 0;
+        var loAbs = Math.min(Math.abs(b.pointsMin), Math.abs(b.pointsMax));
+        var hiAbs = Math.max(Math.abs(b.pointsMin), Math.abs(b.pointsMax));
+        behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign: isPenaltyB?'penalty':'reward', pointsMode:'range', abs:'', rangeMin: loAbs, rangeMax: hiAbs, escalate:false, growthDays:14};
       } else if(bMode==='checklist'){
         behaviorForm = {id:b.id, name:b.name, icon:b.icon, category:b.category, sign:'reward', pointsMode:'checklist', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14, weekendItem: !!b.weekendItem};
       } else {
