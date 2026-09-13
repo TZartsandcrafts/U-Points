@@ -684,8 +684,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.31';
-var APP_BUILD_DATE = '2026-09-10';
+var APP_VERSION = '3.13.32';
+var APP_BUILD_DATE = '2026-09-12';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1207,8 +1207,8 @@ function nutritionChecklist(child){
   if(targets.carb!=null) items.push({key:'carb', icon:'🍞', name_zh:'碳水不超标', name_en:'Carbs within limit', ok: totals.carb <= targets.carb, actual: Math.round(totals.carb*10)/10, target: targets.carb, dir:'max'});
   if(targets.protein!=null) items.push({key:'protein', icon:'🍗', name_zh:'蛋白质达标', name_en:'Protein target met', ok: totals.protein >= targets.protein, actual: Math.round(totals.protein*10)/10, target: targets.protein, dir:'min'});
   if(targets.fat!=null) items.push({key:'fat', icon:'🥑', name_zh:'脂肪不超标', name_en:'Fat within limit', ok: totals.fat <= targets.fat, actual: Math.round(totals.fat*10)/10, target: targets.fat, dir:'max'});
-  items.push({key:'veg', icon:'🥦', name_zh:'蔬菜达标(g)', name_en:'Veggies target met (g)', ok: totals.veg >= targets.veg, actual: totals.veg, target: targets.veg, dir:'min'});
-  items.push({key:'fruit', icon:'🍎', name_zh:'水果不超标(g)', name_en:'Fruit within limit (g)', ok: totals.fruit <= targets.fruit, actual: totals.fruit, target: targets.fruit, dir:'max'});
+  items.push({key:'veg', icon:'🥦', name_zh:'蔬菜达标(g)', name_en:'Veggies target met (g)', ok: totals.veg >= targets.veg, actual: Math.round(totals.veg*10)/10, target: targets.veg, dir:'min'});
+  items.push({key:'fruit', icon:'🍎', name_zh:'水果不超标(g)', name_en:'Fruit within limit (g)', ok: totals.fruit <= targets.fruit, actual: Math.round(totals.fruit*10)/10, target: targets.fruit, dir:'max'});
   return items;
 }
 function settleNutritionToday(childId){
