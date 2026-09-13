@@ -684,8 +684,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.32';
-var APP_BUILD_DATE = '2026-09-12';
+var APP_VERSION = '3.13.33';
+var APP_BUILD_DATE = '2026-09-13';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1897,6 +1897,22 @@ function fmtPts(n){
   n = Math.round(n*10)/10;
   return (n % 1 === 0) ? String(n) : n.toFixed(1);
 }
+// 数量输入统一走这个函数解析：既支持普通小数，也支持"2/3"这种分数写法
+// （用在"吃了多少个/多重"这类场景——手机数字键盘打不出分数线，直接把输入框
+// 换成普通文本框后，苹果系统"type=number"遇到非法字符会把值整个清空成空字符串
+// 这个隐藏坑就不会再把用户填好的表单整体判定成"没填"）
+function parseQty(str){
+  if(str==null) return NaN;
+  str = String(str).trim();
+  if(!str) return NaN;
+  var m = str.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+  if(m){
+    var num = parseFloat(m[1]), den = parseFloat(m[2]);
+    if(!den) return NaN;
+    return num/den;
+  }
+  return parseFloat(str);
+}
 
 /* ---------------- 积分月历 ---------------- */
 var CAL_MONTH_NAMES_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -2250,7 +2266,7 @@ function renderFoodQtyPicker(child, f, editingLog){
       '<div class="range-picker-title">'+esc(f.icon)+' '+esc(nm)+'</div>'+
       '<div class="field" style="margin-bottom:8px;"><label>'+t('mealTypeFieldLabel')+'</label>'+segmentedHtml('set-meal-type', child.id, mealTypeDraft, mealTypeOpts)+'</div>'+
       '<div class="field" style="margin-bottom:8px;"><label>'+t('foodAmountLabel')+' ('+unitLabel+')</label>'+
-      '<input type="number" id="mFoodAmount" value="'+prefillAmt+'" autofocus></div>'+
+      '<input type="text" inputmode="text" id="mFoodAmount" value="'+prefillAmt+'" autofocus></div>'+
       '<div class="calorie-preview" id="mFoodAmountPreview" style="color:var(--food-text);margin-bottom:12px;"></div>'+
       '<button type="button" class="btn-primary tap" data-act="log-meal" data-id="'+child.id+'" style="background:var(--food);box-shadow:0 6px 14px rgba(242,169,59,.35);">'+(editingLog?t('updateMealBtn'):t('logMealBtn'))+'</button>'+
     '</div>'+
@@ -2279,7 +2295,7 @@ function renderMealsSubTab(c, parentMode){
       '<div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:10px;">'+(editingFood?t('editCustomFoodTitle'):t('addCustomFoodTitle'))+'</div>'+
       '<div class="field"><label>'+t('foodNameLabel')+'</label><input id="mCustomFoodName" placeholder="'+t('foodNamePlaceholder')+'" value="'+esc(dName)+'"></div>'+
       '<div class="field"><label>'+t('foodUnitLabel')+'</label>'+segmentedHtml('draft-custom-food-unit', c.id, customFoodUnitDraft, [['g',t('unitGrams')],['count',t('unitCount')]])+'</div>'+
-      '<div class="field"><label>'+(customFoodUnitDraft==='g'?t('foodBaseAmountGLabel'):t('foodBaseAmountCountLabel'))+'</label><input type="number" id="mCustomFoodBaseAmount" placeholder="'+(customFoodUnitDraft==='g'?'100':'1')+'" value="'+esc(dBase)+'"></div>'+
+      '<div class="field"><label>'+(customFoodUnitDraft==='g'?t('foodBaseAmountGLabel'):t('foodBaseAmountCountLabel'))+'</label><input type="text" inputmode="text" id="mCustomFoodBaseAmount" placeholder="'+(customFoodUnitDraft==='g'?'100':'1')+'" value="'+esc(dBase)+'"></div>'+
       '<div class="field"><label>'+t('foodCaloriesLabel')+'</label><input type="number" id="mCustomFoodCal" placeholder="200" value="'+esc(dCal)+'"></div>'+
       '<div class="field"><label>'+t('foodCategoryLabel')+'</label>'+
         segmentedHtml('draft-custom-food-category', c.id, customFoodCategoryDraft, [['other',t('catOtherFood')],['veg',t('catVeg')],['fruit',t('catFruit')]])+
@@ -3443,7 +3459,7 @@ function bindEvents(){
       if(!previewEl) return;
       var f = foodLibraryAll().find(function(x){ return x.refId===selectedFoodRefId; });
       if(!f) return;
-      var amt = parseFloat(foodAmountInput.value) || 0;
+      var amt = parseQty(foodAmountInput.value) || 0;
       var s = scaleFoodValues(f, amt);
       previewEl.textContent = s.calories+' kcal · '+t('carbGLabel')+' '+s.carb+' · '+t('proteinGLabel')+' '+s.protein+' · '+t('fatGLabel')+' '+s.fat;
     };
@@ -3756,7 +3772,7 @@ function handleAction(act, id, value, el){
   else if(act==='log-meal'){
     var f = foodLibraryAll().find(function(x){ return x.refId===selectedFoodRefId; });
     var amtEl = document.getElementById('mFoodAmount');
-    var amt = amtEl ? parseFloat(amtEl.value) : NaN;
+    var amt = amtEl ? parseQty(amtEl.value) : NaN;
     if(!f || !amt || amt<=0){ return; }
     if(editingMealLogId){
       var beingEdited = data.mealLogs.find(function(l){ return l.id===editingMealLogId; });
@@ -3807,7 +3823,7 @@ function handleAction(act, id, value, el){
   }
   else if(act==='save-custom-food'){
     var name = document.getElementById('mCustomFoodName').value.trim();
-    var baseAmount = parseFloat(document.getElementById('mCustomFoodBaseAmount').value);
+    var baseAmount = parseQty(document.getElementById('mCustomFoodBaseAmount').value);
     var cal = parseFloat(document.getElementById('mCustomFoodCal').value);
     if(!name || !cal || !baseAmount){ toast(t('fillFoodFieldsToast')); return; }
     var carb = parseFloat(document.getElementById('mCustomFoodCarb').value) || 0;
