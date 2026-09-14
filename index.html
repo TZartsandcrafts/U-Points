@@ -684,8 +684,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.33';
-var APP_BUILD_DATE = '2026-09-13';
+var APP_VERSION = '3.13.36';
+var APP_BUILD_DATE = '2026-09-14';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -766,8 +766,8 @@ function behaviorDisplayName(b){
 var FOOD_LIBRARY = []; // 预置食物库已按需求清空，只保留自定义食物
 var EXERCISE_LIBRARY = []; // 预置运动项目库已按需求清空，只保留自定义运动
 function foodLibraryAll(){
-  return FOOD_LIBRARY.map(function(f){ return {refId:'lib:'+f.id, name:f.name, name_en:f.name_en, icon:f.icon, unit:f.unit||'count', baseAmount:f.baseAmount||1, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; })
-    .concat((data.customFoods||[]).map(function(f){ return {refId:'custom:'+f.id, name:f.name, name_en:f.name_en||f.name, icon:f.icon||'🍽️', unit:f.unit||'count', baseAmount:f.baseAmount||1, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; }));
+  return FOOD_LIBRARY.map(function(f){ return {refId:'lib:'+f.id, name:f.name, name_en:f.name_en, icon:f.icon, unit:f.unit||'count', baseAmount:f.baseAmount||1, baseAmountDisplay:f.baseAmountDisplay||null, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; })
+    .concat((data.customFoods||[]).map(function(f){ return {refId:'custom:'+f.id, name:f.name, name_en:f.name_en||f.name, icon:f.icon||'🍽️', unit:f.unit||'count', baseAmount:f.baseAmount||1, baseAmountDisplay:f.baseAmountDisplay||null, calories:f.calories, carb:f.carb||0, protein:f.protein||0, fat:f.fat||0, category:f.category||'other'}; }));
 }
 // 按食物的"基准量"营养素折算成任意实际食用量对应的数值（比如基准是250g对应150kcal，吃了300g就按比例放大）
 function scaleFoodValues(food, amount){
@@ -781,11 +781,11 @@ function scaleFoodValues(food, amount){
   };
 }
 // 记住这个孩子上一次吃某个食物时用的量，下次弹出输入框默认填这个量（而不是每次都要重填基准量）
-function lastFoodAmount(childId, refId){
+function lastFoodAmountDisplay(childId, refId){
   var logs = data.mealLogs.filter(function(l){ return l.childId===childId && l.refId===refId; });
   if(!logs.length) return null;
   var latest = logs.reduce(function(a,b){ return ledgerSortKeyGeneric(a) > ledgerSortKeyGeneric(b) ? a : b; });
-  return latest.amount || null;
+  return latest.amountDisplay || (latest.amount!=null ? fmtQtyStr(latest.amount) : null);
 }
 function ledgerSortKeyGeneric(l){ return l.ts!=null ? l.ts : parseLogDT(l).getTime(); }
 function exerciseLibraryAll(){
@@ -1113,12 +1113,12 @@ function todayMealLogs(childId){
 function todayExerciseLogs(childId){
   return data.exerciseLogs.filter(function(l){ return l.childId===childId && l.date===todayStr(); });
 }
-function addMealLog(childId, mealType, food, amount, dateOverride){
+function addMealLog(childId, mealType, food, amount, dateOverride, amountDisplay){
   var scaled = scaleFoodValues(food, amount);
   var log = {
     id: uid(), childId: childId, mealType: mealType, ts: Date.now(),
     name: food.name, name_en: food.name_en || '', icon: food.icon, refId: food.refId || null,
-    unit: food.unit || 'count', amount: scaled.amount,
+    unit: food.unit || 'count', amount: scaled.amount, amountDisplay: amountDisplay || fmtQtyStr(scaled.amount),
     calories: scaled.calories, carb: scaled.carb, protein: scaled.protein, fat: scaled.fat,
     category: food.category || 'other',
     date: dateOverride || todayStr(), time: (new Date()).toTimeString().slice(0,5)
@@ -1128,12 +1128,13 @@ function addMealLog(childId, mealType, food, amount, dateOverride){
 }
 // 修改已有的一条三餐记录（食物换了/数量改了/餐次改了），保留原来的日期不变——
 // 通过月历翻到别的日期看到的记录，改完还是留在那一天，不会因为编辑动作被挪到今天
-function updateMealLog(logId, mealType, food, amount){
+function updateMealLog(logId, mealType, food, amount, amountDisplay){
   var log = data.mealLogs.find(function(l){ return l.id===logId; });
   if(!log) return null;
   var scaled = scaleFoodValues(food, amount);
   log.mealType = mealType; log.name = food.name; log.name_en = food.name_en||''; log.icon = food.icon;
   log.refId = food.refId || null; log.unit = food.unit || 'count'; log.amount = scaled.amount;
+  log.amountDisplay = amountDisplay || fmtQtyStr(scaled.amount);
   log.calories = scaled.calories; log.carb = scaled.carb; log.protein = scaled.protein; log.fat = scaled.fat;
   log.category = food.category || 'other';
   persistEntity('mealLogs', log);
@@ -1156,8 +1157,9 @@ function addExerciseLog(childId, ex, durationMin){
   return log;
 }
 function deleteExerciseLog(logId){ persistDelete('exerciseLogs', logId); }
-function addCustomFood(name, name_en, unit, baseAmount, calories, carb, protein, fat, category){
-  var food = { id: uid(), name: name, name_en: name_en || '', icon: '🍽️', unit: unit||'count', baseAmount: baseAmount||1, calories: calories, carb: carb||0, protein: protein||0, fat: fat||0, category: category||'other' };
+function addCustomFood(name, name_en, unit, baseAmount, calories, carb, protein, fat, category, baseAmountDisplay){
+  var food = { id: uid(), name: name, name_en: name_en || '', icon: '🍽️', unit: unit||'count', baseAmount: baseAmount||1,
+    baseAmountDisplay: baseAmountDisplay || fmtQtyStr(baseAmount), calories: calories, carb: carb||0, protein: protein||0, fat: fat||0, category: category||'other' };
   persistEntity('customFoods', food);
   return food;
 }
@@ -1906,12 +1908,34 @@ function parseQty(str){
   str = String(str).trim();
   if(!str) return NaN;
   var m = str.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+  var n;
   if(m){
     var num = parseFloat(m[1]), den = parseFloat(m[2]);
     if(!den) return NaN;
-    return num/den;
+    n = num/den;
+  } else {
+    n = parseFloat(str);
   }
-  return parseFloat(str);
+  if(isNaN(n)) return NaN;
+  // 分数除不尽会产生一长串小数（2/3 = 0.6666666666666666），直接存进去、显示出来
+  // 就是一串没法看的数字；四舍五入到三位小数，既不影响热量换算的准确度，界面上
+  // 看着也干净（1/3、2/3、1/7 这类常见分数舍到三位小数误差可以忽略不计）
+  return Math.round(n*1000)/1000;
+}
+// 用于展示"数量"这类数字（三餐用量、自定义食物基准数量）：三位小数四舍五入，
+// 顺手把多余的尾零去掉（0.250 -> 0.25，2.000 -> 2）。之所以还需要这一层，是因为
+// 老数据（这次修复之前存进去的分数换算结果）本来就已经带着一长串小数存在
+// localStorage 里了，parseQty 只能保证"以后新存的是干净的"，这里在展示的时候
+// 也兜底处理一下，老数据不用等用户重新编辑一次才能看着正常
+function fmtQty(n){
+  if(n==null || isNaN(n)) return n;
+  return Math.round(n*1000)/1000;
+}
+// 同上，但返回字符串——用在"这条记录当初没存用户原始输入文本（老数据/内置食物）"
+// 时的兜底展示，跟 fmtQty 是同一套四舍五入规则，只是类型不同
+function fmtQtyStr(n){
+  var r = fmtQty(n);
+  return (r==null || isNaN(r)) ? '' : String(r);
 }
 
 /* ---------------- 积分月历 ---------------- */
@@ -2244,7 +2268,7 @@ function renderManageCustomFoodsList(){
     var unitLabel = f.unit==='g' ? t('unitGrams') : t('unitCount');
     return '<div class="behavior-row">'+
       '<span style="font-size:22px;">'+esc(f.icon||'🍽️')+'</span>'+
-      '<div class="name">'+esc(f.name)+' <span class="cat-tag">'+esc(f.baseAmount)+unitLabel+' · '+f.calories+'kcal</span></div>'+
+      '<div class="name">'+esc(f.name)+' <span class="cat-tag">'+esc(f.baseAmountDisplay||fmtQtyStr(f.baseAmount))+unitLabel+' · '+f.calories+'kcal</span></div>'+
       '<button class="small-icon-btn" data-act="edit-custom-food" data-id="'+f.id+'">✏️</button>'+
       '<button class="small-icon-btn" data-act="ask-delete-custom-food" data-id="'+f.id+'">🗑</button>'+
     '</div>';
@@ -2257,7 +2281,7 @@ function renderManageCustomFoodsList(){
 // 保存时更新这条记录而不是新建一条，日期保持不变）
 function renderFoodQtyPicker(child, f, editingLog){
   var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
-  var prefillAmt = editingLog ? editingLog.amount : (lastFoodAmount(child.id, f.refId) || f.baseAmount);
+  var prefillAmt = editingLog ? (editingLog.amountDisplay || fmtQtyStr(editingLog.amount)) : (lastFoodAmountDisplay(child.id, f.refId) || f.baseAmountDisplay || fmtQtyStr(f.baseAmount));
   var unitLabel = f.unit==='g' ? t('unitGrams') : t('unitCount');
   var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
   return '<div class="range-picker-overlay" id="foodQtyOverlay">'+
@@ -2286,7 +2310,7 @@ function renderMealsSubTab(c, parentMode){
   var editingFood = editingCustomFoodId ? (data.customFoods||[]).find(function(f){ return f.id===editingCustomFoodId; }) : null;
   if(showCustomFoodForm){
     var dName = editingFood ? editingFood.name : '';
-    var dBase = editingFood ? editingFood.baseAmount : '';
+    var dBase = editingFood ? (editingFood.baseAmountDisplay || fmtQtyStr(editingFood.baseAmount)) : '';
     var dCal = editingFood ? editingFood.calories : '';
     var dCarb = editingFood ? editingFood.carb : '';
     var dProtein = editingFood ? editingFood.protein : '';
@@ -2342,7 +2366,7 @@ function renderMealsSubTab(c, parentMode){
   } else {
     html += group.map(function(l){
       var nm2 = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-      var amtLabel = l.amount!=null ? (' · '+l.amount+(l.unit==='g'?'g':t('unitCount'))) : '';
+      var amtLabel = l.amount!=null ? (' · '+(l.amountDisplay||fmtQtyStr(l.amount))+(l.unit==='g'?'g':t('unitCount'))) : '';
       return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm2)+'</span><span class="meta">'+l.time+amtLabel+'</span></div>'+
         '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--food-light);color:var(--food-text);">'+l.calories+'</span>'+
         (dayEditable ? ('<button class="small-icon-btn" data-act="edit-meal-log" data-id="'+l.id+'">✏️</button><button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>') : '')+'</div></div>';
@@ -2697,6 +2721,15 @@ function render(){
   // 避免"点了下头像/性别，刚打的字就被清空"这种数据丢失问题
   var preserved = {};
   app.querySelectorAll('input[id]').forEach(function(inp){ preserved[inp.id] = inp.value; });
+  // 同样把当前滚动位置也记下来：像"添加自定义食物"里点单位(克数/份数)、点食物分类
+  // 这种按钮，本意只是切换表单里的一个选项，重绘一次整个页面而已，用户当时正停留
+  // 在表单中间某处填东西——但因为重绘是把 #app 整个 innerHTML 换掉，浏览器（尤其是
+  // 手机上）常常会把页面滚动位置弹回顶部，看起来就像"页面乱跳走了"。这里重绘前后
+  // 都强制把滚动位置按住，让用户的视角停在原处不动。
+  // 注意：真正切换到"另一个页面"（pushScreen/popScreen）时，会在调用 render() 之前
+  // 先手动把滚动位置归零（见 scrollAppTop()），所以这里读到的 scrollY 已经是 0，
+  // 不会跟"进新页面应该回到顶部"这个预期冲突。
+  var scrollY = window.scrollY || window.pageYOffset || 0;
 
   var html = '';
   var scr = currentScreen();
@@ -2731,6 +2764,13 @@ function render(){
   });
 
   bindEvents();
+
+  // 恢复滚动位置：先同步按一次（覆盖大多数情况），再在下一帧兜底按一次
+  // （覆盖少数因为软键盘收起/展开导致视口高度异步变化、把位置又顶跑了的情况）
+  if((window.scrollY || window.pageYOffset || 0) !== scrollY){ window.scrollTo(0, scrollY); }
+  requestAnimationFrame(function(){
+    if((window.scrollY || window.pageYOffset || 0) !== scrollY){ window.scrollTo(0, scrollY); }
+  });
 }
 
 function renderWelcome(){
@@ -3302,9 +3342,21 @@ function bindEvents(){
   // 每次 render() 都会重建整个 DOM，滚动位置会被重置回最左边，导致刚点开的、
   // 原本滚到右边才能看到的标签（比如"家务"）点击后又被"弹"回右边看不全。
   // 这里在每次渲染后，把当前选中的标签滚动到刚好完整可见的位置。
+  // 注意：之前这里用的是 activeBtn.scrollIntoView({block:'nearest',...})，
+  // 这个 API 只要目标元素当时不在纵向视口内，就会连带把整个页面也纵向滚过去——
+  // 这正是"点一下自定义食物表单里的单位/分类按钮，页面却跳到别处"的真正元凶
+  // （表单越长、标签条离视口越远，越容易触发）。改成只调这个标签条自身的横向
+  // 滚动（scrollLeft），不碰页面纵向滚动，两个问题各管各的，不会互相干扰。
   document.querySelectorAll('.segmented.scroll').forEach(function(seg){
     var activeBtn = seg.querySelector('button.active');
-    if(activeBtn) activeBtn.scrollIntoView({block:'nearest', inline:'nearest'});
+    if(!activeBtn) return;
+    var segRect = seg.getBoundingClientRect();
+    var btnRect = activeBtn.getBoundingClientRect();
+    if(btnRect.left < segRect.left){
+      seg.scrollLeft -= (segRect.left - btnRect.left);
+    } else if(btnRect.right > segRect.right){
+      seg.scrollLeft += (btnRect.right - segRect.right);
+    }
   });
 
   // 浮动区间打分浮窗：点击浮窗外围的半透明背景关掉浮窗（点浮窗内部不受影响）
@@ -3772,14 +3824,15 @@ function handleAction(act, id, value, el){
   else if(act==='log-meal'){
     var f = foodLibraryAll().find(function(x){ return x.refId===selectedFoodRefId; });
     var amtEl = document.getElementById('mFoodAmount');
+    var amtRaw = amtEl ? amtEl.value.trim() : '';
     var amt = amtEl ? parseQty(amtEl.value) : NaN;
     if(!f || !amt || amt<=0){ return; }
     if(editingMealLogId){
       var beingEdited = data.mealLogs.find(function(l){ return l.id===editingMealLogId; });
       if(beingEdited && !canEditMealDate(beingEdited.date, isParentMode())){ toast(t('mealPastDateLockedToast')); selectedFoodRefId=null; editingMealLogId=null; render(); return; }
-      updateMealLog(editingMealLogId, mealTypeDraft, f, amt);
+      updateMealLog(editingMealLogId, mealTypeDraft, f, amt, amtRaw);
     } else {
-      addMealLog(id, mealTypeDraft, f, amt, getMealsCalState(id).sel);
+      addMealLog(id, mealTypeDraft, f, amt, getMealsCalState(id).sel, amtRaw);
     }
     selectedFoodRefId = null;
     editingMealLogId = null;
@@ -3823,7 +3876,8 @@ function handleAction(act, id, value, el){
   }
   else if(act==='save-custom-food'){
     var name = document.getElementById('mCustomFoodName').value.trim();
-    var baseAmount = parseQty(document.getElementById('mCustomFoodBaseAmount').value);
+    var baseAmountRaw = document.getElementById('mCustomFoodBaseAmount').value.trim();
+    var baseAmount = parseQty(baseAmountRaw);
     var cal = parseFloat(document.getElementById('mCustomFoodCal').value);
     if(!name || !cal || !baseAmount){ toast(t('fillFoodFieldsToast')); return; }
     var carb = parseFloat(document.getElementById('mCustomFoodCarb').value) || 0;
@@ -3835,13 +3889,13 @@ function handleAction(act, id, value, el){
     if(editingCustomFoodId){
       food = (data.customFoods||[]).find(function(f){ return f.id===editingCustomFoodId; });
       if(food){
-        food.name = name; food.unit = customFoodUnitDraft; food.baseAmount = baseAmount;
+        food.name = name; food.unit = customFoodUnitDraft; food.baseAmount = baseAmount; food.baseAmountDisplay = baseAmountRaw;
         food.calories = cal; food.carb = carb; food.protein = protein; food.fat = fat;
         food.category = customFoodCategoryDraft;
         persistEntity('customFoods', food);
       }
     } else {
-      food = addCustomFood(name, '', customFoodUnitDraft, baseAmount, cal, carb, protein, fat, customFoodCategoryDraft);
+      food = addCustomFood(name, '', customFoodUnitDraft, baseAmount, cal, carb, protein, fat, customFoodCategoryDraft, baseAmountRaw);
     }
     showCustomFoodForm = false;
     editingCustomFoodId = null;
