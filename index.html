@@ -371,6 +371,7 @@ zh: {
   noBehaviors:'还没有行为规则，点下面添加一条吧', addBehaviorRule:'+ 添加行为规则',
   behaviorNameLabel:'行为名称', behaviorNamePlaceholder:'例如：主动分享玩具',
   categoryLabel:'分类', catStudy:'学习', catLife:'生活', catManner:'礼貌', catChore:'家务', catOther:'其他', allCategoriesTab:'全部',
+  subCategoryLabel:'小分类（选填）', subCategoryPlaceholder:'不填就只按加分/减分分组，比如"阅读"',
   iconLabel:'图标', signLabel:'加分还是扣分', signReward:'加分 ✨', signPenalty:'扣分 ⚠️',
   pointValueLabel:'分值（正数即可）', pointValuePlaceholder:'例如：3', save:'保存', cancel:'取消',
   escalateModeLabel:'扣分方式', escalateModeFixed:'固定分值', escalateModeStep:'阶梯翻倍',
@@ -551,6 +552,7 @@ en: {
   noBehaviors:'No rules yet — add one below', addBehaviorRule:'+ Add a behavior rule',
   behaviorNameLabel:'Behavior name', behaviorNamePlaceholder:'e.g. Shared toys nicely',
   categoryLabel:'Category', catStudy:'Study', catLife:'Life', catManner:'Manners', catChore:'Chores', catOther:'Other', allCategoriesTab:'All',
+  subCategoryLabel:'Subcategory (optional)', subCategoryPlaceholder:'Leave blank to group only by reward/deduction, e.g. "Reading"',
   iconLabel:'Icon', signLabel:'Reward or deduction', signReward:'Reward ✨', signPenalty:'Deduction ⚠️',
   pointValueLabel:'Points (positive number)', pointValuePlaceholder:'e.g. 3', save:'Save', cancel:'Cancel',
   escalateModeLabel:'Deduction style', escalateModeFixed:'Fixed amount', escalateModeStep:'Step-up (doubling)',
@@ -688,8 +690,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.37';
-var APP_BUILD_DATE = '2026-09-15';
+var APP_VERSION = '3.13.38';
+var APP_BUILD_DATE = '2026-09-17';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -883,6 +885,24 @@ function behaviorSign(b){
   if(b.pointsMode==='checklist') return 'checklist';
   if(b.pointsMode==='range') return (b.pointsMax>=0) ? 'reward' : 'penalty';
   return (b.points>=0) ? 'reward' : 'penalty';
+}
+// 小分类展示文本：旧数据里的固定分类（学习/生活/礼貌/家务/其他）继续走翻译，
+// 新的自定义小分类是家长自己填的文字，中英文界面下都原样显示，不做翻译。
+function subCategoryLabel(cat){
+  if(!cat) return '';
+  var known = {'学习':'catStudy','生活':'catLife','礼貌':'catManner','家务':'catChore','其他':'catOther'}[cat];
+  return known ? t(known) : cat;
+}
+// 家长之前给这个孩子的加分/减分规则填过哪些小分类名字，按出现顺序去重返回——
+// 用于表单里的输入建议(datalist)，方便复用，不强制从固定列表里选。
+function usedSubCategories(child, sign){
+  var seen = [], out = [];
+  (child.behaviors||[]).forEach(function(b){
+    if(behaviorSign(b)!==sign) return;
+    var cat = (b.category||'').trim();
+    if(cat && seen.indexOf(cat)===-1){ seen.push(cat); out.push(cat); }
+  });
+  return out;
 }
 function childThresholds(childId){
   return data.thresholds.filter(function(t2){ return t2.childId === childId; });
@@ -1763,9 +1783,11 @@ var roleDraft = null;
 var toastTimer = null;
 var behaviorForm = null;
 var confirmDeleteBehaviorId = null;
-var manageBehaviorsCategoryFilter = 'all'; // 管理行为规则页：当前选中查看哪个分类（all=全部）
+var manageBehaviorsCategoryFilter = 'all'; // 管理行为规则页：当前选中查看 全部/加分/减分（/打卡）
+var manageBehaviorsSubFilter = 'all'; // 管理行为规则页：在加分或减分大类下，选中查看哪个小分类（all=全部）
 var childHomeCategoryTab = 'checklist'; // 孩子首页：当前选中查看 打卡/加分/减分 中的哪一类（已废弃，保留避免旧状态报错）
-var childPointsCategoryFilter = 'all'; // 孩子端积分页：当前选中查看哪个分类（学习/生活/礼貌/家务/其他，all=全部）
+var childPointsCategoryFilter = 'all'; // 孩子端积分页：当前选中查看 全部/加分/减分
+var childPointsSubFilter = 'all'; // 孩子端积分页：在加分或减分大类下，选中查看哪个小分类（all=全部）
 var thresholdForm = null;
 var settingsJoinInput = false;
 var settingsRoomCodeDraft = '';
@@ -1858,7 +1880,6 @@ function avatarPickerHtml(actName, ownerId, selected){
   return s + '</div>';
 }
 function genderOptions(){ return [['男',t('genderBoy')],['女',t('genderGirl')],['保密',t('genderPrivate')]]; }
-function categoryOptions(){ return [['学习',t('catStudy')],['生活',t('catLife')],['礼貌',t('catManner')],['家务',t('catChore')],['其他',t('catOther')]]; }
 function screenHeader(title, backAct){
   return '<div class="screen-header"><button class="screen-back tap" data-act="'+(backAct||'nav-back')+'">‹</button><div class="screen-title">'+title+'</div></div>';
 }
@@ -3087,17 +3108,33 @@ function renderEditChildScreen(scr, isRoot){
 
     body += renderCalendar(c, false);
 
-    // 加减分规则列表：横向分类标签（跟家长端"管理行为规则"页一致）+ 组内按
-    // 加分→减分排序、同组内新添加的排最前 —— 这样规则多的时候也不用在一条
-    // 长列表里死翻。打卡类规则已经在上面单独显示，这里不再重复。
-    var allCats = [['学习',t('catStudy')],['生活',t('catLife')],['礼貌',t('catManner')],['家务',t('catChore')],['其他',t('catOther')]];
+    // 加减分规则列表：分两级筛选——先按"加分/减分"分大类，如果这个大类下
+    // 有人填过小分类，才会再出现一行小分类筛选；没人填小分类的话就只按大类
+    // 分组，不会强行显示一堆空的小标签。打卡类规则已经在上面单独显示，这里不再重复。
     var pointBehaviors = childBehaviors.filter(function(b){ return behaviorSign(b)!=='checklist'; });
-    var countOfCat = function(catKeyRaw){ return pointBehaviors.filter(function(b){ return (b.category||'其他')===catKeyRaw; }).length; };
-    var pointsFilterTabs = [['all', t('allCategoriesTab')+' ('+pointBehaviors.length+')']].concat(
-      allCats.map(function(pair){ return [pair[0], pair[1]+' ('+countOfCat(pair[0])+')']; })
-    );
+    var rewardCount = pointBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; }).length;
+    var penaltyCount = pointBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; }).length;
+    var pointsFilterTabs = [
+      ['all', t('allCategoriesTab')+' ('+pointBehaviors.length+')'],
+      ['reward', t('childHomeTabReward')+' ('+rewardCount+')'],
+      ['penalty', t('childHomeTabPenalty')+' ('+penaltyCount+')']
+    ];
     var activePointsFilter = childPointsCategoryFilter || 'all';
-    var filteredBehaviors = activePointsFilter==='all' ? pointBehaviors : pointBehaviors.filter(function(b){ return (b.category||'其他')===activePointsFilter; });
+    var signFiltered = activePointsFilter==='all' ? pointBehaviors : pointBehaviors.filter(function(b){ return behaviorSign(b)===activePointsFilter; });
+
+    var pointsSubFilterTabs = null, activePointsSubFilter = 'all';
+    if(activePointsFilter==='reward' || activePointsFilter==='penalty'){
+      var pSubsInGroup = [];
+      signFiltered.forEach(function(b){ var cat=(b.category||'').trim(); if(cat && pSubsInGroup.indexOf(cat)===-1) pSubsInGroup.push(cat); });
+      if(pSubsInGroup.length){
+        activePointsSubFilter = childPointsSubFilter || 'all';
+        var pCountOfSub = function(cat){ return signFiltered.filter(function(b){ return (b.category||'').trim()===cat; }).length; };
+        pointsSubFilterTabs = [['all', t('allCategoriesTab')+' ('+signFiltered.length+')']].concat(
+          pSubsInGroup.map(function(cat){ return [cat, subCategoryLabel(cat)+' ('+pCountOfSub(cat)+')']; })
+        );
+      }
+    }
+    var filteredBehaviors = (pointsSubFilterTabs && activePointsSubFilter!=='all') ? signFiltered.filter(function(b){ return (b.category||'').trim()===activePointsSubFilter; }) : signFiltered;
 
     var pSignRank = {reward:0, penalty:1};
     var sortedBehaviors = filteredBehaviors.map(function(b, idx){ return {b:b, idx:idx}; }).sort(function(x, y){
@@ -3113,6 +3150,7 @@ function renderEditChildScreen(scr, isRoot){
     } else {
       var lastSign = null;
       sortedBehaviors.forEach(function(b){
+
         var sign = behaviorSign(b);
         if(sign !== lastSign){
           pointsListHtml += '<div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--muted);margin:'+(lastSign===null?'0':'14px')+' 0 6px;">'+groupLabel(sign)+'</div><div class="chip-grid">';
@@ -3123,7 +3161,9 @@ function renderEditChildScreen(scr, isRoot){
       pointsListHtml += '</div>';
     }
 
-    body += segmentedHtml('set-child-points-category-filter', c.id, activePointsFilter, pointsFilterTabs, true) + pointsListHtml;
+    body += segmentedHtml('set-child-points-category-filter', c.id, activePointsFilter, pointsFilterTabs, true) +
+      (pointsSubFilterTabs ? segmentedHtml('set-child-points-sub-filter', c.id, activePointsSubFilter, pointsSubFilterTabs, true) : '') +
+      pointsListHtml;
     body += (selectedRangeBehaviorId && childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; }) ? renderRangePicker(c, childBehaviors.find(function(b){ return b.id===selectedRangeBehaviorId; })) : '');
   } else if(tab === 'health'){
     body = renderHealthTabBody(c, parentMode);
@@ -3146,13 +3186,33 @@ function renderManageBehaviorsScreen(scr){
   if(!child){ popScreen(); return ''; }
   var list = child.behaviors || [];
 
-  var allCats = [['学习',t('catStudy')],['生活',t('catLife')],['礼貌',t('catManner')],['家务',t('catChore')],['其他',t('catOther')]];
-  var countOf = function(catKeyRaw){ return list.filter(function(b){ return (b.category||'其他')===catKeyRaw; }).length; };
-  var filterTabs = [['all', t('allCategoriesTab')+' ('+list.length+')']].concat(
-    allCats.map(function(pair){ return [pair[0], pair[1]+' ('+countOf(pair[0])+')']; })
-  );
+  var checklistCount = list.filter(function(b){ return behaviorSign(b)==='checklist'; }).length;
+  var rewardCount = list.filter(function(b){ return behaviorSign(b)==='reward'; }).length;
+  var penaltyCount = list.filter(function(b){ return behaviorSign(b)==='penalty'; }).length;
+  var filterTabs = [
+    ['all', t('allCategoriesTab')+' ('+list.length+')'],
+    ['reward', t('childHomeTabReward')+' ('+rewardCount+')'],
+    ['penalty', t('childHomeTabPenalty')+' ('+penaltyCount+')']
+  ];
+  if(checklistCount){ filterTabs.push(['checklist', t('childHomeTabCheckin')+' ('+checklistCount+')']); }
   var activeFilter = manageBehaviorsCategoryFilter || 'all';
-  var filteredList = activeFilter==='all' ? list : list.filter(function(b){ return (b.category||'其他')===activeFilter; });
+  var signFiltered = activeFilter==='all' ? list : list.filter(function(b){ return behaviorSign(b)===activeFilter; });
+
+  // 小分类二级筛选：只有当前这个大类（加分/减分）下确实有规则填过小分类时才出现，
+  // 没人填小分类的话，界面上就只有"全部/加分/减分"这一行，不会多出空标签。
+  var subFilterTabs = null, activeSubFilter = 'all';
+  if(activeFilter==='reward' || activeFilter==='penalty'){
+    var subsInGroup = [];
+    signFiltered.forEach(function(b){ var cat=(b.category||'').trim(); if(cat && subsInGroup.indexOf(cat)===-1) subsInGroup.push(cat); });
+    if(subsInGroup.length){
+      activeSubFilter = manageBehaviorsSubFilter || 'all';
+      var countOfSub = function(cat){ return signFiltered.filter(function(b){ return (b.category||'').trim()===cat; }).length; };
+      subFilterTabs = [['all', t('allCategoriesTab')+' ('+signFiltered.length+')']].concat(
+        subsInGroup.map(function(cat){ return [cat, subCategoryLabel(cat)+' ('+countOfSub(cat)+')']; })
+      );
+    }
+  }
+  var filteredList = (subFilterTabs && activeSubFilter!=='all') ? signFiltered.filter(function(b){ return (b.category||'').trim()===activeSubFilter; }) : signFiltered;
 
   // 按 打卡→加分→减分 的类别顺序排列；同一类别内，最新添加的排在最前面
   // （behaviors 数组里新加的项会 push 到末尾，所以原始顺序越靠后就是越新）。
@@ -3170,7 +3230,7 @@ function renderManageBehaviorsScreen(scr){
         '<button class="btn-ghost tap" style="width:auto;padding:8px 12px;min-height:auto;" data-act="cancel-delete-behavior">'+t('reallyThink')+'</button>'+
         '<button class="small-icon-btn" style="color:var(--danger);" data-act="confirm-delete-behavior" data-id="'+b.id+'">✓</button></div>';
     }
-    var catKey = {'学习':'catStudy','生活':'catLife','礼貌':'catManner','家务':'catChore','其他':'catOther'}[b.category] || 'catOther';
+    var subLabel = subCategoryLabel(b.category);
     var mode = b.pointsMode || 'fixed';
     var valueHtml;
     if(mode==='checklist'){
@@ -3182,7 +3242,7 @@ function renderManageBehaviorsScreen(scr){
     }
     return '<div class="behavior-row">'+
       '<span style="font-size:22px;">'+esc(b.icon)+'</span>'+
-      '<div class="name">'+esc(behaviorDisplayName(b))+(activeFilter==='all' ? ' <span class="cat-tag">'+esc(t(catKey))+'</span>' : '')+(b.escalate?' <span class="cat-tag" style="background:var(--sun-light);color:#8A6A2C;">🌱 '+esc(t('escalateModeStep'))+'</span>':'')+'</div>'+
+      '<div class="name">'+esc(behaviorDisplayName(b))+(subLabel ? ' <span class="cat-tag">'+esc(subLabel)+'</span>' : '')+(b.escalate?' <span class="cat-tag" style="background:var(--sun-light);color:#8A6A2C;">🌱 '+esc(t('escalateModeStep'))+'</span>':'')+'</div>'+
       valueHtml+
       '<button class="small-icon-btn" data-act="edit-behavior" data-id="'+b.id+'">✏️</button>'+
       '<button class="small-icon-btn" data-act="ask-delete-behavior" data-id="'+b.id+'">🗑</button>'+
@@ -3195,13 +3255,16 @@ function renderManageBehaviorsScreen(scr){
     var pm = f.pointsMode || 'fixed';
     formHtml = '<div class="card-box" style="margin-top:16px;">'+
       '<div class="field"><label>'+t('behaviorNameLabel')+'</label><input id="mBehaviorName" value="'+esc(f.name)+'" placeholder="'+t('behaviorNamePlaceholder')+'"></div>'+
-      '<div class="field"><label>'+t('categoryLabel')+'</label>'+segmentedHtml('behavior-category', '_', f.category, categoryOptions())+'</div>'+
       '<div class="field"><label>'+t('iconLabel')+'</label></div>'+
       '<div class="icon-grid">'+BEHAVIOR_ICONS.map(function(ic){
         return '<button type="button" class="icon-pick tap'+(f.icon===ic?' selected':'')+'" data-act="behavior-icon" data-value="'+ic+'">'+ic+'</button>';
       }).join('')+'</div>'+
       '<div class="field"><label>'+t('pointsModeLabel')+'</label>'+segmentedHtml('behavior-points-mode', '_', pm, [['fixed',t('pointsModeFixed')],['range',t('pointsModeRange')],['checklist',t('pointsModeChecklist')]])+'</div>'+
       (pm!=='checklist' ? '<div class="field"><label>'+t('signLabel')+'</label>'+segmentedHtml('behavior-sign', '_', f.sign, [['reward',t('signReward')],['penalty',t('signPenalty')]])+'</div>' : '')+
+      (pm!=='checklist' ? ('<div class="field"><label>'+t('subCategoryLabel')+'</label>'+
+        '<input id="mBehaviorCategory" list="behaviorCategoryDatalist" value="'+esc(f.category||'')+'" placeholder="'+t('subCategoryPlaceholder')+'">'+
+        '<datalist id="behaviorCategoryDatalist">'+usedSubCategories(child, f.sign||'reward').map(function(cat){ return '<option value="'+esc(cat)+'">'; }).join('')+'</datalist>'+
+        '</div>') : '')+
       (pm==='fixed' ? '<div class="field"><label>'+t('pointValueLabel')+'</label><input type="number" step="0.1" id="mBehaviorAbs" value="'+esc(f.abs)+'" placeholder="'+t('pointValuePlaceholder')+'"></div>' : '')+
       (pm==='range' ? (''+
         '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
@@ -3237,6 +3300,7 @@ function renderManageBehaviorsScreen(scr){
     formHtml +
     (behaviorForm ? '' : (
       segmentedHtml('set-behavior-category-filter', '_', activeFilter, filterTabs, true) +
+      (subFilterTabs ? segmentedHtml('set-behavior-sub-filter', '_', activeSubFilter, subFilterTabs, true) : '') +
       '<div style="margin-top:14px;">'+rows+'</div>'
     ));
 }
@@ -3987,8 +4051,8 @@ function handleAction(act, id, value, el){
   }
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
 
-  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; manageBehaviorsCategoryFilter='all'; pushScreen({type:'manageBehaviors', childId:id}); }
-  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'学习', sign:'reward', pointsMode:'fixed', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14, weekendItem:false}; render(); }
+  else if(act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; manageBehaviorsCategoryFilter='all'; manageBehaviorsSubFilter='all'; pushScreen({type:'manageBehaviors', childId:id}); }
+  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:BEHAVIOR_ICONS[0], category:'', sign:'reward', pointsMode:'fixed', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14, weekendItem:false}; render(); }
   else if(act==='edit-behavior'){
     var scrB = currentScreen();
     var b = scrB ? behaviorById(scrB.childId, id) : null;
@@ -4012,16 +4076,17 @@ function handleAction(act, id, value, el){
   }
   else if(act==='toggle-behavior-weekend-item'){ if(behaviorForm) behaviorForm.weekendItem = !behaviorForm.weekendItem; render(); }
   else if(act==='cancel-behavior-form'){ behaviorForm=null; render(); }
-  else if(act==='behavior-category'){ if(behaviorForm) behaviorForm.category=value; render(); }
   else if(act==='behavior-icon'){ if(behaviorForm) behaviorForm.icon=value; render(); }
   else if(act==='behavior-sign'){ if(behaviorForm) behaviorForm.sign=value; render(); }
   else if(act==='behavior-points-mode'){ if(behaviorForm) behaviorForm.pointsMode=value; render(); }
   else if(act==='behavior-escalate-mode'){ if(behaviorForm) behaviorForm.escalate = (value==='step'); render(); }
   else if(act==='save-behavior'){ saveBehavior(id); }
   else if(act==='ask-delete-behavior'){ confirmDeleteBehaviorId = id; render(); }
-  else if(act==='set-behavior-category-filter'){ manageBehaviorsCategoryFilter = value; render(); }
+  else if(act==='set-behavior-category-filter'){ manageBehaviorsCategoryFilter = value; manageBehaviorsSubFilter = 'all'; render(); }
+  else if(act==='set-behavior-sub-filter'){ manageBehaviorsSubFilter = value; render(); }
   else if(act==='child-home-category-tab'){ childHomeCategoryTab = value; render(); }
-  else if(act==='set-child-points-category-filter'){ childPointsCategoryFilter = value; render(); }
+  else if(act==='set-child-points-category-filter'){ childPointsCategoryFilter = value; childPointsSubFilter = 'all'; render(); }
+  else if(act==='set-child-points-sub-filter'){ childPointsSubFilter = value; render(); }
   else if(act==='cancel-delete-behavior'){ confirmDeleteBehaviorId = null; render(); }
   else if(act==='confirm-delete-behavior'){
     var scrD = currentScreen();
@@ -4151,8 +4216,10 @@ function saveBehavior(childId){
   var name = n ? n.value.trim() : '';
   if(!name){ toast(t('fillBehaviorFieldsToast')); return; }
   var pm = behaviorForm.pointsMode || 'fixed';
+  var catEl = document.getElementById('mBehaviorCategory');
+  var category = (pm!=='checklist' && catEl) ? catEl.value.trim() : '';
 
-  var fields = { name:name, icon:behaviorForm.icon, category:behaviorForm.category, pointsMode:pm };
+  var fields = { name:name, icon:behaviorForm.icon, category:category, pointsMode:pm };
 
   if(pm==='checklist'){
     fields.points = 0;
