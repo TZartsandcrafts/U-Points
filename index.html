@@ -473,9 +473,9 @@ zh: {
   fillPenaltyFieldsToast:'请填写惩罚名称和抵消积分数', selectBehaviorFirstToast:'请先选一条行为规则',
   redeemHistoryReward:'奖励', redeemHistoryPenalty:'惩罚', redeemHistoryCash:'兑换零花钱',
   ledgerTab:'记账', currentMoneyBalanceLabel:'当前零花钱余额',
-  exchangeRateTitle:'积分兑换零花钱', normalRateLabel:'平时汇率', currentRateDisplay:'{{points}} 积分 = ¥{{money}}',
+  exchangeRateTitle:'积分兑换零花钱', normalRateLabel:'平时汇率', currentRateDisplay:'{{points}} 积分 = {{moneyWithSym}}',
   specialOfferActiveLabel:'🎉 限时优惠中：{{name}}', specialOfferPeriodLabel:'{{start}} ~ {{end}}',
-  specialOfferUpcomingLabel:'⏳ 即将开始的限时优惠：{{name}}（{{points}} 积分 = ¥{{money}}）', specialOfferUpcomingHint:'到开始日期才能按此汇率兑换',
+  specialOfferUpcomingLabel:'⏳ 即将开始的限时优惠：{{name}}（{{points}} 积分 = {{moneyWithSym}}）', specialOfferUpcomingHint:'到开始日期才能按此汇率兑换',
   pointsToExchangeLabel:'兑换积分数', exchangePreviewLabel:'预计到账', confirmExchangeBtn:'确认兑换',
   editRateBtn:'调整平时汇率', pointsPerLabel:'每多少积分(points)', moneyPerLabel:'兑换多少钱(money)',
   addSpecialOfferBtn:'+ 新建限时优惠', specialOffersTitle:'限时优惠列表',
@@ -654,9 +654,9 @@ en: {
   fillPenaltyFieldsToast:'Please fill in penalty name and points offset', selectBehaviorFirstToast:'Please pick a behavior rule first',
   redeemHistoryReward:'Reward', redeemHistoryPenalty:'Penalty', redeemHistoryCash:'Cash exchange',
   ledgerTab:'Ledger', currentMoneyBalanceLabel:'Current allowance balance',
-  exchangeRateTitle:'Exchange points for allowance', normalRateLabel:'Standard rate', currentRateDisplay:'{{points}} points = ¥{{money}}',
+  exchangeRateTitle:'Exchange points for allowance', normalRateLabel:'Standard rate', currentRateDisplay:'{{points}} points = {{moneyWithSym}}',
   specialOfferActiveLabel:'🎉 Special offer active: {{name}}', specialOfferPeriodLabel:'{{start}} ~ {{end}}',
-  specialOfferUpcomingLabel:'⏳ Upcoming special offer: {{name}} ({{points}} points = ¥{{money}})', specialOfferUpcomingHint:'Available once the start date arrives',
+  specialOfferUpcomingLabel:'⏳ Upcoming special offer: {{name}} ({{points}} points = {{moneyWithSym}})', specialOfferUpcomingHint:'Available once the start date arrives',
   pointsToExchangeLabel:'Points to exchange', exchangePreviewLabel:'You will receive', confirmExchangeBtn:'Confirm exchange',
   editRateBtn:'Adjust standard rate', pointsPerLabel:'Points per unit', moneyPerLabel:'Money per unit',
   addSpecialOfferBtn:'+ New special offer', specialOffersTitle:'Special offers',
@@ -690,7 +690,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.42';
+var APP_VERSION = '3.13.43';
 var APP_BUILD_DATE = '2026-09-17';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2632,13 +2632,13 @@ function renderLedgerTabBody(c, parentMode){
 
   // 兑换区
   html += '<div class="rate-card">'+
-    '<div class="rate-display">'+t('currentRateDisplay',{points:fmtPts(rate.points), money:fmtMoney(rate.money)})+' '+sym+'</div>';
+    '<div class="rate-display">'+t('currentRateDisplay',{points:fmtPts(rate.points), moneyWithSym:sym+fmtMoney(rate.money)})+'</div>';
   if(rate.special){
     html += '<div class="offer-banner">'+t('specialOfferActiveLabel',{name:rate.special.name})+'<br>'+t('specialOfferPeriodLabel',{start:rate.special.startDate, end:rate.special.endDate})+'</div>';
   } else {
     var upcoming = upcomingSpecialOffer(c, ledgerCurrency);
     if(upcoming){
-      html += '<div class="offer-banner upcoming">'+t('specialOfferUpcomingLabel',{name:upcoming.name, points:fmtPts(upcoming.points), money:fmtMoney(upcoming.money)})+'<br>'+t('specialOfferPeriodLabel',{start:upcoming.startDate, end:upcoming.endDate})+'<br><span class="offer-hint">'+t('specialOfferUpcomingHint')+'</span></div>';
+      html += '<div class="offer-banner upcoming">'+t('specialOfferUpcomingLabel',{name:upcoming.name, points:fmtPts(upcoming.points), moneyWithSym:sym+fmtMoney(upcoming.money)})+'<br>'+t('specialOfferPeriodLabel',{start:upcoming.startDate, end:upcoming.endDate})+'<br><span class="offer-hint">'+t('specialOfferUpcomingHint')+'</span></div>';
     }
   }
   html += '<div class="field" style="margin-top:12px;"><label>'+t('pointsToExchangeLabel')+' ('+t('currentBalanceLabel')+': '+fmtPts(pointsBalance)+')</label>'+
