@@ -125,6 +125,13 @@
   .cal-recent-scroll .log-row:last-child{border-bottom:none;}
   .cal-day-title{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
   .cal-day-sum{font-family:var(--font-display);font-weight:800;font-size:16px;}
+  .cal-summary-toggle{width:auto;border-radius:16px;padding:0 12px;font-size:12px;font-weight:700;height:30px;margin-bottom:10px;}
+  .cal-summary{background:var(--sky-light);border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--text);}
+  .cal-summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;}
+  .cal-summary-row+.cal-summary-row{border-top:1px solid rgba(0,0,0,.06);}
+  .cal-summary-row .csr-label{color:var(--muted);}
+  .cal-summary-row .csr-val{font-weight:700;font-family:var(--font-display);}
+  .cal-summary-row .csr-item{font-weight:600;text-align:right;}
 
   /* ---- 健康打卡：三餐 + 运动 ---- */
   .chip.food{background:var(--food-light);color:var(--food-text);}
@@ -404,6 +411,11 @@ zh: {
   noChildrenYetHint:'还没有添加孩子，去设置页添加一个吧', familyMembersTitle:'家庭成员',
   addParentBtn:'+ 添加家长', addChildBtn:'+ 添加孩子',
   calendarTitle:'积分月历', calNoLogsForDay:'这天还没有加减分记录',
+  calSummaryOpenBtn:'📊 本月小结', calSummaryCloseBtn:'▲ 收起小结', calSummaryEmptyHint:'本月还没有加减分记录',
+  calSummaryAddedLabel:'本月已加分', calSummaryDeductedLabel:'本月已减分', calSummaryTimesUnit:'次',
+  calSummaryTopAddedPointsLabel:'加分最多(分)', calSummaryTopAddedCountLabel:'加分最多(次数)',
+  calSummaryTopDeductedPointsLabel:'减分最多(分)', calSummaryTopDeductedCountLabel:'减分最多(次数)',
+  calSummaryNoneLabel:'无',
   healthTab:'健康',
   calorieTargetTitle:'今日热量小结', calorieGoal:'目标', calorieFood:'摄入', calorieExercise:'运动消耗', calorieRemaining:'剩余可吃',
   macroSuggestion:'建议摄入（仅供参考，非医疗建议）', proteinLabel:'蛋白质', fatLabel:'脂肪', carbLabel:'碳水',
@@ -585,6 +597,11 @@ en: {
   noChildrenYetHint:'No children added yet — add one from Settings', familyMembersTitle:'Family members',
   addParentBtn:'+ Add a parent', addChildBtn:'+ Add a child',
   calendarTitle:'Points Calendar', calNoLogsForDay:'No points logged this day',
+  calSummaryOpenBtn:'📊 Monthly summary', calSummaryCloseBtn:'▲ Hide summary', calSummaryEmptyHint:'No points logged this month yet',
+  calSummaryAddedLabel:'Earned this month', calSummaryDeductedLabel:'Deducted this month', calSummaryTimesUnit:'x',
+  calSummaryTopAddedPointsLabel:'Most points earned', calSummaryTopAddedCountLabel:'Most times earned',
+  calSummaryTopDeductedPointsLabel:'Most points deducted', calSummaryTopDeductedCountLabel:'Most times deducted',
+  calSummaryNoneLabel:'None',
   healthTab:'Health Log',
   calorieTargetTitle:"Today's Calories", calorieGoal:'Goal', calorieFood:'Food', calorieExercise:'Exercise', calorieRemaining:'Remaining',
   macroSuggestion:'Suggested intake (reference only, not medical advice)', proteinLabel:'Protein', fatLabel:'Fat', carbLabel:'Carbs',
@@ -690,8 +707,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.43';
-var APP_BUILD_DATE = '2026-09-17';
+var APP_VERSION = '3.13.45';
+var APP_BUILD_DATE = '2026-09-22';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1470,6 +1487,16 @@ function addSpecialOffer(childId, currency, name, startDate, endDate, points, mo
   persistEntity('children', child);
   return offer;
 }
+function updateSpecialOffer(childId, offerId, currency, name, startDate, endDate, points, money){
+  var child = childById(childId);
+  if(!child || !child.specialOffers) return null;
+  var offer = child.specialOffers.find(function(o){ return o.id===offerId; });
+  if(!offer) return null;
+  offer.currency = currency; offer.name = name; offer.startDate = startDate; offer.endDate = endDate;
+  offer.points = points; offer.money = money;
+  persistEntity('children', child);
+  return offer;
+}
 function deleteSpecialOffer(childId, offerId){
   var child = childById(childId);
   if(!child || !child.specialOffers) return;
@@ -1833,6 +1860,7 @@ var penaltyFormEscalate = false;
 var penaltyFormEscalateStep = 1;
 var showExchangeRateForm = false; // 记账：是否展开"设置兑换汇率"表单
 var showSpecialOfferForm = false; // 记账：是否展开"新建限时优惠"表单
+var editingOfferId = null; // 正在修改哪一条已添加的限时优惠（点已有优惠的 ✎ 进来编辑；null=新增）
 var showManualLedgerForm = false; // 记账：是否展开"手动记一笔"表单
 var manualLedgerDirection = 'income'; // 手动记账表单：income(入账) | expense(出账)
 var manualLedgerCategory = 'grant'; // 手动记账表单：grant/spending/violation/other
@@ -1977,7 +2005,7 @@ function getCalState(childId){
   var s = calendarState[childId];
   if(!s){
     var now = new Date();
-    s = { y: now.getFullYear(), m: now.getMonth(), sel: todayStr() };
+    s = { y: now.getFullYear(), m: now.getMonth(), sel: todayStr(), summaryOpen: false };
     calendarState[childId] = s;
   }
   return s;
@@ -1998,6 +2026,57 @@ function shiftCalMonth(cs, delta){
   cs.m += delta;
   while(cs.m < 0){ cs.m += 12; cs.y -= 1; }
   while(cs.m > 11){ cs.m -= 12; cs.y += 1; }
+}
+// 月历小结：把这个月（不含打卡类）的加减分记录，汇总成"共加了多少分/多少次、
+// 共减了多少分/多少次，以及加分最多和减分最多分别是哪一项"，点小结按钮展开查看
+function calMonthSummaryHtml(monthLogs){
+  if(!monthLogs.length){
+    return '<div class="cal-summary" style="text-align:center;color:var(--muted);">'+t('calSummaryEmptyHint')+'</div>';
+  }
+  var added = monthLogs.filter(function(l){ return l.points >= 0; });
+  var deducted = monthLogs.filter(function(l){ return l.points < 0; });
+  var addedTotal = Math.round(added.reduce(function(s,l){ return s + l.points; }, 0) * 100) / 100;
+  var deductedTotal = Math.round(deducted.reduce(function(s,l){ return s + Math.abs(l.points); }, 0) * 100) / 100;
+  // 按名称分组，同时统计每项的总分和总次数——加分最多的一项（按总分）和
+  // 打卡/触发最多次的一项（按次数）不一定是同一项，所以分开各挑各的第一名
+  function groupByName(logs, useAbs){
+    var byName = {};
+    logs.forEach(function(l){
+      var key = l.name || '';
+      var g = byName[key];
+      if(!g){ g = { name: l.name, name_en: l.name_en, icon: l.icon, points: 0, count: 0 }; byName[key] = g; }
+      g.points += useAbs ? Math.abs(l.points) : l.points;
+      g.count += 1;
+    });
+    return Object.keys(byName).map(function(k){ return byName[k]; });
+  }
+  function topByPoints(arr){
+    if(!arr.length) return null;
+    return arr.slice().sort(function(a,b){ return b.points - a.points; })[0];
+  }
+  function topByCount(arr){
+    if(!arr.length) return null;
+    return arr.slice().sort(function(a,b){ return b.count - a.count; })[0];
+  }
+  var addedGroups = groupByName(added, false);
+  var deductedGroups = groupByName(deducted, true);
+  var topAddedPoints = topByPoints(addedGroups);
+  var topAddedCount = topByCount(addedGroups);
+  var topDeductedPoints = topByPoints(deductedGroups);
+  var topDeductedCount = topByCount(deductedGroups);
+  function itemLabel(g){
+    if(!g) return '<span class="csr-item">'+t('calSummaryNoneLabel')+'</span>';
+    var nm = (state.lang==='en' && g.name_en) ? g.name_en : g.name;
+    return '<span class="csr-item">'+esc(g.icon)+' '+esc(nm)+' · '+fmtPts(Math.round(g.points*100)/100)+' / '+g.count+t('calSummaryTimesUnit')+'</span>';
+  }
+  return '<div class="cal-summary">'+
+    '<div class="cal-summary-row"><span class="csr-label">'+t('calSummaryAddedLabel')+'</span><span class="csr-val" style="color:var(--sky-dark);">+'+fmtPts(addedTotal)+' / '+added.length+t('calSummaryTimesUnit')+'</span></div>'+
+    '<div class="cal-summary-row"><span class="csr-label">'+t('calSummaryDeductedLabel')+'</span><span class="csr-val" style="color:var(--danger);">-'+fmtPts(deductedTotal)+' / '+deducted.length+t('calSummaryTimesUnit')+'</span></div>'+
+    '<div class="cal-summary-row"><span class="csr-label">'+t('calSummaryTopAddedPointsLabel')+'</span>'+itemLabel(topAddedPoints)+'</div>'+
+    '<div class="cal-summary-row"><span class="csr-label">'+t('calSummaryTopAddedCountLabel')+'</span>'+itemLabel(topAddedCount)+'</div>'+
+    '<div class="cal-summary-row"><span class="csr-label">'+t('calSummaryTopDeductedPointsLabel')+'</span>'+itemLabel(topDeductedPoints)+'</div>'+
+    '<div class="cal-summary-row"><span class="csr-label">'+t('calSummaryTopDeductedCountLabel')+'</span>'+itemLabel(topDeductedCount)+'</div>'+
+  '</div>';
 }
 function renderCalendar(child, recentMode){
   var cs = getCalState(child.id);
@@ -2074,6 +2153,8 @@ function renderCalendar(child, recentMode){
         '<div class="cal-title">'+calMonthLabel(y,m)+'</div>'+
         '<button class="cal-nav-btn tap" data-act="cal-next" data-id="'+child.id+'">›</button>'+
       '</div>'+
+      '<button class="cal-nav-btn tap cal-summary-toggle" data-act="cal-toggle-summary" data-id="'+child.id+'">'+(cs.summaryOpen?t('calSummaryCloseBtn'):t('calSummaryOpenBtn'))+'</button>'+
+      (cs.summaryOpen ? calMonthSummaryHtml(monthLogs) : '')+
       '<div class="cal-weekdays">'+weekdaysHtml+'</div>'+
       '<div class="cal-grid">'+cellsHtml+'</div>'+
       detailHtml+
@@ -2661,22 +2742,24 @@ function renderLedgerTabBody(c, parentMode){
     // 限时优惠列表（只显示当前币种的）
     html += '<div class="section-title" style="margin-top:0;">'+t('specialOffersTitle')+'</div>';
     var offers = (c.specialOffers||[]).filter(function(o){ return (o.currency||CURRENCIES[0].code)===ledgerCurrency; });
+    var editingOffer = editingOfferId ? offers.find(function(o){ return o.id===editingOfferId; }) : null;
     if(offers.length){
       html += offers.map(function(o){
         return '<div class="offer-row"><div class="offer-info"><span>'+esc(o.name)+' · '+fmtPts(o.points)+' = '+sym+fmtMoney(o.money)+'</span><span class="offer-dates">'+o.startDate+' ~ '+o.endDate+'</span></div>'+
-          '<button class="small-icon-btn" data-act="delete-offer" data-id="'+c.id+'" data-value="'+o.id+'">✕</button></div>';
+          '<div style="display:flex;gap:6px;"><button class="small-icon-btn" data-act="edit-offer-form" data-id="'+c.id+'" data-value="'+o.id+'">✎</button>'+
+          '<button class="small-icon-btn" data-act="delete-offer" data-id="'+c.id+'" data-value="'+o.id+'">✕</button></div></div>';
       }).join('');
     }
     html += showSpecialOfferForm ?
       '<div class="inline-form">'+
-        '<div class="field"><label>'+t('offerNameLabel')+'</label><input id="mOfferName" placeholder="'+t('offerNamePlaceholder')+'"></div>'+
+        '<div class="field"><label>'+t('offerNameLabel')+'</label><input id="mOfferName" placeholder="'+t('offerNamePlaceholder')+'" value="'+(editingOffer?esc(editingOffer.name):'')+'"></div>'+
         '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
-          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerStartLabel')+'</span><input type="date" id="mOfferStart" style="width:100%;min-width:0;box-sizing:border-box;"></div>'+
-          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerEndLabel')+'</span><input type="date" id="mOfferEnd" style="width:100%;min-width:0;box-sizing:border-box;"></div>'+
+          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerStartLabel')+'</span><input type="date" id="mOfferStart" style="width:100%;min-width:0;box-sizing:border-box;" value="'+(editingOffer?editingOffer.startDate:'')+'"></div>'+
+          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerEndLabel')+'</span><input type="date" id="mOfferEnd" style="width:100%;min-width:0;box-sizing:border-box;" value="'+(editingOffer?editingOffer.endDate:'')+'"></div>'+
         '</div></div>'+
         '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
-          '<div><span style="font-size:12px;color:var(--muted);">'+t('pointsPerLabel')+'</span><input type="number" step="0.1" id="mOfferPoints" placeholder="'+rate.points+'"></div>'+
-          '<div><span style="font-size:12px;color:var(--muted);">'+t('moneyPerLabel')+'</span><input type="number" step="0.01" id="mOfferMoney" placeholder="2"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('pointsPerLabel')+'</span><input type="number" step="0.1" id="mOfferPoints" placeholder="'+rate.points+'" value="'+(editingOffer?editingOffer.points:'')+'"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('moneyPerLabel')+'</span><input type="number" step="0.01" id="mOfferMoney" placeholder="2" value="'+(editingOffer?editingOffer.money:'')+'"></div>'+
         '</div></div>'+
         '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-offer-form">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-offer" data-id="'+c.id+'">'+t('save')+'</button></div>'+
@@ -3681,7 +3764,7 @@ function handleAction(act, id, value, el){
   else if(act==='modal-add-child-avatar'){ screenForm.avatar = value; render(); }
   else if(act==='save-add-child'){ saveAddChild(); }
 
-  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; selectedFoodRefId=null; selectedRangeBehaviorId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; editingRewardId=null; editingPenaltyId=null; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showPointsAdjustForm=false; render(); }
+  else if(act==='edit-child-tab'){ editChildTab = value; confirmDeleteChild=false; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; showNutritionSettings=false; selectedExerciseRefId=null; selectedFoodRefId=null; selectedRangeBehaviorId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; showRewardForm=false; showPenaltyForm=false; editingRewardId=null; editingPenaltyId=null; showExchangeRateForm=false; showSpecialOfferForm=false; editingOfferId=null; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showPointsAdjustForm=false; render(); }
   else if(act==='edit-child-avatar'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.avatar=value; persistEntity('children', c);} render(); }
   else if(act==='edit-child-gender'){ var c = data.children.find(function(x){return x.id===id;}); if(c){ c.gender=value; persistEntity('children', c);} render(); }
   else if(act==='save-edit-child-info'){ saveEditChildInfo(id); }
@@ -3715,6 +3798,7 @@ function handleAction(act, id, value, el){
   else if(act==='cal-prev'){ shiftCalMonth(getCalState(id), -1); render(); }
   else if(act==='cal-next'){ shiftCalMonth(getCalState(id), 1); render(); }
   else if(act==='cal-select-day'){ getCalState(id).sel = value; render(); }
+  else if(act==='cal-toggle-summary'){ var csT = getCalState(id); csT.summaryOpen = !csT.summaryOpen; render(); }
 
   else if(act==='open-child-health'){ editChildTab='health'; confirmDeleteChild=false; healthSubTab='meals'; showCustomFoodForm=false; showCustomExerciseForm=false; showCalorieOverrideForm=false; selectedExerciseRefId=null; pushScreen({type:'editChild', childId:id}); }
   else if(act==='health-sub-tab'){ healthSubTab = value; showCustomFoodForm=false; showCustomExerciseForm=false; selectedExerciseRefId=null; selectedFoodRefId=null; mealFoodSearch=''; mealFoodShowAll=false; mealFoodListExpanded=false; editingMealLogId=null; exerciseSearch=''; exerciseShowAll=false; render(); }
@@ -3801,8 +3885,8 @@ function handleAction(act, id, value, el){
   else if(act==='delete-penalty'){ if(editingPenaltyId===value) editingPenaltyId=null; deletePenalty(id, value); render(); }
   else if(act==='execute-penalty'){ executePenalty(id, value); toast(t('penaltyExecutedToast')); render(); }
 
-  else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; ledgerCurrency='CAD'; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; pushScreen({type:'editChild', childId:id}); }
-  else if(act==='set-ledger-currency'){ ledgerCurrency = value; showExchangeRateForm=false; showSpecialOfferForm=false; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; render(); }
+  else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; ledgerCurrency='CAD'; showExchangeRateForm=false; showSpecialOfferForm=false; editingOfferId=null; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='set-ledger-currency'){ ledgerCurrency = value; showExchangeRateForm=false; showSpecialOfferForm=false; editingOfferId=null; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; render(); }
   else if(act==='open-rate-form'){ showExchangeRateForm=true; render(); }
   else if(act==='cancel-rate-form'){ showExchangeRateForm=false; render(); }
   else if(act==='save-rate'){
@@ -3813,8 +3897,16 @@ function handleAction(act, id, value, el){
     showExchangeRateForm = false;
     render();
   }
-  else if(act==='open-offer-form'){ showSpecialOfferForm=true; render(); }
-  else if(act==='cancel-offer-form'){ showSpecialOfferForm=false; render(); }
+  else if(act==='open-offer-form'){ showSpecialOfferForm=true; editingOfferId=null; render(); }
+  else if(act==='edit-offer-form'){
+    var childO = childById(id);
+    var itemO = childO && (childO.specialOffers||[]).find(function(o){ return o.id===value; });
+    if(!itemO) return;
+    showSpecialOfferForm = true;
+    editingOfferId = itemO.id;
+    render();
+  }
+  else if(act==='cancel-offer-form'){ showSpecialOfferForm=false; editingOfferId=null; render(); }
   else if(act==='save-offer'){
     var oname = document.getElementById('mOfferName').value.trim();
     var ostart = document.getElementById('mOfferStart').value;
@@ -3822,11 +3914,13 @@ function handleAction(act, id, value, el){
     var opts = parseFloat(document.getElementById('mOfferPoints').value);
     var omoney = parseFloat(document.getElementById('mOfferMoney').value);
     if(!oname || !ostart || !oend || !opts || !omoney){ toast(t('fillOfferFieldsToast')); return; }
-    addSpecialOffer(id, ledgerCurrency, oname, ostart, oend, opts, omoney);
+    if(editingOfferId){ updateSpecialOffer(id, editingOfferId, ledgerCurrency, oname, ostart, oend, opts, omoney); }
+    else { addSpecialOffer(id, ledgerCurrency, oname, ostart, oend, opts, omoney); }
     showSpecialOfferForm = false;
+    editingOfferId = null;
     render();
   }
-  else if(act==='delete-offer'){ deleteSpecialOffer(id, value); render(); }
+  else if(act==='delete-offer'){ if(editingOfferId===value) editingOfferId=null; deleteSpecialOffer(id, value); render(); }
   else if(act==='draft-ledger-direction'){ manualLedgerDirection = value; render(); }
   else if(act==='draft-ledger-category'){ manualLedgerCategory = value; render(); }
   else if(act==='open-ledger-form'){ showManualLedgerForm=true; manualLedgerDirection='income'; manualLedgerCategory='grant'; render(); }
