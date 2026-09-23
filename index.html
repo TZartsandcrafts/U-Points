@@ -707,7 +707,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.45';
+var APP_VERSION = '3.13.46';
 var APP_BUILD_DATE = '2026-09-22';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2027,8 +2027,11 @@ function shiftCalMonth(cs, delta){
   while(cs.m < 0){ cs.m += 12; cs.y -= 1; }
   while(cs.m > 11){ cs.m -= 12; cs.y += 1; }
 }
-// 月历小结：把这个月（不含打卡类）的加减分记录，汇总成"共加了多少分/多少次、
-// 共减了多少分/多少次，以及加分最多和减分最多分别是哪一项"，点小结按钮展开查看
+// 月历小结：把这个月「积分页」里真正的加分/减分规则记录（behaviorId 不为空，
+// 即孩子/家长点某条加分或减分规则产生的记录），汇总成"共加了多少分/多少次、
+// 共减了多少分/多少次，以及加分最多和减分最多分别是哪一项"，点小结按钮展开查看。
+// 不含打卡自动加分、营养达标加分、初始分数调整、兑换奖惩这些 behaviorId 为空的记录，
+// 调用处已经先用 behaviorId 过滤过一遍，这里传入的就是纯 积分页 加分/减分记录。
 function calMonthSummaryHtml(monthLogs){
   if(!monthLogs.length){
     return '<div class="cal-summary" style="text-align:center;color:var(--muted);">'+t('calSummaryEmptyHint')+'</div>';
@@ -2154,7 +2157,7 @@ function renderCalendar(child, recentMode){
         '<button class="cal-nav-btn tap" data-act="cal-next" data-id="'+child.id+'">›</button>'+
       '</div>'+
       '<button class="cal-nav-btn tap cal-summary-toggle" data-act="cal-toggle-summary" data-id="'+child.id+'">'+(cs.summaryOpen?t('calSummaryCloseBtn'):t('calSummaryOpenBtn'))+'</button>'+
-      (cs.summaryOpen ? calMonthSummaryHtml(monthLogs) : '')+
+      (cs.summaryOpen ? calMonthSummaryHtml(monthLogs.filter(function(l){ return l.behaviorId; })) : '')+
       '<div class="cal-weekdays">'+weekdaysHtml+'</div>'+
       '<div class="cal-grid">'+cellsHtml+'</div>'+
       detailHtml+
