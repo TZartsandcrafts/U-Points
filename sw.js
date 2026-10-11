@@ -2,12 +2,21 @@
 // 简单的"离线优先"缓存：把 index.html 本体缓存下来，
 // 这样即使没有网络，重新打开 PWA 也能正常显示（数据仍在 localStorage 里，不受影响）。
 //
+// v3.13.48 更新（修复家长端收不到孩子端最新记录、要反复开关 App 才同步的问题）：
+// 之前这里的 fetch 处理器会拦截"所有"GET 请求，连 Firestore 的跨域长连接请求
+// （firestore.googleapis.com 的 WebChannel / long polling 下行通道，本质上是一条
+// 挂起很久的 GET）也被 Service Worker 代理了一遍，还会把响应 clone 后试图写进缓存。
+// iOS 会很快回收闲置的 Service Worker，被它代理着的长连接就会无声地卡住或断掉，
+// 表现就是：实时监听不再收到新数据，直到整个 App 被划掉重开。
+// 现在只处理同源的 GET 请求（也就是 index.html / sw.js 自己），所有跨域请求
+// （Firestore、Firebase 登录、gstatic 的 SDK 脚本）一律不拦截，直接走网络。
+//
 // v3.13.47 更新：记账页「手动记一笔」平时收支功能，从原来只有家长能用，开放给
 // 孩子自己也能记（比如收到的零花钱、自己买了什么）。孩子只能新增，不能修改或
 // 删除——流水列表里的✕删除按钮仍然只在家长身份下才会出现，App 里本来就没有
 // "改"这条流水的功能，家长也一样不能改，只能删了重记。汇率设置、限时优惠、货币
 // 互转、调整初始金额这几项账户管理功能，仍然只有家长能看到。
-var CACHE_NAME = 'u-points-cache-v3.13.47';
+var CACHE_NAME = 'u-points-cache-v3.13.48';
 var APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function(event){
@@ -32,14 +41,24 @@ self.addEventListener('activate', function(event){
 });
 
 self.addEventListener('fetch', function(event){
-  if(event.request.method !== 'GET') return;
+  var req = event.request;
+  var url = new URL(req.url);
+
+  // 只处理同源 GET：跨域请求（Firestore 长连接、Firebase Auth、gstatic SDK 等）
+  // 直接放行，不经过 Service Worker，也不进缓存。
+  if(req.method !== 'GET' || url.origin !== self.location.origin){
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request, { cache: 'no-store' }).then(function(res){
-      var resClone = res.clone();
-      caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, resClone); });
+    fetch(req, { cache: 'no-store' }).then(function(res){
+      if(res && res.status === 200){
+        var resClone = res.clone();
+        caches.open(CACHE_NAME).then(function(cache){ cache.put(req, resClone); });
+      }
       return res;
     }).catch(function(){
-      return caches.match(event.request).then(function(cached){
+      return caches.match(req).then(function(cached){
         return cached || caches.match('./index.html');
       });
     })

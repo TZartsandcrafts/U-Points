@@ -707,8 +707,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.47';
-var APP_BUILD_DATE = '2026-10-04';
+var APP_VERSION = '3.13.48';
+var APP_BUILD_DATE = '2026-10-10';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1605,11 +1605,26 @@ function collRef(name){ return roomRef().collection(name); }
 function familyDocRef(){ return roomRef().collection('meta').doc('family'); }
 
 // 避免云同步引发的重渲染打断正在输入的文本框（iOS 上会导致键盘收起，需要重新点一次才能继续打字）
+var renderDeferred = false;
 function safeRender(){
   var ae = document.activeElement;
-  if(ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA')) return;
+  if(ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA')){
+    // v3.13.48：输入框有焦点时先不渲染（免得 iOS 键盘收起），但记下来，
+    // 等输入框失焦后补做一次，避免家长端停在输入页时一直看不到新数据。
+    renderDeferred = true;
+    return;
+  }
+  renderDeferred = false;
   render();
 }
+document.addEventListener('focusout', function(){
+  if(!renderDeferred) return;
+  setTimeout(function(){
+    var ae = document.activeElement;
+    if(ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA')) return;
+    if(renderDeferred){ renderDeferred = false; render(); }
+  }, 300);
+});
 
 async function connectCloudSync(roomCode, isNewRoom){
   state.cloudSync.roomCode = roomCode;
@@ -4445,22 +4460,56 @@ if(state.cloudSync.enabled && state.cloudSync.roomCode){
   connectCloudSync(state.cloudSync.roomCode, false);
 }
 
-// 兜底补发：即使开了离线持久化，也可能因为各种边缘情况（比如那次连接建立失败、
-// 或者持久化本身没启用成功）导致个别记录没发出去。这里在"App 重新回到前台"和
-// "浏览器判定网络恢复"这两个时机各补一次 pushAllLocal()——它内部已经用
-// updatedAt 版本号去重，重复调用是安全的，不会重复写入或触发多余的网络请求。
+// 兜底补发 + 主动拉取：
+// v3.13.48 之前，"回到前台""网络恢复"这两个时机只会补发本机没发出去的记录（推），
+// 从来不会主动检查"收"的这条通道是否还活着——而 iOS 把 PWA 切到后台后，Firestore 的
+// 实时监听连接常被系统冻结或掐断，回到前台时 SDK 并不总能立刻发现，结果就是家长端
+// 一直收不到孩子端的新记录，要强退重开（重开=重新订阅）才恢复。
+// 现在这两个时机除了补发，还会把网络层断开再重连一次（强制丢掉可能已经死掉的旧连接），
+// 然后重新订阅全部监听，效果相当于"自动帮你重开一次"，但不会重新加载页面、不打断操作。
+// 补发部分仍按 updatedAt 版本号去重，重复调用是安全的。
+var cloudResumeBusy = false;
+var cloudLastResumeAt = 0;
+var appHiddenAt = 0;
+function cloudSyncResume(force){
+  if(!cloudSyncActive()) return;
+  pushAllLocal();
+  var now = Date.now();
+  if(cloudResumeBusy) return;
+  if(!force && now - cloudLastResumeAt < 5000) return; // 5 秒内不重复重连
+  cloudResumeBusy = true;
+  cloudLastResumeAt = now;
+  var db = CLOUD.db;
+  var resub = function(){
+    if(!cloudSyncActive()) return;
+    SYNC_COLLECTIONS.forEach(subscribeCollection);
+    subscribeFamily();
+    pushAllLocal();
+  };
+  Promise.resolve()
+    .then(function(){ return db.disableNetwork(); })
+    .then(function(){ return db.enableNetwork(); })
+    .then(resub)
+    .catch(function(e){ console.warn('cloud sync resume failed', e); resub(); })
+    .then(function(){ cloudResumeBusy = false; });
+}
 document.addEventListener('visibilitychange', function(){
-  if(!document.hidden && cloudSyncActive()) pushAllLocal();
+  if(document.hidden){ appHiddenAt = Date.now(); return; }
+  // 只在离开超过 3 秒后才重连，避免下拉通知栏之类的瞬间切换也折腾网络
+  var away = appHiddenAt ? Date.now() - appHiddenAt : 0;
+  appHiddenAt = 0;
+  if(cloudSyncActive()) cloudSyncResume(away > 3000);
+});
+window.addEventListener('pageshow', function(e){
+  if(e && e.persisted && cloudSyncActive()) cloudSyncResume(true);
 });
 window.addEventListener('online', function(){
-  if(cloudSyncActive()) pushAllLocal();
+  if(cloudSyncActive()) cloudSyncResume(true);
 });
-// 额外兜底：App 处于前台、正在被使用的这段时间里，每20秒也顺手补发一次——
-// 不是所有"写失败"都会走到 visibilitychange/online 这两个事件（比如网络连接
-// 本身没断，只是 Firestore 那条流式连接卡住了、请求发出去但一直没回音），
-// 定期兜底一次能在孩子还开着 App 的时候就把卡住的记录发出去，不用非等到切
-// 后台再回来或者强退重开。pushAllLocal 内部按版本号去重，没有待发送的东西
-// 时基本不产生任何网络请求，可以放心定期跑。
+// 额外兜底：App 处于前台、正在被使用的这段时间里，每20秒也顺手补发一次（只推不重连）——
+// 不是所有"写失败"都会走到上面这些事件（比如网络连接本身没断，只是请求发出去一直没回音），
+// 定期兜底一次能在孩子还开着 App 的时候就把卡住的记录发出去。pushAllLocal 内部按版本号
+// 去重，没有待发送的东西时基本不产生任何网络请求。
 setInterval(function(){ if(cloudSyncActive()) pushAllLocal(); }, 20000);
 
 if('serviceWorker' in navigator){
