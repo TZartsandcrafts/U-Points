@@ -2,6 +2,12 @@
 // 简单的"离线优先"缓存：把 index.html 本体缓存下来，
 // 这样即使没有网络，重新打开 PWA 也能正常显示（数据仍在 localStorage 里，不受影响）。
 //
+// v3.13.50 更新：自动还款改成按结算日的限时优惠汇率换算，设置入口挪到「调整平时汇率」下面（逻辑都在
+// index.html 里，这里只升缓存版本号）。
+//
+// v3.13.49 更新：新增「账户余额为负时，每天结算的积分自动按比例还款」功能（逻辑都在
+// index.html 里，这里没有改动，只是同步升了缓存版本号，让两台设备都拿到新的 index.html）。
+//
 // v3.13.48 更新（修复家长端收不到孩子端最新记录、要反复开关 App 才同步的问题）：
 // 之前这里的 fetch 处理器会拦截"所有"GET 请求，连 Firestore 的跨域长连接请求
 // （firestore.googleapis.com 的 WebChannel / long polling 下行通道，本质上是一条
@@ -16,7 +22,7 @@
 // 删除——流水列表里的✕删除按钮仍然只在家长身份下才会出现，App 里本来就没有
 // "改"这条流水的功能，家长也一样不能改，只能删了重记。汇率设置、限时优惠、货币
 // 互转、调整初始金额这几项账户管理功能，仍然只有家长能看到。
-var CACHE_NAME = 'u-points-cache-v3.13.48';
+var CACHE_NAME = 'u-points-cache-v3.13.50';
 var APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function(event){

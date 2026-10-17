@@ -504,7 +504,15 @@ zh: {
   transferFromLabel:'从', transferToLabel:'转到', transferAmountLabel:'转出金额', transferRateLabel:'转换汇率（1{{from}} = ? {{to}}）',
   transferPreviewLabel:'预计到账', transferBtn:'+ 货币互转', confirmTransferBtn:'确认互转',
   transferOutSource:'转出到{{to}}', transferInSource:'从{{from}}转入',
-  catTransfer:'货币互转', catAdjustment:'初始调整',
+  catTransfer:'货币互转', catAdjustment:'初始调整', catRepay:'自动还款',
+  redeemHistoryRepay:'自动还款',
+  autoRepayBtn:'自动还款比例', autoRepayPercentLabel:'每天结算积分的百分之几用于还款（0＝关闭）',
+  autoRepayHint:'账户余额为负数时，每天结算的积分（当天净得分，扣分已抵消）会按这个比例自动换成零花钱还款。汇率跟着结算那一天走：当天有限时优惠就按优惠汇率，没有就按平时汇率。还款会自动生成一条兑换记录和一条记账流水；还到余额为 0 就自动停止。每天结算一次，在次日打开 App 时完成。开启后只从当天起算，不会追溯之前的积分。',
+  autoRepayInvalidToast:'请输入 0 到 100 之间的数字', autoRepaySavedToast:'自动还款设置已保存',
+  autoRepayActiveBanner:'🧾 账户余额为负：每天结算积分的 {{percent}}% 会自动用于还款，还到 0 为止',
+  autoRepayIdleBanner:'🧾 自动还款已开启（{{percent}}%）：账户余额为负时，每天结算积分的 {{percent}}% 会自动还款',
+  autoRepayLogName:'自动还款（{{date}} 结算 · {{cur}}）', autoRepayLedgerSource:'积分自动还款（{{date}} 结算）', autoRepayLedgerSourceSpecial:'积分自动还款（{{date}} 结算 · {{offer}} 优惠价）',
+  autoRepayToast:'自动还款：用 {{points}} 积分还了 {{money}}',
   adjustInitialMoneyBtn:'调整初始金额', initialMoneyLabel:'初始金额', initialMoneyLogSource:'初始金额调整',
   adjustInitialPointsBtn:'调整初始积分', initialPointsLabel:'初始积分', initialPointsLogName:'初始积分调整',
 },
@@ -690,7 +698,15 @@ en: {
   transferFromLabel:'From', transferToLabel:'To', transferAmountLabel:'Amount to transfer', transferRateLabel:'Conversion rate (1 {{from}} = ? {{to}})',
   transferPreviewLabel:'You will receive', transferBtn:'+ Currency transfer', confirmTransferBtn:'Confirm transfer',
   transferOutSource:'Transferred to {{to}}', transferInSource:'Transferred from {{from}}',
-  catTransfer:'Currency transfer', catAdjustment:'Initial adjustment',
+  catTransfer:'Currency transfer', catAdjustment:'Initial adjustment', catRepay:'Auto repayment',
+  redeemHistoryRepay:'Auto repayment',
+  autoRepayBtn:'Auto-repayment percentage', autoRepayPercentLabel:"% of each day's settled points used to repay (0 = off)",
+  autoRepayHint:"While the allowance balance is negative, this percentage of each day's settled points (that day's net score, deductions already offset) is automatically converted to allowance to repay it. The rate follows the day being settled: the special-offer rate if one was active that day, otherwise the standard rate. A redemption record and a ledger entry are created automatically, and repayment stops once the balance reaches 0. Settled once a day, when the app is opened the next day. Starts from the day you turn it on — earlier points are not counted.",
+  autoRepayInvalidToast:'Enter a number between 0 and 100', autoRepaySavedToast:'Auto-repayment saved',
+  autoRepayActiveBanner:"🧾 Balance is negative: {{percent}}% of each day's settled points is automatically used to repay it, until it reaches 0",
+  autoRepayIdleBanner:"🧾 Auto-repayment is on ({{percent}}%): when the balance is negative, {{percent}}% of each day's settled points repays it automatically",
+  autoRepayLogName:'Auto repayment ({{date}} · {{cur}})', autoRepayLedgerSource:'Auto repayment from points ({{date}})', autoRepayLedgerSourceSpecial:'Auto repayment from points ({{date}} · {{offer}} rate)',
+  autoRepayToast:'Auto repayment: {{points}} points repaid {{money}}',
   adjustInitialMoneyBtn:'Adjust initial balance', initialMoneyLabel:'Initial balance', initialMoneyLogSource:'Initial balance adjustment',
   adjustInitialPointsBtn:'Adjust initial points', initialPointsLabel:'Initial points', initialPointsLogName:'Initial points adjustment',
 }
@@ -707,7 +723,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.48';
+var APP_VERSION = '3.13.50';
 var APP_BUILD_DATE = '2026-10-10';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1528,6 +1544,155 @@ function transferCurrency(childId, fromCurrency, toCurrency, fromAmount, toAmoun
   return transferId;
 }
 
+/* ---------------- 自动还款：账户余额为负时，每天结算的积分按比例自动还款 ---------------- */
+// v3.13.49：家长给每个孩子设置一个百分比（0＝关闭）。只要某个币种的零花钱账户余额是负数，
+// 孩子每天结算的积分（当天的净得分）里，这个比例会自动换成零花钱还款，还到余额为 0 就停。
+// 设计要点：
+// - "每天结算"＝一天结束之后才结算那一天（次日有任意设备打开 App 时补做），这样当天的积分
+//   不会因为中途补记、重新结算营养分而反复变动；开启之前的日子不会追溯。
+// - 换算用结算那一天生效的汇率：那天有限时优惠就按优惠汇率（多个优惠同时生效取对孩子最划算的，
+//   跟手动兑换一致），没有就按平时汇率；多个币种同时为负时按 CAD、USD、CNY 的顺序依次还。
+// - 每笔还款的记录 id 是确定的（日期+币种），家长端和孩子端同时补结算时只会写成同一条，不会重复扣。
+// - 自动生成两条记录：一条兑换记录（积分扣除，出现在「兑换记录」页）、一条记账流水（零花钱入账）。
+function autoRepayConfig(child){
+  var c = (child && child.autoRepay) || {};
+  var p = Number(c.percent);
+  if(isNaN(p) || p < 0) p = 0;
+  if(p > 100) p = 100;
+  return { percent: p, startDate: c.startDate || '', settledThrough: c.settledThrough || '' };
+}
+function dateStrAddDays(dateStr, n){
+  var d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function setAutoRepayPercent(childId, percent){
+  var child = childById(childId);
+  if(!child) return;
+  var old = autoRepayConfig(child);
+  percent = Math.round(percent);
+  if(percent <= 0){
+    child.autoRepay = { percent: 0, startDate: '', settledThrough: '' };
+  } else if(old.percent <= 0){
+    // 从关闭变成开启：只从今天起算，今天的积分明天结算
+    child.autoRepay = { percent: percent, startDate: todayStr(), settledThrough: dateStrAddDays(todayStr(), -1) };
+  } else {
+    child.autoRepay = { percent: percent, startDate: old.startDate, settledThrough: old.settledThrough };
+  }
+  persistEntity('children', child);
+}
+// 某一天的净得分：当天所有加分/扣分合计（不含兑换、初始调整），不会小于 0
+function dayNetPoints(childId, dateStr){
+  var sum = 0;
+  data.pointLogs.forEach(function(l){
+    if(l.childId !== childId || l.date !== dateStr) return;
+    if(l.source === 'redemption' || l.source === 'adjustment') return;
+    sum += (l.points || 0);
+  });
+  return Math.max(0, Math.round(sum*10)/10);
+}
+// 某一天、某个币种生效的汇率（日期可以是过去的某一天，因为是次日才结算）
+function repayRateOn(child, currency, dateStr){
+  var offers = (child.specialOffers || []).filter(function(o){
+    return (o.currency || CURRENCIES[0].code) === currency && o.startDate <= dateStr && dateStr <= o.endDate && o.points > 0 && o.money > 0;
+  });
+  if(offers.length){
+    offers.sort(function(a,b){ return (b.money/b.points) - (a.money/a.points); });
+    return { points: offers[0].points, money: offers[0].money, special: offers[0] };
+  }
+  var r = childExchangeRates(child)[currency] || defaultExchangeRate();
+  return { points: r.points, money: r.money, special: null };
+}
+function floorTenth(x){ return Math.floor(x*10 + 1e-9) / 10; }
+// 结算某一天，返回这一天实际产生的还款 [{points, money, currency}]
+function autoRepaySettleDay(child, dateStr){
+  var cfg = autoRepayConfig(child);
+  var results = [];
+  var pool = floorTenth(dayNetPoints(child.id, dateStr) * cfg.percent / 100);
+  pool = floorTenth(Math.min(pool, Math.max(0, pointBalance(child.id)))); // 不会把总积分扣成负数
+  CURRENCIES.forEach(function(cur){
+    if(pool <= 0) return;
+    var pid = 'repay-' + child.id + '-' + dateStr + '-' + cur.code;
+    var lid = 'repayL-' + child.id + '-' + dateStr + '-' + cur.code;
+    var existingPoint = data.pointLogs.find(function(l){ return l.id === pid; });
+    var existingLedger = data.ledgerLogs.find(function(l){ return l.id === lid; });
+    if(existingPoint || existingLedger){
+      // 另一台设备已经结算过这一天这个币种：把它用掉的积分从额度里扣掉，继续看下一个币种
+      var usedBefore = existingPoint ? Math.abs(existingPoint.points) : (existingLedger.pointsSpent || 0);
+      pool = floorTenth(pool - usedBefore);
+      return;
+    }
+    var bal = ledgerBalance(child.id, cur.code);
+    if(bal >= 0) return;
+    var rate = repayRateOn(child, cur.code, dateStr);
+    if(!(rate.points > 0) || !(rate.money > 0)) return;
+    var deficit = Math.round(-bal * 100) / 100;
+    var need = Math.ceil(deficit / rate.money * rate.points * 10 - 1e-9) / 10; // 还清欠款需要的积分，向上取整到 0.1
+    var used = Math.min(pool, need);
+    var money = (used >= need) ? deficit : Math.round(used / rate.points * rate.money * 100) / 100;
+    if(!(used > 0) || !(money > 0)) return;
+    var now = Date.now();
+    var time = (new Date()).toTimeString().slice(0,5);
+    persistEntity('ledgerLogs', {
+      id: lid, childId: child.id, source: rate.special ? t('autoRepayLedgerSourceSpecial', {date: dateStr, offer: rate.special.name}) : t('autoRepayLedgerSource', {date: dateStr}), amount: money, category: 'repay',
+      pointsSpent: used, ts: now, currency: cur.code, date: todayStr(), time: time
+    });
+    persistEntity('pointLogs', {
+      id: pid, childId: child.id, behaviorId: null, source: 'redemption', redemptionKind: 'repay',
+      name: t('autoRepayLogName', {date: dateStr, cur: currencyName(cur.code)}),
+      name_en: 'Auto repayment (' + dateStr + ', ' + cur.name_en + ')',
+      icon: '🧾', points: -used, date: todayStr(), time: time, ts: now + 1
+    });
+    pool = floorTenth(pool - used);
+    results.push({ points: used, money: money, currency: cur.code });
+  });
+  return results;
+}
+var autoRepayRunning = false;
+var autoRepayTimer = null;
+var autoRepayLastDay = '';
+// 补结算所有"已经过完、还没结算"的日子（昨天及以前）。可以随时反复调用，没有要结算的就什么都不做。
+function runAutoRepay(){
+  if(autoRepayRunning) return;
+  autoRepayRunning = true;
+  try{
+    var today = todayStr();
+    var yesterday = dateStrAddDays(today, -1);
+    var sumPoints = 0, moneyParts = {}, any = false;
+    (data.children || []).slice().forEach(function(child){
+      var cfg = autoRepayConfig(child);
+      if(cfg.percent <= 0) return;
+      var last = cfg.settledThrough || dateStrAddDays(cfg.startDate || today, -1);
+      if(last >= yesterday) return;
+      var d = dateStrAddDays(last, 1), guard = 0, childRepaid = false;
+      while(d <= yesterday && guard < 60){ // 最多一次补 60 天，剩下的下次再补
+        autoRepaySettleDay(child, d).forEach(function(r){
+          sumPoints += r.points; moneyParts[r.currency] = (moneyParts[r.currency] || 0) + r.money;
+          childRepaid = true; any = true;
+        });
+        last = d;
+        d = dateStrAddDays(d, 1); guard++;
+      }
+      child.autoRepay = { percent: cfg.percent, startDate: cfg.startDate, settledThrough: last };
+      persistEntity('children', child);
+      if(childRepaid) rearmThresholds(child.id);
+    });
+    if(any){
+      var moneyText = Object.keys(moneyParts).map(function(code){ return currencySymbol(code) + fmtMoney(moneyParts[code]); }).join(' + ');
+      toast(t('autoRepayToast', {points: fmtPts(sumPoints), money: moneyText}));
+      safeRender();
+    }
+  } finally {
+    autoRepayRunning = false;
+  }
+}
+function scheduleAutoRepay(delay){
+  clearTimeout(autoRepayTimer);
+  autoRepayTimer = setTimeout(function(){
+    try{ runAutoRepay(); }catch(e){ console.warn('auto repay failed', e); }
+  }, delay == null ? 3000 : delay);
+}
+
 /* ---------------- 初始积分 / 初始金额调整（支持家长自定义起始值） ---------------- */
 function pointsAdjustmentLog(childId){
   return data.pointLogs.find(function(l){ return l.childId===childId && l.source==='adjustment'; });
@@ -1884,6 +2049,7 @@ var showTransferForm = false; // 记账：是否展开"货币互转"表单
 var transferToCurrencyDraft = 'USD'; // 货币互转表单：目标币种
 var showPointsAdjustForm = false; // 积分：是否展开"调整初始积分"表单
 var showLedgerAdjustForm = false; // 记账：是否展开"调整初始金额"表单
+var showAutoRepayForm = false; // 记账：是否展开"自动还款比例"表单（仅家长）
 
 function toast(msg){
   // toast 用独立的常驻 DOM 节点，不参与 render() 的整页重绘——
@@ -2711,7 +2877,7 @@ function renderRedeemHistorySubTab(c, parentMode){
   }
   var rows = history.map(function(l){
     var nm = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
-    var kindLabel = l.redemptionKind==='penalty' ? t('redeemHistoryPenalty') : (l.redemptionKind==='cash' ? t('redeemHistoryCash') : t('redeemHistoryReward'));
+    var kindLabel = l.redemptionKind==='penalty' ? t('redeemHistoryPenalty') : (l.redemptionKind==='cash' ? t('redeemHistoryCash') : (l.redemptionKind==='repay' ? t('redeemHistoryRepay') : t('redeemHistoryReward')));
     return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm)+'</span><span class="meta">'+kindLabel+' · '+l.date+' '+l.time+'</span></div>'+
       '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill '+(l.points>=0?'pos':'neg')+'">'+(l.points>=0?'+':'')+fmtPts(l.points)+'</span>'+
       (parentMode ? '<button class="small-icon-btn" data-act="delete-log" data-id="'+l.id+'">✕</button>' : '')+'</div></div>';
@@ -2728,6 +2894,14 @@ function renderLedgerTabBody(c, parentMode){
 
   var html = segmentedHtml('set-ledger-currency', c.id, ledgerCurrency, CURRENCIES.map(function(cur){ return [cur.code, cur.code]; }));
   html += '<div class="balance-card money"><div class="balance-num">'+sym+fmtMoney(balance)+'</div><div class="balance-label">'+t('currentMoneyBalanceLabel')+' ('+currencyName(ledgerCurrency)+')</div></div>';
+
+  // 自动还款提示条（家长、孩子都能看到，只读）
+  var arCfg = autoRepayConfig(c);
+  if(arCfg.percent > 0){
+    var anyNegative = CURRENCIES.some(function(cur){ return ledgerBalance(c.id, cur.code) < 0; });
+    html += '<div class="rate-card"><div class="offer-banner upcoming" style="margin-top:0;">'+
+      t(anyNegative ? 'autoRepayActiveBanner' : 'autoRepayIdleBanner', {percent: arCfg.percent})+'</div></div>';
+  }
 
   // 兑换区
   html += '<div class="rate-card">'+
@@ -2756,6 +2930,16 @@ function renderLedgerTabBody(c, parentMode){
         '<button class="btn-primary tap" data-act="save-rate" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>'
       : '<button class="dashed-btn tap" data-act="open-rate-form" style="margin-bottom:16px;">'+t('editRateBtn')+'</button>';
+
+    // 自动还款比例（只有家长能设置，对这个孩子所有币种通用）
+    html += showAutoRepayForm ?
+      '<div class="inline-form">'+
+        '<div class="field"><label>'+t('autoRepayPercentLabel')+'</label><input type="number" step="1" min="0" max="100" id="mAutoRepayPercent" value="'+arCfg.percent+'"></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin:-6px 0 12px;line-height:1.5;">🌱 '+t('autoRepayHint')+'</div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-autorepay-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-autorepay" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>'
+      : '<button class="dashed-btn tap" data-act="open-autorepay-form" style="margin-bottom:16px;">'+t('autoRepayBtn')+(arCfg.percent>0 ? ' ('+arCfg.percent+'%)' : '')+'</button>';
 
     // 限时优惠列表（只显示当前币种的）
     html += '<div class="section-title" style="margin-top:0;">'+t('specialOffersTitle')+'</div>';
@@ -2835,7 +3019,7 @@ function renderLedgerTabBody(c, parentMode){
     entriesAsc.forEach(function(l){ running += l.amount; runningMap[l.id] = Math.round(running*100)/100; });
     html += entriesDesc.map(function(l){
       var isViolation = l.category==='violation';
-      var catLabel = {grant:t('catGrant'), spending:t('catSpending'), violation:t('catViolation'), other:t('catOtherLedger'), exchange:'', transfer:t('catTransfer'), adjustment:t('catAdjustment')}[l.category] || '';
+      var catLabel = {grant:t('catGrant'), spending:t('catSpending'), violation:t('catViolation'), other:t('catOtherLedger'), exchange:'', transfer:t('catTransfer'), adjustment:t('catAdjustment'), repay:t('catRepay')}[l.category] || '';
       var meta = l.date+' '+l.time + (catLabel?(' · '+catLabel):'') + (l.pointsSpent ? t('pointsSpentSuffix',{n:fmtPts(l.pointsSpent)}) : '');
       return '<div class="ledger-row'+(isViolation?' violation':'')+'">'+
         '<div class="ledger-top"><span class="ledger-source">'+(isViolation?'⚠️ ':'')+esc(l.source)+'</span>'+
@@ -3905,8 +4089,18 @@ function handleAction(act, id, value, el){
   else if(act==='delete-penalty'){ if(editingPenaltyId===value) editingPenaltyId=null; deletePenalty(id, value); render(); }
   else if(act==='execute-penalty'){ executePenalty(id, value); toast(t('penaltyExecutedToast')); render(); }
 
-  else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; ledgerCurrency='CAD'; showExchangeRateForm=false; showSpecialOfferForm=false; editingOfferId=null; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; pushScreen({type:'editChild', childId:id}); }
-  else if(act==='set-ledger-currency'){ ledgerCurrency = value; showExchangeRateForm=false; showSpecialOfferForm=false; editingOfferId=null; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; render(); }
+  else if(act==='open-child-ledger'){ editChildTab='ledger'; confirmDeleteChild=false; ledgerCurrency='CAD'; showExchangeRateForm=false; showSpecialOfferForm=false; editingOfferId=null; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showAutoRepayForm=false; pushScreen({type:'editChild', childId:id}); }
+  else if(act==='set-ledger-currency'){ ledgerCurrency = value; showExchangeRateForm=false; showSpecialOfferForm=false; editingOfferId=null; showManualLedgerForm=false; showTransferForm=false; showLedgerAdjustForm=false; showAutoRepayForm=false; render(); }
+  else if(act==='open-autorepay-form'){ showAutoRepayForm=true; render(); }
+  else if(act==='cancel-autorepay-form'){ showAutoRepayForm=false; render(); }
+  else if(act==='save-autorepay'){
+    var arPct = parseFloat(document.getElementById('mAutoRepayPercent').value);
+    if(isNaN(arPct) || arPct < 0 || arPct > 100){ toast(t('autoRepayInvalidToast')); return; }
+    setAutoRepayPercent(id, arPct);
+    showAutoRepayForm = false;
+    toast(t('autoRepaySavedToast'));
+    render();
+  }
   else if(act==='open-rate-form'){ showExchangeRateForm=true; render(); }
   else if(act==='cancel-rate-form'){ showExchangeRateForm=false; render(); }
   else if(act==='save-rate'){
@@ -4459,6 +4653,9 @@ render();
 if(state.cloudSync.enabled && state.cloudSync.roomCode){
   connectCloudSync(state.cloudSync.roomCode, false);
 }
+// 自动还款补结算：启动时做一次。开了云同步的话多等几秒，让另一台设备已经产生的记录先同步下来再算
+autoRepayLastDay = todayStr();
+scheduleAutoRepay((state.cloudSync.enabled && state.cloudSync.roomCode) ? 4000 : 500);
 
 // 兜底补发 + 主动拉取：
 // v3.13.48 之前，"回到前台""网络恢复"这两个时机只会补发本机没发出去的记录（推），
@@ -4485,6 +4682,7 @@ function cloudSyncResume(force){
     SYNC_COLLECTIONS.forEach(subscribeCollection);
     subscribeFamily();
     pushAllLocal();
+    scheduleAutoRepay(3000); // 重新订阅后等数据同步下来，再补结算自动还款
   };
   Promise.resolve()
     .then(function(){ return db.disableNetwork(); })
@@ -4510,7 +4708,11 @@ window.addEventListener('online', function(){
 // 不是所有"写失败"都会走到上面这些事件（比如网络连接本身没断，只是请求发出去一直没回音），
 // 定期兜底一次能在孩子还开着 App 的时候就把卡住的记录发出去。pushAllLocal 内部按版本号
 // 去重，没有待发送的东西时基本不产生任何网络请求。
-setInterval(function(){ if(cloudSyncActive()) pushAllLocal(); }, 20000);
+setInterval(function(){
+  if(cloudSyncActive()) pushAllLocal();
+  // App 一直开着、过了零点：新的一天开始了，补结算昨天的自动还款
+  if(autoRepayLastDay !== todayStr()){ autoRepayLastDay = todayStr(); scheduleAutoRepay(500); }
+}, 20000);
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
