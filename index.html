@@ -162,6 +162,16 @@
   .calorie-preview{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--exercise-text);text-align:center;margin:8px 0;}
   .nutri-row{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--border);font-size:14px;}
   .nutri-row:last-child{border-bottom:none;}
+  /* 营养达标设置：每一项的名称、标准、加分放在同一行 */
+  .nutri-set-head,.nutri-set-row{display:grid;grid-template-columns:minmax(0,1fr) 116px 62px;gap:8px;align-items:center;}
+  .nutri-set-head{font-size:12px;color:var(--muted);padding:0 0 4px;border-bottom:1px solid var(--border);}
+  .nutri-set-head span:nth-child(n+2){text-align:center;}
+  .nutri-set-row{padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;}
+  .nutri-set-row:last-of-type{border-bottom:none;}
+  .nutri-set-row .nutri-left{display:flex;align-items:center;gap:6px;min-width:0;}
+  .nutri-set-cell{display:flex;align-items:center;gap:3px;min-width:0;justify-content:center;}
+  .nutri-set-cell input{width:100%;min-width:0;box-sizing:border-box;padding:8px 4px;text-align:center;font-size:16px;}
+  .nutri-set-cell .nutri-op,.nutri-set-cell .nutri-unit{font-size:12px;color:var(--muted);flex:none;}
   .nutri-row .nutri-left{display:flex;align-items:center;gap:8px;}
   .nutri-row .nutri-actual{font-size:12px;color:var(--muted);}
   .nutri-badge{font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;}
@@ -435,6 +445,17 @@ zh: {
   perServing:'每份',
   nutritionTitle:'营养达标', nutritionEnableLabel:'启用营养积分（三餐达标时自动加分，未达标/超标不扣分）',
   nutritionEnabledOn:'已启用', nutritionEnabledOff:'未启用',
+  foodGoalsTitle:'食物目标', foodGoalsHint:'指定某种食物每天至少吃多少，或最多不超过多少；每条可以选"达标加分"或"只显示进度"。在「三餐」里记录这种食物后会自动累计，点一行可以修改或删除。',
+  foodGoalAddBtn:'+ 添加食物目标', foodGoalAddTitle:'添加食物目标', foodGoalEditTitle:'修改食物目标',
+  foodGoalPickFood:'选择食物', foodGoalSearchPlaceholder:'搜索食物', foodGoalNoFoodsHint:'食物库里还没有食物——先在「三餐」里添加自定义食物', foodGoalSelected:'已选：',
+  foodGoalDirLabel:'目标方向', foodGoalDirMin:'至少吃到', foodGoalDirMax:'最多不超过', foodGoalTargetLabel:'每天目标量',
+  foodGoalModeLabel:'达标后', foodGoalModePoints:'加分', foodGoalModeDisplay:'只显示进度', foodGoalPointsLabel:'达标加分（分）',
+  foodGoalDisplayOnly:'仅显示', foodGoalRowPts:'加 {{n}} 分',
+  foodGoalPickFirstToast:'请先选择一种食物', foodGoalInvalidTargetToast:'请填写大于 0 的目标量', foodGoalInvalidPointsToast:'请填写大于 0 的加分值，或改成「只显示进度」',
+  foodGoalSavedToast:'食物目标已保存', foodGoalDeletedToast:'已删除', foodGoalDeleteBtn:'删除这个食物目标', foodGoalConfirmDeleteBtn:'再点一次确认删除',
+  nutriColItem:'项目', nutriColTarget:'标准', nutriColPoints:'加分', nutriAutoLabel:'自动',
+  nutriSettingsRowHint:'标准留空＝按身高体重给出的建议值（灰字）。加分只在达标时加；没达标或超标都不扣分，填 0 表示这一项不参与加分。',
+  noLogRuleName:'前一天没有记录三餐（{{date}}）', noLogRuleToast:'昨天没有任何三餐记录，扣 1 分',
   nutritionSettingsBtn:'调整达标标准', carbLimitLabel:'碳水上限(g，留空按建议值)', proteinMinLabel:'蛋白质下限(g，留空按建议值)',
   fatLimitLabel:'脂肪上限(g，留空按建议值)', vegTargetLabel:'蔬菜克重目标(g，不少于)', fruitTargetLabel:'水果克重上限(g，不多于)',
   pointsPerRuleTitle:'每项达标奖励的分值', pointsPerRuleHint:'只在达标时加这么多分；没达标或超标都不扣分。留空或填 0 表示这一项不参与加分',
@@ -629,6 +650,17 @@ en: {
   perServing:'per serving',
   nutritionTitle:'Nutrition Goals', nutritionEnableLabel:'Enable nutrition points (bonus points when a target is met; missing or exceeding never deducts)',
   nutritionEnabledOn:'On', nutritionEnabledOff:'Off',
+  foodGoalsTitle:'Food goals', foodGoalsHint:'Set how much of a specific food to eat each day (at least, or at most). Each goal can award bonus points or just show progress. Amounts add up from Meals logs; tap a row to edit or delete.',
+  foodGoalAddBtn:'+ Add food goal', foodGoalAddTitle:'Add food goal', foodGoalEditTitle:'Edit food goal',
+  foodGoalPickFood:'Choose a food', foodGoalSearchPlaceholder:'Search foods', foodGoalNoFoodsHint:'No foods yet — add a custom food in Meals first', foodGoalSelected:'Selected: ',
+  foodGoalDirLabel:'Direction', foodGoalDirMin:'At least', foodGoalDirMax:'At most', foodGoalTargetLabel:'Daily amount',
+  foodGoalModeLabel:'When met', foodGoalModePoints:'Add points', foodGoalModeDisplay:'Just show progress', foodGoalPointsLabel:'Bonus points when met',
+  foodGoalDisplayOnly:'display only', foodGoalRowPts:'+{{n}} pts',
+  foodGoalPickFirstToast:'Choose a food first', foodGoalInvalidTargetToast:'Enter an amount greater than 0', foodGoalInvalidPointsToast:'Enter points greater than 0, or switch to "Just show progress"',
+  foodGoalSavedToast:'Food goal saved', foodGoalDeletedToast:'Deleted', foodGoalDeleteBtn:'Delete this food goal', foodGoalConfirmDeleteBtn:'Tap again to confirm delete',
+  nutriColItem:'Item', nutriColTarget:'Target', nutriColPoints:'Points', nutriAutoLabel:'Auto',
+  nutriSettingsRowHint:'Leave a target blank to use the suggested value (grey). Points are only added when the target is met; missing or exceeding it never deducts points. 0 = this item gives no points.',
+  noLogRuleName:'No meals logged the day before ({{date}})', noLogRuleToast:'No meals were logged yesterday: -1 point',
   nutritionSettingsBtn:'Adjust targets', carbLimitLabel:'Carb limit (g, blank = suggested)', proteinMinLabel:'Protein minimum (g, blank = suggested)',
   fatLimitLabel:'Fat limit (g, blank = suggested)', vegTargetLabel:'Veggie grams target (g, at least)', fruitTargetLabel:'Fruit grams limit (g, at most)',
   pointsPerRuleTitle:'Bonus points when target is met', pointsPerRuleHint:'Points are only awarded when the target is met; missing it or going over never deducts points. Leave blank or 0 to skip a category',
@@ -723,8 +755,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.50';
-var APP_BUILD_DATE = '2026-10-10';
+var APP_VERSION = '3.13.52';
+var APP_BUILD_DATE = '2026-10-25';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1232,6 +1264,7 @@ function defaultNutritionRules(){
     enabled: false,
     carbMaxOverride: null, proteinMinOverride: null, fatMaxOverride: null,
     vegGramsTarget: 300, fruitGramsTarget: 200,
+    foodGoals: [],
     points: { calorie:3, carb:2, protein:3, fat:2, veg:3, fruit:2 }
   };
 }
@@ -1268,7 +1301,30 @@ function nutritionChecklist(child){
   if(targets.fat!=null) items.push({key:'fat', icon:'🥑', name_zh:'脂肪不超标', name_en:'Fat within limit', ok: totals.fat <= targets.fat, actual: Math.round(totals.fat*10)/10, target: targets.fat, dir:'max'});
   items.push({key:'veg', icon:'🥦', name_zh:'蔬菜达标(g)', name_en:'Veggies target met (g)', ok: totals.veg >= targets.veg, actual: Math.round(totals.veg*10)/10, target: targets.veg, dir:'min'});
   items.push({key:'fruit', icon:'🍎', name_zh:'水果不超标(g)', name_en:'Fruit within limit (g)', ok: totals.fruit <= targets.fruit, actual: Math.round(totals.fruit*10)/10, target: targets.fruit, dir:'max'});
+  // v3.13.52：家长自己指定的食物目标（比如牛奶至少 500g、鸡蛋至少 2 个、糖最多 20g）。
+  // 按三餐里选的那种食物（refId）累计当天吃的量，单位跟食物本身一致（克/个）。
+  var nrf = child.nutritionRules || defaultNutritionRules();
+  (nrf.foodGoals || []).forEach(function(g){
+    var actual = todayFoodAmount(child.id, g);
+    var isMax = g.dir === 'max';
+    var unitTxt = g.unit === 'g' ? 'g' : '个';
+    items.push({
+      key: 'food:' + g.id, icon: g.icon || '🍽️', isFood: true, goal: g, unit: g.unit,
+      name_zh: g.name + (isMax ? '不超标' : '达标') + '(' + unitTxt + ')',
+      name_en: (g.name_en || g.name) + (isMax ? ' within limit' : ' target met') + ' (' + (g.unit === 'g' ? 'g' : 'count') + ')',
+      ok: isMax ? actual <= g.target : actual >= g.target,
+      actual: actual, target: g.target, dir: isMax ? 'max' : 'min'
+    });
+  });
   return items;
+}
+// 今天这个孩子吃了多少某种目标食物（只累计单位一致的记录）
+function todayFoodAmount(childId, goal){
+  var sum = 0;
+  todayMealLogs(childId).forEach(function(l){
+    if(l.refId && l.refId === goal.refId && (l.unit || 'count') === goal.unit) sum += (l.amount || 0);
+  });
+  return Math.round(sum * 10) / 10;
 }
 function settleNutritionToday(childId){
   var child = childById(childId);
@@ -1283,7 +1339,7 @@ function settleNutritionToday(childId){
   // 留空（存成0）＝这一项完全不参与加分。
   var items = nutritionChecklist(child);
   items.forEach(function(it){
-    var pts = nr.points[it.key] || 0;
+    var pts = it.isFood ? (it.goal.mode === 'points' ? (Number(it.goal.points) || 0) : 0) : (nr.points[it.key] || 0);
     if(!pts) return;
     if(!it.ok) return;
     var log = {
@@ -1689,8 +1745,66 @@ function runAutoRepay(){
 function scheduleAutoRepay(delay){
   clearTimeout(autoRepayTimer);
   autoRepayTimer = setTimeout(function(){
-    try{ runAutoRepay(); }catch(e){ console.warn('auto repay failed', e); }
+    try{ runDailyRules(); }catch(e){ console.warn('daily rules failed', e); }
   }, delay == null ? 3000 : delay);
+}
+
+/* ---------------- 全局规则：前一天三餐一条记录都没有，次日自动扣 1 分 ---------------- */
+// v3.13.51 新增、v3.13.52 改为只看三餐：对所有孩子生效（不用设置）。"每天结算"的做法和自动还款一致：一天过完之后，次日有任意
+// 一台设备打开 App 时补做；扣分记录的 id 是确定的（孩子+日期），多台设备同时补做也只会扣一次；
+// 从新规则上线当天起算，不追溯以前的日子。v3.13.52 起只看三餐记录：当天一条三餐记录都没有才扣，
+// 运动记录不算（只记了运动、没记三餐，照样扣）。
+// 扣分记录的日期是实际扣分的那天（次日），不会改变前一天自己的得分统计。
+function dayHasMealRecord(childId, dateStr){
+  return data.mealLogs.some(function(l){ return l.childId===childId && l.date===dateStr; });
+}
+var noLogRuleRunning = false;
+function runNoLogRule(){
+  if(noLogRuleRunning) return;
+  noLogRuleRunning = true;
+  try{
+    var today = todayStr();
+    var yesterday = dateStrAddDays(today, -1);
+    var penalized = 0;
+    (data.children || []).slice().forEach(function(child){
+      var marker = child.noLogRule && child.noLogRule.settledThrough;
+      if(!marker){
+        // 第一次见到这个孩子：从昨天开始记，今天的记录明天检查，不追溯
+        child.noLogRule = { settledThrough: yesterday };
+        persistEntity('children', child);
+        return;
+      }
+      if(marker >= yesterday) return;
+      var d = dateStrAddDays(marker, 1), guard = 0, last = marker, n = 0;
+      while(d <= yesterday && guard < 60){
+        if(!dayHasMealRecord(child.id, d)){
+          var id = 'nolog-' + child.id + '-' + d;
+          if(!data.pointLogs.some(function(l){ return l.id === id; })){
+            persistEntity('pointLogs', {
+              id: id, childId: child.id, behaviorId: null, source: 'rule',
+              name: t('noLogRuleName', {date: d}), name_en: 'No meals logged the day before (' + d + ')',
+              icon: '📝', points: -1, date: today, time: (new Date()).toTimeString().slice(0,5), ts: Date.now()
+            });
+            n++;
+          }
+        }
+        last = d; d = dateStrAddDays(d, 1); guard++;
+      }
+      child.noLogRule = { settledThrough: last };
+      persistEntity('children', child);
+      if(n > 0){ penalized += n; rearmThresholds(child.id); }
+    });
+    if(penalized > 0){
+      setTimeout(function(){ toast(t('noLogRuleToast')); }, 2600); // 错开，免得盖住同时出现的自动还款提示
+      safeRender();
+    }
+  } finally {
+    noLogRuleRunning = false;
+  }
+}
+function runDailyRules(){
+  try{ runAutoRepay(); }catch(e){ console.warn('auto repay failed', e); }
+  try{ runNoLogRule(); }catch(e){ console.warn('no-log rule failed', e); }
 }
 
 /* ---------------- 初始积分 / 初始金额调整（支持家长自定义起始值） ---------------- */
@@ -2460,14 +2574,15 @@ function renderNutritionCard(c, parentMode){
   var items = nutritionChecklist(c);
   var rows = items.map(function(it){
     var nm = (state.lang==='en') ? it.name_en : it.name_zh;
-    var unit = (it.key==='veg'||it.key==='fruit') ? '' : (it.key==='calorie'?'':'g');
-    return '<div class="nutri-row"><div class="nutri-left"><span>'+it.icon+'</span><span>'+esc(nm)+'</span></div>'+
+    var unit = it.isFood ? (it.unit==='g' ? 'g' : t('unitCount')) : ((it.key==='veg'||it.key==='fruit') ? '' : (it.key==='calorie'?'':'g'));
+    var onlyShow = (it.isFood && it.goal.mode !== 'points') ? ' <span style="font-size:11px;color:var(--muted);">'+t('foodGoalDisplayOnly')+'</span>' : '';
+    return '<div class="nutri-row"><div class="nutri-left"><span>'+it.icon+'</span><span>'+esc(nm)+onlyShow+'</span></div>'+
       '<div style="display:flex;align-items:center;gap:8px;"><span class="nutri-actual">'+it.actual+unit+' / '+(it.dir==='min'?'≥':'≤')+it.target+unit+'</span>'+
       '<span class="nutri-badge '+(it.ok?'ok':'bad')+'">'+(it.ok?t('metLabel'):t('notMetLabel'))+'</span></div></div>';
   }).join('');
   html += '<div style="margin-top:8px;">'+rows+'</div>';
 
-  if(items.length < 6){
+  if(items.filter(function(it){ return !it.isFood; }).length < 6){
     html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;">'+t('needHeightWeightForNutritionHint')+'</div>';
   }
 
@@ -2478,27 +2593,47 @@ function renderNutritionCard(c, parentMode){
     '</div>';
 
     if(showNutritionSettings){
+      var sugg = macroSuggestion(calorieTarget(c)) || {};
+      var setRow = function(icon, nameKey, targetHtml, ptsId, ptsVal){
+        return '<div class="nutri-set-row">'+
+          '<div class="nutri-left"><span>'+icon+'</span><span>'+t(nameKey)+'</span></div>'+
+          '<div class="nutri-set-cell">'+targetHtml+'</div>'+
+          '<div class="nutri-set-cell"><input type="number" min="0" step="0.1" id="'+ptsId+'" value="'+ptsVal+'"></div>'+
+        '</div>';
+      };
+      var tgtInput = function(op, id, val, ph){
+        return '<span class="nutri-op">'+op+'</span><input type="number" id="'+id+'" value="'+val+'" placeholder="'+(ph!=null?ph:'')+'"><span class="nutri-unit">g</span>';
+      };
       html += '<div class="inline-form" style="margin-top:12px;">'+
-        '<div class="field"><label>'+t('carbLimitLabel')+'</label><input type="number" id="mNutriCarbMax" value="'+(nr.carbMaxOverride||'')+'"></div>'+
-        '<div class="field"><label>'+t('proteinMinLabel')+'</label><input type="number" id="mNutriProteinMin" value="'+(nr.proteinMinOverride||'')+'"></div>'+
-        '<div class="field"><label>'+t('fatLimitLabel')+'</label><input type="number" id="mNutriFatMax" value="'+(nr.fatMaxOverride||'')+'"></div>'+
-        '<div class="field"><label>'+t('vegTargetLabel')+'</label><input type="number" id="mNutriVegTarget" value="'+nutritionTargets(c).veg+'"></div>'+
-        '<div class="field"><label>'+t('fruitTargetLabel')+'</label><input type="number" id="mNutriFruitTarget" value="'+nutritionTargets(c).fruit+'"></div>'+
-        '<div class="field"><label>'+t('pointsPerRuleTitle')+'</label>'+
-          '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">'+t('pointsPerRuleHint')+'</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('calorieRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsCalorie" value="'+nr.points.calorie+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('carbRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsCarb" value="'+nr.points.carb+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('proteinRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsProtein" value="'+nr.points.protein+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('fatRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsFat" value="'+nr.points.fat+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('vegRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsVeg" value="'+nr.points.veg+'"></div>'+
-            '<div><span style="font-size:12px;color:var(--muted);">'+t('fruitRulePoints')+'</span><input type="number" min="0" step="0.1" id="mNutriPtsFruit" value="'+nr.points.fruit+'"></div>'+
-          '</div>'+
-        '</div>'+
-        '<div style="display:flex;gap:10px;margin-top:4px;"><button class="btn-ghost tap" data-act="cancel-nutrition-settings">'+t('cancel')+'</button>'+
+        '<div class="nutri-set-head"><span>'+t('nutriColItem')+'</span><span>'+t('nutriColTarget')+'</span><span>'+t('nutriColPoints')+'</span></div>'+
+        setRow('🔥','calorieRulePoints','<span style="font-size:12px;color:var(--muted);">'+t('nutriAutoLabel')+'</span>','mNutriPtsCalorie',nr.points.calorie)+
+        setRow('🍞','carbRulePoints',tgtInput('≤','mNutriCarbMax',(nr.carbMaxOverride||''),sugg.carb),'mNutriPtsCarb',nr.points.carb)+
+        setRow('🍗','proteinRulePoints',tgtInput('≥','mNutriProteinMin',(nr.proteinMinOverride||''),sugg.protein),'mNutriPtsProtein',nr.points.protein)+
+        setRow('🥑','fatRulePoints',tgtInput('≤','mNutriFatMax',(nr.fatMaxOverride||''),sugg.fat),'mNutriPtsFat',nr.points.fat)+
+        setRow('🥦','vegRulePoints',tgtInput('≥','mNutriVegTarget',nutritionTargets(c).veg),'mNutriPtsVeg',nr.points.veg)+
+        setRow('🍎','fruitRulePoints',tgtInput('≤','mNutriFruitTarget',nutritionTargets(c).fruit),'mNutriPtsFruit',nr.points.fruit)+
+        '<div style="font-size:12px;color:var(--muted);margin:8px 0 10px;line-height:1.5;">'+t('nutriSettingsRowHint')+'</div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-nutrition-settings">'+t('cancel')+'</button>'+
         '<button class="btn-primary tap" data-act="save-nutrition-settings" data-id="'+c.id+'">'+t('save')+'</button></div>'+
       '</div>';
     }
+
+    // 食物目标：家长可以增、改、删（点某一行进入整页编辑，删除在编辑页里）
+    var goalRows = (nr.foodGoals || []).map(function(g){
+      var unitTxt = g.unit === 'g' ? 'g' : t('unitCount');
+      var right = (g.mode === 'points') ? t('foodGoalRowPts', {n: g.points}) : t('foodGoalDisplayOnly');
+      return '<button type="button" class="nutri-set-row tap" data-act="edit-food-goal" data-id="'+c.id+'" data-value="'+g.id+'" style="width:100%;background:none;border:none;border-bottom:1px solid var(--border);text-align:left;font:inherit;color:inherit;cursor:pointer;">'+
+        '<div class="nutri-left"><span>'+esc(g.icon || '🍽️')+'</span><span>'+esc((state.lang==='en' && g.name_en) ? g.name_en : g.name)+'</span></div>'+
+        '<div class="nutri-set-cell" style="font-size:13px;">'+(g.dir==='max'?'≤':'≥')+g.target+unitTxt+'</div>'+
+        '<div class="nutri-set-cell" style="font-size:12px;color:var(--muted);">'+right+'</div>'+
+      '</button>';
+    }).join('');
+    html += '<div style="margin-top:16px;">'+
+      '<div style="font-family:var(--font-display);font-weight:800;font-size:14px;">🍽️ '+t('foodGoalsTitle')+'</div>'+
+      '<div style="font-size:12px;color:var(--muted);margin:4px 0 6px;line-height:1.5;">'+t('foodGoalsHint')+'</div>'+
+      goalRows+
+      '<button class="dashed-btn tap" style="margin-top:8px;" data-act="open-add-food-goal" data-id="'+c.id+'">'+t('foodGoalAddBtn')+'</button>'+
+    '</div>';
   }
 
   html += '</div>';
@@ -3294,7 +3429,69 @@ function renderScreen(scr){
   if(scr.type === 'editChild') return renderEditChildScreen(scr);
   if(scr.type === 'manageBehaviors') return renderManageBehaviorsScreen(scr);
   if(scr.type === 'manageThresholds') return renderManageThresholdsScreen(scr);
+  if(scr.type === 'foodGoalForm') return renderFoodGoalFormScreen(scr);
   return '';
+}
+
+/* ---------------- 食物目标：整页添加/修改（v3.13.52） ---------------- */
+var foodGoalDraft = null; // {goalId, refId, dir:'min'|'max', target, mode:'points'|'display', points, search, confirmDelete}
+function syncFoodGoalDraft(){
+  var d = foodGoalDraft; if(!d) return;
+  var a = document.getElementById('mFoodGoalTarget'); if(a) d.target = a.value;
+  var b = document.getElementById('mFoodGoalPoints'); if(b) d.points = b.value;
+}
+function foodGoalFoodFor(child, d){
+  var f = foodLibraryAll().find(function(x){ return x.refId === d.refId; });
+  if(f) return f;
+  // 食物库里已经找不到了（比如自定义食物被删），用目标里存的那份快照
+  var nr = child.nutritionRules || defaultNutritionRules();
+  var g = (nr.foodGoals || []).find(function(x){ return x.refId === d.refId; });
+  return g ? {refId: g.refId, name: g.name, name_en: g.name_en, icon: g.icon, unit: g.unit} : null;
+}
+function renderFoodGoalPickList(child){
+  var d = foodGoalDraft || {};
+  var q = (d.search || '').trim().toLowerCase();
+  var list = foodLibrarySorted(child.id).filter(function(f){
+    if(!q) return true;
+    return (f.name||'').toLowerCase().indexOf(q) >= 0 || (f.name_en||'').toLowerCase().indexOf(q) >= 0;
+  });
+  if(!foodLibraryAll().length) return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('foodGoalNoFoodsHint')+'</div>';
+  if(!list.length) return '<div style="font-size:14px;color:var(--muted);padding:10px 2px;text-align:center;">'+t('noFoodMatchHint')+'</div>';
+  return '<div class="chip-grid" style="margin-bottom:6px;">'+list.map(function(f){
+    var nm = (state.lang==='en' && f.name_en) ? f.name_en : f.name;
+    return '<button type="button" class="chip food tap'+(d.refId===f.refId?' selected':'')+'" data-act="pick-goal-food" data-id="'+child.id+'" data-value="'+f.refId+'">'+
+      '<span class="chip-left"><span class="chip-icon">'+esc(f.icon)+'</span><span class="chip-name">'+esc(nm)+'</span></span>'+
+      '<span class="chip-value">'+(f.unit==='g' ? 'g' : t('unitCount'))+'</span></button>';
+  }).join('')+'</div>';
+}
+function renderFoodGoalFormScreen(scr){
+  var child = childById(scr.childId);
+  var d = foodGoalDraft;
+  if(!child || !d){ popScreen(); return ''; }
+  var food = d.refId ? foodGoalFoodFor(child, d) : null;
+  var unitTxt = food ? (food.unit==='g' ? 'g' : t('unitCount')) : '';
+  var html = screenHeader(t(d.goalId ? 'foodGoalEditTitle' : 'foodGoalAddTitle'));
+  html += '<div class="field"><label>'+t('foodGoalPickFood')+'</label>'+
+    '<input id="mFoodGoalSearch" value="'+esc(d.search||'')+'" placeholder="'+t('foodGoalSearchPlaceholder')+'">'+
+    '<div id="foodGoalListWrap" style="margin-top:8px;">'+renderFoodGoalPickList(child)+'</div></div>';
+  if(food){
+    html += '<div style="font-size:13px;color:var(--muted);margin:-4px 0 14px;">'+t('foodGoalSelected')+esc(food.icon||'🍽️')+' '+esc((state.lang==='en' && food.name_en) ? food.name_en : food.name)+'（'+unitTxt+'）</div>';
+  }
+  html += '<div class="field"><label>'+t('foodGoalDirLabel')+'</label>'+
+    segmentedHtml('foodgoal-dir', child.id, d.dir, [['min',t('foodGoalDirMin')],['max',t('foodGoalDirMax')]])+'</div>';
+  html += '<div class="field"><label>'+t('foodGoalTargetLabel')+(unitTxt ? ' ('+unitTxt+')' : '')+'</label>'+
+    '<input type="number" min="0" step="0.1" id="mFoodGoalTarget" value="'+esc(d.target)+'"></div>';
+  html += '<div class="field"><label>'+t('foodGoalModeLabel')+'</label>'+
+    segmentedHtml('foodgoal-mode', child.id, d.mode, [['points',t('foodGoalModePoints')],['display',t('foodGoalModeDisplay')]])+'</div>';
+  if(d.mode === 'points'){
+    html += '<div class="field"><label>'+t('foodGoalPointsLabel')+'</label>'+
+      '<input type="number" min="0" step="0.1" id="mFoodGoalPoints" value="'+esc(d.points)+'"></div>';
+  }
+  html += '<button class="btn-primary tap" data-act="save-food-goal" data-id="'+child.id+'" style="margin-bottom:12px;">'+t('save')+'</button>';
+  if(d.goalId){
+    html += '<button class="btn-ghost tap" data-act="delete-food-goal" data-id="'+child.id+'" style="color:var(--danger,#d9534f);">'+t(d.confirmDelete ? 'foodGoalConfirmDeleteBtn' : 'foodGoalDeleteBtn')+'</button>';
+  }
+  return html;
 }
 
 function renderAddParentScreen(){
@@ -3851,6 +4048,24 @@ function bindEvents(){
     exerciseSearchInput.addEventListener('compositionstart', function(){ exerciseSearchInput.dataset.composing='1'; });
     exerciseSearchInput.addEventListener('compositionend', function(){ exerciseSearchInput.dataset.composing=''; runExerciseSearch(); });
   }
+  var foodGoalSearchInput = document.getElementById('mFoodGoalSearch');
+  if(foodGoalSearchInput){
+    var fgScr = currentScreen();
+    var fgChild = fgScr ? childById(fgScr.childId) : null;
+    if(fgChild){
+      var runFoodGoalSearch = function(){
+        if(foodGoalDraft) foodGoalDraft.search = foodGoalSearchInput.value;
+        var wrap = document.getElementById('foodGoalListWrap');
+        if(wrap){ wrap.innerHTML = renderFoodGoalPickList(fgChild); bindScoped(wrap); }
+      };
+      foodGoalSearchInput.addEventListener('input', function(){
+        if(foodGoalSearchInput.dataset.composing==='1') return;
+        runFoodGoalSearch();
+      });
+      foodGoalSearchInput.addEventListener('compositionstart', function(){ foodGoalSearchInput.dataset.composing='1'; });
+      foodGoalSearchInput.addEventListener('compositionend', function(){ foodGoalSearchInput.dataset.composing=''; runFoodGoalSearch(); });
+    }
+  }
   var exchangePointsInput = document.getElementById('mExchangePoints');
   if(exchangePointsInput && editingChild){
     exchangePointsInput.addEventListener('input', function(){
@@ -4360,6 +4575,60 @@ function handleAction(act, id, value, el){
     showNutritionSettings = false;
     toast(t('targetSavedToast'));
     render();
+  }
+  else if(act==='open-add-food-goal'){
+    foodGoalDraft = {goalId:null, refId:'', dir:'min', target:'', mode:'points', points:'1', search:'', confirmDelete:false};
+    pushScreen({type:'foodGoalForm', childId:id});
+  }
+  else if(act==='edit-food-goal'){
+    var fgc = childById(id);
+    var fgNr = fgc ? (fgc.nutritionRules || defaultNutritionRules()) : null;
+    var fg = fgNr ? (fgNr.foodGoals || []).find(function(x){ return x.id===value; }) : null;
+    if(fg){
+      foodGoalDraft = {goalId:fg.id, refId:fg.refId, dir:fg.dir||'min', target:String(fg.target), mode:fg.mode==='points'?'points':'display', points:String(fg.points||1), search:'', confirmDelete:false};
+      pushScreen({type:'foodGoalForm', childId:id});
+    }
+  }
+  else if(act==='pick-goal-food'){ syncFoodGoalDraft(); if(foodGoalDraft){ foodGoalDraft.refId = value; foodGoalDraft.confirmDelete = false; } render(); }
+  else if(act==='foodgoal-dir'){ syncFoodGoalDraft(); if(foodGoalDraft) foodGoalDraft.dir = value; render(); }
+  else if(act==='foodgoal-mode'){ syncFoodGoalDraft(); if(foodGoalDraft) foodGoalDraft.mode = value; render(); }
+  else if(act==='save-food-goal'){
+    syncFoodGoalDraft();
+    var sd = foodGoalDraft, sc = childById(id);
+    if(!sd || !sc) return;
+    var sFood = sd.refId ? foodGoalFoodFor(sc, sd) : null;
+    if(!sFood){ toast(t('foodGoalPickFirstToast')); return; }
+    var sTarget = parseFloat(sd.target);
+    if(!(sTarget > 0)){ toast(t('foodGoalInvalidTargetToast')); return; }
+    var sPoints = parseFloat(sd.points);
+    if(sd.mode === 'points' && !(sPoints > 0)){ toast(t('foodGoalInvalidPointsToast')); return; }
+    var sNr = sc.nutritionRules || defaultNutritionRules();
+    if(!sNr.foodGoals) sNr.foodGoals = [];
+    var sGoal = {
+      id: sd.goalId || uid(), refId: sFood.refId, name: sFood.name, name_en: sFood.name_en || '', icon: sFood.icon || '🍽️',
+      unit: sFood.unit === 'g' ? 'g' : 'count', dir: sd.dir === 'max' ? 'max' : 'min',
+      target: Math.round(sTarget*10)/10, mode: sd.mode === 'points' ? 'points' : 'display',
+      points: sd.mode === 'points' ? Math.round(sPoints*10)/10 : 0
+    };
+    var sIdx = sNr.foodGoals.findIndex(function(x){ return x.id === sGoal.id; });
+    if(sIdx >= 0) sNr.foodGoals[sIdx] = sGoal; else sNr.foodGoals.push(sGoal);
+    sc.nutritionRules = sNr;
+    persistEntity('children', sc);
+    foodGoalDraft = null;
+    toast(t('foodGoalSavedToast'));
+    popScreen();
+  }
+  else if(act==='delete-food-goal'){
+    var dd = foodGoalDraft, dc = childById(id);
+    if(!dd || !dc) return;
+    if(!dd.confirmDelete){ dd.confirmDelete = true; syncFoodGoalDraft(); render(); return; }
+    var dNr = dc.nutritionRules || defaultNutritionRules();
+    dNr.foodGoals = (dNr.foodGoals || []).filter(function(x){ return x.id !== dd.goalId; });
+    dc.nutritionRules = dNr;
+    persistEntity('children', dc);
+    foodGoalDraft = null;
+    toast(t('foodGoalDeletedToast'));
+    popScreen();
   }
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
 
