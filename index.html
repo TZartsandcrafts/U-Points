@@ -137,6 +137,11 @@
   .chip.food{background:var(--food-light);color:var(--food-text);}
   .chip.exercise{background:var(--exercise-light);color:var(--exercise-text);}
   .chip.exercise.selected{box-shadow:inset 0 0 0 2px var(--exercise);}
+  /* v3.13.53：所有可点选的 chip 都要有明显的"已选中"反馈（之前食物 chip 选中后没有任何样式变化） */
+  .chip.selected{box-shadow:inset 0 0 0 3px var(--sky-dark);}
+  .chip.food.selected{background:#FFE2A0;box-shadow:inset 0 0 0 3px var(--food);}
+  .chip.exercise.selected{background:#C9EBDD;box-shadow:inset 0 0 0 3px var(--exercise);}
+  .chip.selected .chip-name::after{content:' ✓';font-weight:800;}
   .chip.checklist{background:var(--sky-light);color:var(--sky-dark);}
   .chip.checklist.done{background:var(--exercise-light);color:var(--exercise-text);}
   .range-picker-overlay{position:fixed;inset:0;background:rgba(20,34,46,.5);z-index:55;display:flex;align-items:center;justify-content:center;padding:24px;}
@@ -445,6 +450,8 @@ zh: {
   perServing:'每份',
   nutritionTitle:'营养达标', nutritionEnableLabel:'启用营养积分（三餐达标时自动加分，未达标/超标不扣分）',
   nutritionEnabledOn:'已启用', nutritionEnabledOff:'未启用',
+  formPageRewardAdd:'添加奖励', formPageRewardEdit:'修改奖励', formPagePenaltyAdd:'添加惩罚', formPagePenaltyEdit:'修改惩罚', formPageOfferAdd:'新建限时优惠', formPageOfferEdit:'修改限时优惠',
+  exerciseKcalPreview:'约 {{kcal}} kcal', foodGoalPickHint:'点一种食物，下一步设置目标量', foodGoalChangeFood:'更换',
   foodGoalsTitle:'食物目标', foodGoalsHint:'指定某种食物每天至少吃多少，或最多不超过多少；每条可以选"达标加分"或"只显示进度"。在「三餐」里记录这种食物后会自动累计，点一行可以修改或删除。',
   foodGoalAddBtn:'+ 添加食物目标', foodGoalAddTitle:'添加食物目标', foodGoalEditTitle:'修改食物目标',
   foodGoalPickFood:'选择食物', foodGoalSearchPlaceholder:'搜索食物', foodGoalNoFoodsHint:'食物库里还没有食物——先在「三餐」里添加自定义食物', foodGoalSelected:'已选：',
@@ -650,6 +657,8 @@ en: {
   perServing:'per serving',
   nutritionTitle:'Nutrition Goals', nutritionEnableLabel:'Enable nutrition points (bonus points when a target is met; missing or exceeding never deducts)',
   nutritionEnabledOn:'On', nutritionEnabledOff:'Off',
+  formPageRewardAdd:'Add reward', formPageRewardEdit:'Edit reward', formPagePenaltyAdd:'Add penalty', formPagePenaltyEdit:'Edit penalty', formPageOfferAdd:'New special offer', formPageOfferEdit:'Edit special offer',
+  exerciseKcalPreview:'≈ {{kcal}} kcal', foodGoalPickHint:'Tap a food, then set the target on the next step', foodGoalChangeFood:'Change',
   foodGoalsTitle:'Food goals', foodGoalsHint:'Set how much of a specific food to eat each day (at least, or at most). Each goal can award bonus points or just show progress. Amounts add up from Meals logs; tap a row to edit or delete.',
   foodGoalAddBtn:'+ Add food goal', foodGoalAddTitle:'Add food goal', foodGoalEditTitle:'Edit food goal',
   foodGoalPickFood:'Choose a food', foodGoalSearchPlaceholder:'Search foods', foodGoalNoFoodsHint:'No foods yet — add a custom food in Meals first', foodGoalSelected:'Selected: ',
@@ -755,7 +764,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.52';
+var APP_VERSION = '3.13.53';
 var APP_BUILD_DATE = '2026-10-25';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -2075,8 +2084,25 @@ function copyRoomCode(){
    界面渲染与交互 (v3.1: 整页导航 + 孩子端专属主页 + 版本号)
    ===================================================================== */
 var screenStack = [];
-function pushScreen(s){ screenStack.push(s); scrollAppTop(); render(); }
-function popScreen(){ screenStack.pop(); scrollAppTop(); render(); }
+// v3.13.53：进入新页面前记下当前滚动位置，返回时回到原来的位置（而不是跳回页面顶部）。
+// 根页面（没有压栈的主页/孩子页）的位置存在 rootScrollY，叠在上面的页面存在各自栈项的 __scrollY 里。
+var rootScrollY = 0;
+function currentScrollY(){ return window.scrollY || window.pageYOffset || 0; }
+function pushScreen(s){
+  var top = currentScreen();
+  if(top) top.__scrollY = currentScrollY(); else rootScrollY = currentScrollY();
+  screenStack.push(s); scrollAppTop(); render();
+}
+function popScreen(){
+  screenStack.pop();
+  var top = currentScreen();
+  var y = top ? (top.__scrollY || 0) : (rootScrollY || 0);
+  scrollAppTop(); render();
+  if(y){
+    window.scrollTo(0, y);
+    requestAnimationFrame(function(){ if(currentScrollY() !== y) window.scrollTo(0, y); });
+  }
+}
 function currentScreen(){ return screenStack.length ? screenStack[screenStack.length-1] : null; }
 function scrollAppTop(){ window.scrollTo(0,0); }
 // 切到孩子模式时：如果家里只有一个孩子，直接绑定这台设备，不用再选一次；
@@ -2122,6 +2148,7 @@ var showCustomFoodForm = false;
 var showCustomExerciseForm = false;
 var showCalorieOverrideForm = false;
 var selectedExerciseRefId = null; // 运动打卡：当前选中待记录的运动类型
+var exerciseFocusedFor = null; // 运动时长弹窗：已经自动聚焦过的那次（避免云同步重绘时反复抢焦点）
 var selectedFoodRefId = null; // 三餐打卡：当前选中待记录的食物
 var selectedRangeBehaviorId = null; // 浮动区间行为规则：当前选中待打分的那一条
 var showNutritionSettings = false; // 营养达标：是否展开"调整达标标准"表单
@@ -2732,14 +2759,8 @@ function renderFoodQtyPicker(child, f, editingLog){
 function renderMealsSubTab(c, parentMode){
   var mcs = getMealsCalState(c.id);
   var html = '<div class="field" style="margin:0 0 8px;"><input type="text" id="mFoodSearch" placeholder="'+t('searchFoodPlaceholder')+'" value="'+esc(mealFoodSearch)+'"></div>';
-  html += '<div id="mealFoodListWrap">'+renderFoodChipList(c)+'</div>';
-
-  var editingLog = editingMealLogId ? data.mealLogs.find(function(l){ return l.id===editingMealLogId; }) : null;
-  var selFood = selectedFoodRefId ? foodLibraryAll().find(function(f){ return f.refId===selectedFoodRefId; }) : null;
-  if(selFood){
-    html += renderFoodQtyPicker(c, selFood, editingLog);
-  }
-
+  // v3.13.53：「添加自定义食物/管理」按钮和表单放在搜索框正下方、列表上方——
+  // 之前在列表最下面，列表展开后很长，要拖到最底才找得到。
   var editingFood = editingCustomFoodId ? (data.customFoods||[]).find(function(f){ return f.id===editingCustomFoodId; }) : null;
   if(showCustomFoodForm){
     var dName = editingFood ? editingFood.name : '';
@@ -2773,6 +2794,15 @@ function renderMealsSubTab(c, parentMode){
     '</div>';
     if(showManageCustomFoods) html += renderManageCustomFoodsList();
   }
+
+  html += '<div id="mealFoodListWrap">'+renderFoodChipList(c)+'</div>';
+
+  var editingLog = editingMealLogId ? data.mealLogs.find(function(l){ return l.id===editingMealLogId; }) : null;
+  var selFood = selectedFoodRefId ? foodLibraryAll().find(function(f){ return f.refId===selectedFoodRefId; }) : null;
+  if(selFood){
+    html += renderFoodQtyPicker(c, selFood, editingLog);
+  }
+
 
   // 月历：决定"现在浏览/记录的是哪一天"，默认展开，也可以收起
   html += '<div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">'+
@@ -2850,10 +2880,22 @@ function renderExerciseChipList(c){
   return html;
 }
 
+function renderExerciseDurationPicker(c, selEx){
+  var nm = (state.lang==='en' && selEx.name_en) ? selEx.name_en : selEx.name;
+  return '<div class="range-picker-overlay" id="exerciseOverlay">'+
+    '<div class="range-picker">'+
+      '<button type="button" class="range-picker-close tap" data-act="close-exercise-picker">×</button>'+
+      '<div class="range-picker-title">'+esc(selEx.icon)+' '+esc(nm)+'</div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+t('exerciseDurationLabel')+'</label>'+
+      '<input type="number" id="mExDuration" placeholder="20" autofocus></div>'+
+      '<div class="calorie-preview" id="mExDurationPreview" style="color:var(--exercise-text);margin-bottom:12px;"></div>'+
+      '<button type="button" class="btn-primary tap" data-act="log-exercise" data-id="'+c.id+'" style="background:var(--exercise);box-shadow:0 6px 14px rgba(79,174,138,.35);">'+t('logExerciseBtn')+'</button>'+
+    '</div>'+
+  '</div>';
+}
 function renderExerciseSubTab(c, parentMode){
   var html = '<div class="field" style="margin-bottom:10px;"><input type="text" id="mExerciseSearch" placeholder="'+t('searchExercisePlaceholder')+'" value="'+esc(exerciseSearch)+'"></div>';
-  html += '<div id="exerciseListWrap">'+renderExerciseChipList(c)+'</div>';
-
+  // v3.13.53：添加自定义运动的按钮/表单放在搜索框下方、列表上方（就近）
   html += showCustomExerciseForm ?
     '<div class="inline-form">'+
       '<div class="field"><label>'+t('exerciseNameLabel')+'</label><input id="mCustomExName" placeholder="'+t('exerciseNamePlaceholder')+'"></div>'+
@@ -2862,16 +2904,12 @@ function renderExerciseSubTab(c, parentMode){
       '<button class="btn-primary tap" data-act="save-custom-exercise" data-id="'+c.id+'">'+t('save')+'</button></div>'+
     '</div>'
     : '<button class="dashed-btn tap" data-act="open-custom-exercise" style="margin-bottom:14px;">'+t('addCustomExercise')+'</button>';
+  html += '<div id="exerciseListWrap">'+renderExerciseChipList(c)+'</div>';
 
+
+  // v3.13.53：选了运动之后，输入时长改成居中弹窗（跟三餐选食物一样），不用再滚到列表最下面找输入框
   var selEx = exerciseLibraryAll().find(function(e){ return e.refId === selectedExerciseRefId; });
-  if(selEx){
-    var nm = (state.lang==='en' && selEx.name_en) ? selEx.name_en : selEx.name;
-    html += '<div class="exercise-log-form">'+
-      '<div class="field" style="margin-bottom:8px;"><label>'+esc(nm)+' · '+t('exerciseDurationLabel')+'</label>'+
-      '<input type="number" id="mExDuration" placeholder="20"></div>'+
-      '<button class="btn-primary tap" data-act="log-exercise" data-id="'+c.id+'" style="background:var(--exercise);box-shadow:0 6px 14px rgba(79,174,138,.35);">'+t('logExerciseBtn')+'</button>'+
-    '</div>';
-  }
+  if(selEx) html += renderExerciseDurationPicker(c, selEx);
 
   var logs = todayExerciseLogs(c.id).slice().sort(function(a,b){ return (a.time||'') < (b.time||'') ? -1 : 1; });
   var rows = logs.map(function(l){
@@ -2909,6 +2947,26 @@ function renderRedeemTabBody(c, parentMode){
   return html;
 }
 
+// v3.13.53：奖励/惩罚/限时优惠的新增、修改表单改成整页（原来是展开在列表最下面，列表长了要拖到最底才看得到）
+function renderRewardFormHtml(c){
+  var editingItem = editingRewardId ? (c.rewards||[]).find(function(r){ return r.id===editingRewardId; }) : null;
+  return '<div class="inline-form">'+
+        '<div class="field"><label>'+t('rewardNameLabel')+'</label><input id="mRewardName" placeholder="'+t('rewardNamePlaceholder')+'" value="'+(editingItem?esc(editingItem.name):'')+'"></div>'+
+        '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-reward-scope', c.id, rewardFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
+        (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mRewardBehaviorSelect', c, editingItem?editingItem.behaviorId:null)+'</div>' : '')+
+        (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-reward-metric', c.id, rewardFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
+        (rewardFormScope==='behavior' && rewardFormMetric==='count'
+          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mRewardCost" placeholder="3" value="'+(editingItem?esc(editingItem.cost):'')+'"></div>'
+          : '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50" value="'+(editingItem?esc(editingItem.cost):'')+'"></div>')+
+        (rewardFormScope==='behavior' && rewardFormMetric==='count' ? (''+
+          '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-reward-escalate', c.id, rewardFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
+          (rewardFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mRewardEscalateStep" value="'+rewardFormEscalateStep+'"></div>'+
+            '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">🌱 '+t('escalateCountHint')+'</div>' : '')
+        ) : '')+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-reward-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-reward" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>';
+}
 function renderRewardsSubTab(c, parentMode){
   var rewards = c.rewards || [];
   var editingItem = editingRewardId ? rewards.find(function(r){ return r.id===editingRewardId; }) : null;
@@ -2935,28 +2993,30 @@ function renderRewardsSubTab(c, parentMode){
   }
 
   if(parentMode){
-    html += showRewardForm ?
-      '<div class="inline-form">'+
-        '<div class="field"><label>'+t('rewardNameLabel')+'</label><input id="mRewardName" placeholder="'+t('rewardNamePlaceholder')+'" value="'+(editingItem?esc(editingItem.name):'')+'"></div>'+
-        '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-reward-scope', c.id, rewardFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
-        (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mRewardBehaviorSelect', c, editingItem?editingItem.behaviorId:null)+'</div>' : '')+
-        (rewardFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-reward-metric', c.id, rewardFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
-        (rewardFormScope==='behavior' && rewardFormMetric==='count'
-          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mRewardCost" placeholder="3" value="'+(editingItem?esc(editingItem.cost):'')+'"></div>'
-          : '<div class="field"><label>'+t('costPointsLabel')+'</label><input type="number" step="0.1" id="mRewardCost" placeholder="50" value="'+(editingItem?esc(editingItem.cost):'')+'"></div>')+
-        (rewardFormScope==='behavior' && rewardFormMetric==='count' ? (''+
-          '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-reward-escalate', c.id, rewardFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
-          (rewardFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mRewardEscalateStep" value="'+rewardFormEscalateStep+'"></div>'+
-            '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">🌱 '+t('escalateCountHint')+'</div>' : '')
-        ) : '')+
-        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-reward-form">'+t('cancel')+'</button>'+
-        '<button class="btn-primary tap" data-act="save-reward" data-id="'+c.id+'">'+t('save')+'</button></div>'+
-      '</div>'
-      : '<button class="dashed-btn tap" data-act="open-reward-form" style="margin-top:6px;">'+t('addRewardBtn')+'</button>';
+    html += '<button class="dashed-btn tap" data-act="open-reward-form" data-id="'+c.id+'" style="margin-top:6px;">'+t('addRewardBtn')+'</button>';
   }
   return html;
 }
 
+function renderPenaltyFormHtml(c){
+  var editingItem = editingPenaltyId ? (c.penalties||[]).find(function(p){ return p.id===editingPenaltyId; }) : null;
+  return '<div class="inline-form">'+
+        '<div class="field"><label>'+t('penaltyNameLabel')+'</label><input id="mPenaltyName" placeholder="'+t('penaltyNamePlaceholder')+'" value="'+(editingItem?esc(editingItem.name):'')+'"></div>'+
+        '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-penalty-scope', c.id, penaltyFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
+        (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mPenaltyBehaviorSelect', c, editingItem?editingItem.behaviorId:null)+'</div>' : '')+
+        (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-penalty-metric', c.id, penaltyFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
+        (penaltyFormScope==='behavior' && penaltyFormMetric==='count'
+          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyOffset" placeholder="3" value="'+(editingItem?esc(editingItem.offset):'')+'"></div>'
+          : '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20" value="'+(editingItem?esc(editingItem.offset):'')+'"></div>')+
+        (penaltyFormScope==='behavior' && penaltyFormMetric==='count' ? (''+
+          '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-penalty-escalate', c.id, penaltyFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
+          (penaltyFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyEscalateStep" value="'+penaltyFormEscalateStep+'"></div>'+
+            '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">🌱 '+t('escalateCountHint')+'</div>' : '')
+        ) : '')+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-penalty-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-penalty" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>';
+}
 function renderPenaltiesSubTab(c, parentMode){
   var penalties = c.penalties || [];
   var editingItem = editingPenaltyId ? penalties.find(function(p){ return p.id===editingPenaltyId; }) : null;
@@ -2983,24 +3043,7 @@ function renderPenaltiesSubTab(c, parentMode){
   }
 
   if(parentMode){
-    html += showPenaltyForm ?
-      '<div class="inline-form">'+
-        '<div class="field"><label>'+t('penaltyNameLabel')+'</label><input id="mPenaltyName" placeholder="'+t('penaltyNamePlaceholder')+'" value="'+(editingItem?esc(editingItem.name):'')+'"></div>'+
-        '<div class="field"><label>'+t('scopeLabel')+'</label>'+segmentedHtml('draft-penalty-scope', c.id, penaltyFormScope, [['total',t('scopeTotal')],['behavior',t('scopeBehavior')]])+'</div>'+
-        (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('trackedBehaviorLabel')+'</label>'+renderBehaviorSelectHtml('mPenaltyBehaviorSelect', c, editingItem?editingItem.behaviorId:null)+'</div>' : '')+
-        (penaltyFormScope==='behavior' ? '<div class="field"><label>'+t('metricLabel')+'</label>'+segmentedHtml('draft-penalty-metric', c.id, penaltyFormMetric, [['points',t('metricPoints')],['count',t('metricCount')]])+'</div>' : '')+
-        (penaltyFormScope==='behavior' && penaltyFormMetric==='count'
-          ? '<div class="field"><label>'+t('countThresholdLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyOffset" placeholder="3" value="'+(editingItem?esc(editingItem.offset):'')+'"></div>'
-          : '<div class="field"><label>'+t('offsetPointsLabel')+'</label><input type="number" step="0.1" id="mPenaltyOffset" placeholder="20" value="'+(editingItem?esc(editingItem.offset):'')+'"></div>')+
-        (penaltyFormScope==='behavior' && penaltyFormMetric==='count' ? (''+
-          '<div class="field"><label>'+t('escalateCountLabel')+'</label>'+segmentedHtml('toggle-penalty-escalate', c.id, penaltyFormEscalate?'on':'off', [['off',t('escalateCountOff')],['on',t('escalateCountOn')]])+'</div>'+
-          (penaltyFormEscalate ? '<div class="field"><label>'+t('escalateCountStepLabel')+'</label><input type="number" step="1" min="1" id="mPenaltyEscalateStep" value="'+penaltyFormEscalateStep+'"></div>'+
-            '<div style="font-size:12px;color:var(--muted);margin:-10px 0 16px;line-height:1.5;">🌱 '+t('escalateCountHint')+'</div>' : '')
-        ) : '')+
-        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-penalty-form">'+t('cancel')+'</button>'+
-        '<button class="btn-primary tap" data-act="save-penalty" data-id="'+c.id+'">'+t('save')+'</button></div>'+
-      '</div>'
-      : '<button class="dashed-btn tap" data-act="open-penalty-form" style="margin-top:6px;">'+t('addPenaltyBtn')+'</button>';
+    html += '<button class="dashed-btn tap" data-act="open-penalty-form" data-id="'+c.id+'" style="margin-top:6px;">'+t('addPenaltyBtn')+'</button>';
   }
   return html;
 }
@@ -3021,6 +3064,23 @@ function renderRedeemHistorySubTab(c, parentMode){
 }
 
 /* ---------------- 记账 ---------------- */
+function renderOfferFormHtml(c){
+  var rate = currentExchangeRate(c, ledgerCurrency);
+  var editingOffer = editingOfferId ? (c.specialOffers||[]).find(function(o){ return o.id===editingOfferId; }) : null;
+  return '<div class="inline-form">'+
+        '<div class="field"><label>'+t('offerNameLabel')+'</label><input id="mOfferName" placeholder="'+t('offerNamePlaceholder')+'" value="'+(editingOffer?esc(editingOffer.name):'')+'"></div>'+
+        '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerStartLabel')+'</span><input type="date" id="mOfferStart" style="width:100%;min-width:0;box-sizing:border-box;" value="'+(editingOffer?editingOffer.startDate:'')+'"></div>'+
+          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerEndLabel')+'</span><input type="date" id="mOfferEnd" style="width:100%;min-width:0;box-sizing:border-box;" value="'+(editingOffer?editingOffer.endDate:'')+'"></div>'+
+        '</div></div>'+
+        '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('pointsPerLabel')+'</span><input type="number" step="0.1" id="mOfferPoints" placeholder="'+rate.points+'" value="'+(editingOffer?editingOffer.points:'')+'"></div>'+
+          '<div><span style="font-size:12px;color:var(--muted);">'+t('moneyPerLabel')+'</span><input type="number" step="0.01" id="mOfferMoney" placeholder="2" value="'+(editingOffer?editingOffer.money:'')+'"></div>'+
+        '</div></div>'+
+        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-offer-form">'+t('cancel')+'</button>'+
+        '<button class="btn-primary tap" data-act="save-offer" data-id="'+c.id+'">'+t('save')+'</button></div>'+
+      '</div>';
+}
 function renderLedgerTabBody(c, parentMode){
   var sym = currencySymbol(ledgerCurrency);
   var balance = ledgerBalance(c.id, ledgerCurrency);
@@ -3087,21 +3147,7 @@ function renderLedgerTabBody(c, parentMode){
           '<button class="small-icon-btn" data-act="delete-offer" data-id="'+c.id+'" data-value="'+o.id+'">✕</button></div></div>';
       }).join('');
     }
-    html += showSpecialOfferForm ?
-      '<div class="inline-form">'+
-        '<div class="field"><label>'+t('offerNameLabel')+'</label><input id="mOfferName" placeholder="'+t('offerNamePlaceholder')+'" value="'+(editingOffer?esc(editingOffer.name):'')+'"></div>'+
-        '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
-          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerStartLabel')+'</span><input type="date" id="mOfferStart" style="width:100%;min-width:0;box-sizing:border-box;" value="'+(editingOffer?editingOffer.startDate:'')+'"></div>'+
-          '<div style="min-width:0;"><span style="font-size:12px;color:var(--muted);">'+t('offerEndLabel')+'</span><input type="date" id="mOfferEnd" style="width:100%;min-width:0;box-sizing:border-box;" value="'+(editingOffer?editingOffer.endDate:'')+'"></div>'+
-        '</div></div>'+
-        '<div class="field"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+
-          '<div><span style="font-size:12px;color:var(--muted);">'+t('pointsPerLabel')+'</span><input type="number" step="0.1" id="mOfferPoints" placeholder="'+rate.points+'" value="'+(editingOffer?editingOffer.points:'')+'"></div>'+
-          '<div><span style="font-size:12px;color:var(--muted);">'+t('moneyPerLabel')+'</span><input type="number" step="0.01" id="mOfferMoney" placeholder="2" value="'+(editingOffer?editingOffer.money:'')+'"></div>'+
-        '</div></div>'+
-        '<div style="display:flex;gap:10px;"><button class="btn-ghost tap" data-act="cancel-offer-form">'+t('cancel')+'</button>'+
-        '<button class="btn-primary tap" data-act="save-offer" data-id="'+c.id+'">'+t('save')+'</button></div>'+
-      '</div>'
-      : '<button class="dashed-btn tap" data-act="open-offer-form" style="margin-bottom:18px;">'+t('addSpecialOfferBtn')+'</button>';
+    html += '<button class="dashed-btn tap" data-act="open-offer-form" data-id="'+c.id+'" style="margin-bottom:18px;">'+t('addSpecialOfferBtn')+'</button>';
 
     // 货币互转
     html += showTransferForm ?
@@ -3430,6 +3476,7 @@ function renderScreen(scr){
   if(scr.type === 'manageBehaviors') return renderManageBehaviorsScreen(scr);
   if(scr.type === 'manageThresholds') return renderManageThresholdsScreen(scr);
   if(scr.type === 'foodGoalForm') return renderFoodGoalFormScreen(scr);
+  if(scr.type === 'formPage') return renderFormPageScreen(scr);
   return '';
 }
 
@@ -3469,17 +3516,27 @@ function renderFoodGoalFormScreen(scr){
   var d = foodGoalDraft;
   if(!child || !d){ popScreen(); return ''; }
   var food = d.refId ? foodGoalFoodFor(child, d) : null;
-  var unitTxt = food ? (food.unit==='g' ? 'g' : t('unitCount')) : '';
-  var html = screenHeader(t(d.goalId ? 'foodGoalEditTitle' : 'foodGoalAddTitle'));
-  html += '<div class="field"><label>'+t('foodGoalPickFood')+'</label>'+
-    '<input id="mFoodGoalSearch" value="'+esc(d.search||'')+'" placeholder="'+t('foodGoalSearchPlaceholder')+'">'+
-    '<div id="foodGoalListWrap" style="margin-top:8px;">'+renderFoodGoalPickList(child)+'</div></div>';
-  if(food){
-    html += '<div style="font-size:13px;color:var(--muted);margin:-4px 0 14px;">'+t('foodGoalSelected')+esc(food.icon||'🍽️')+' '+esc((state.lang==='en' && food.name_en) ? food.name_en : food.name)+'（'+unitTxt+'）</div>';
+  if(d.step === 'config' && !food) d.step = 'pick';
+
+  // 第一步：选择食物（长列表只负责"点一下选中"，点完立刻进入第二步，不用往下拖）
+  if(d.step === 'pick'){
+    return screenHeader(t(d.goalId ? 'foodGoalEditTitle' : 'foodGoalAddTitle'), 'foodgoal-back') +
+      '<div style="font-size:13px;color:var(--muted);margin:0 0 10px;line-height:1.5;">'+t('foodGoalPickHint')+'</div>'+
+      '<div class="field" style="margin-bottom:10px;"><input id="mFoodGoalSearch" value="'+esc(d.search||'')+'" placeholder="'+t('foodGoalSearchPlaceholder')+'"></div>'+
+      '<div id="foodGoalListWrap">'+renderFoodGoalPickList(child)+'</div>';
   }
+
+  // 第二步：设置目标。顶部是已选食物（带"更换"），下面的输入项一屏之内就能看全
+  var unitTxt = food.unit==='g' ? 'g' : t('unitCount');
+  var fname = (state.lang==='en' && food.name_en) ? food.name_en : food.name;
+  var html = screenHeader(t(d.goalId ? 'foodGoalEditTitle' : 'foodGoalAddTitle'), 'foodgoal-back');
+  html += '<div class="chip food selected" style="cursor:default;margin-bottom:16px;">'+
+    '<span class="chip-left"><span class="chip-icon">'+esc(food.icon||'🍽️')+'</span><span class="chip-name">'+esc(fname)+' <span style="font-size:13px;font-weight:600;">（'+unitTxt+'）</span></span></span>'+
+    '<button type="button" class="btn-ghost tap" data-act="foodgoal-change-food" style="width:auto;min-height:auto;padding:6px 12px;font-size:13px;">'+t('foodGoalChangeFood')+'</button>'+
+  '</div>';
   html += '<div class="field"><label>'+t('foodGoalDirLabel')+'</label>'+
     segmentedHtml('foodgoal-dir', child.id, d.dir, [['min',t('foodGoalDirMin')],['max',t('foodGoalDirMax')]])+'</div>';
-  html += '<div class="field"><label>'+t('foodGoalTargetLabel')+(unitTxt ? ' ('+unitTxt+')' : '')+'</label>'+
+  html += '<div class="field"><label>'+t('foodGoalTargetLabel')+' ('+unitTxt+')</label>'+
     '<input type="number" min="0" step="0.1" id="mFoodGoalTarget" value="'+esc(d.target)+'"></div>';
   html += '<div class="field"><label>'+t('foodGoalModeLabel')+'</label>'+
     segmentedHtml('foodgoal-mode', child.id, d.mode, [['points',t('foodGoalModePoints')],['display',t('foodGoalModeDisplay')]])+'</div>';
@@ -3492,6 +3549,15 @@ function renderFoodGoalFormScreen(scr){
     html += '<button class="btn-ghost tap" data-act="delete-food-goal" data-id="'+child.id+'" style="color:var(--danger,#d9534f);">'+t(d.confirmDelete ? 'foodGoalConfirmDeleteBtn' : 'foodGoalDeleteBtn')+'</button>';
   }
   return html;
+}
+
+function renderFormPageScreen(scr){
+  var c = childById(scr.childId);
+  if(!c){ popScreen(); return ''; }
+  if(scr.kind === 'reward') return screenHeader(t(editingRewardId ? 'formPageRewardEdit' : 'formPageRewardAdd')) + renderRewardFormHtml(c);
+  if(scr.kind === 'penalty') return screenHeader(t(editingPenaltyId ? 'formPagePenaltyEdit' : 'formPagePenaltyAdd')) + renderPenaltyFormHtml(c);
+  if(scr.kind === 'offer') return screenHeader(t(editingOfferId ? 'formPageOfferEdit' : 'formPageOfferAdd')) + renderOfferFormHtml(c);
+  popScreen(); return '';
 }
 
 function renderAddParentScreen(){
@@ -3937,6 +4003,24 @@ function bindEvents(){
   }
 
   // 食物数量浮窗：同样点背景关掉
+  var exOverlay = document.getElementById('exerciseOverlay');
+  if(exOverlay){
+    exOverlay.addEventListener('click', function(e){
+      if(e.target === exOverlay){ selectedExerciseRefId = null; exerciseFocusedFor = null; render(); }
+    });
+    var exDurInput = document.getElementById('mExDuration');
+    var exSel = exerciseLibraryAll().find(function(x){ return x.refId === selectedExerciseRefId; });
+    if(exDurInput && exSel){
+      var updateExPreview = function(){
+        var pv = document.getElementById('mExDurationPreview');
+        var mins = parseFloat(exDurInput.value) || 0;
+        if(pv) pv.textContent = mins > 0 ? t('exerciseKcalPreview', {kcal: Math.round(mins * exSel.caloriesPerMin)}) : '';
+      };
+      exDurInput.addEventListener('input', updateExPreview);
+      updateExPreview();
+      if(exerciseFocusedFor !== selectedExerciseRefId){ exerciseFocusedFor = selectedExerciseRefId; try{ exDurInput.focus(); }catch(e){} }
+    }
+  }
   var fqOverlay = document.getElementById('foodQtyOverlay');
   if(fqOverlay){
     fqOverlay.addEventListener('click', function(e){
@@ -4224,7 +4308,7 @@ function handleAction(act, id, value, el){
 
   else if(act==='open-child-redeem'){ editChildTab='redeem'; confirmDeleteChild=false; redeemSubTab='rewards'; showRewardForm=false; showPenaltyForm=false; editingRewardId=null; editingPenaltyId=null; pushScreen({type:'editChild', childId:id}); }
   else if(act==='redeem-sub-tab'){ redeemSubTab = value; showRewardForm=false; showPenaltyForm=false; editingRewardId=null; editingPenaltyId=null; render(); }
-  else if(act==='open-reward-form'){ showRewardForm=true; editingRewardId=null; rewardFormScope='total'; rewardFormMetric='points'; rewardFormEscalate=false; rewardFormEscalateStep=1; render(); }
+  else if(act==='open-reward-form'){ showRewardForm=true; editingRewardId=null; rewardFormScope='total'; rewardFormMetric='points'; rewardFormEscalate=false; rewardFormEscalateStep=1; pushScreen({type:'formPage', kind:'reward', childId:id}); }
   else if(act==='edit-reward-form'){
     var childR = childById(id);
     var itemR = childR && (childR.rewards||[]).find(function(r){ return r.id===value; });
@@ -4235,9 +4319,9 @@ function handleAction(act, id, value, el){
     rewardFormMetric = itemR.metric || 'points';
     rewardFormEscalate = !!itemR.escalate;
     rewardFormEscalateStep = itemR.escalateStep || 1;
-    render();
+    pushScreen({type:'formPage', kind:'reward', childId:id});
   }
-  else if(act==='cancel-reward-form'){ showRewardForm=false; editingRewardId=null; render(); }
+  else if(act==='cancel-reward-form'){ showRewardForm=false; editingRewardId=null; popScreen(); }
   else if(act==='draft-reward-scope'){ rewardFormScope = value; if(value==='total'){ rewardFormMetric='points'; rewardFormEscalate=false; } render(); }
   else if(act==='draft-reward-metric'){ rewardFormMetric = value; if(value!=='count') rewardFormEscalate=false; render(); }
   else if(act==='toggle-reward-escalate'){ rewardFormEscalate = (value==='on'); render(); }
@@ -4259,12 +4343,12 @@ function handleAction(act, id, value, el){
     else { addReward(id, name, '', rewardFormScope, behaviorId, cost, rewardFormMetric, isCountReward && rewardFormEscalate, escalateStep); }
     showRewardForm = false;
     editingRewardId = null;
-    render();
+    popScreen();
   }
   else if(act==='delete-reward'){ if(editingRewardId===value) editingRewardId=null; deleteReward(id, value); render(); }
   else if(act==='redeem-reward'){ redeemReward(id, value); toast(t('redeemedRewardToast')); render(); }
 
-  else if(act==='open-penalty-form'){ showPenaltyForm=true; editingPenaltyId=null; penaltyFormScope='total'; penaltyFormMetric='points'; penaltyFormEscalate=false; penaltyFormEscalateStep=1; render(); }
+  else if(act==='open-penalty-form'){ showPenaltyForm=true; editingPenaltyId=null; penaltyFormScope='total'; penaltyFormMetric='points'; penaltyFormEscalate=false; penaltyFormEscalateStep=1; pushScreen({type:'formPage', kind:'penalty', childId:id}); }
   else if(act==='edit-penalty-form'){
     var childP = childById(id);
     var itemP = childP && (childP.penalties||[]).find(function(p){ return p.id===value; });
@@ -4275,9 +4359,9 @@ function handleAction(act, id, value, el){
     penaltyFormMetric = itemP.metric || 'points';
     penaltyFormEscalate = !!itemP.escalate;
     penaltyFormEscalateStep = itemP.escalateStep || 1;
-    render();
+    pushScreen({type:'formPage', kind:'penalty', childId:id});
   }
-  else if(act==='cancel-penalty-form'){ showPenaltyForm=false; editingPenaltyId=null; render(); }
+  else if(act==='cancel-penalty-form'){ showPenaltyForm=false; editingPenaltyId=null; popScreen(); }
   else if(act==='draft-penalty-scope'){ penaltyFormScope = value; if(value==='total'){ penaltyFormMetric='points'; penaltyFormEscalate=false; } render(); }
   else if(act==='draft-penalty-metric'){ penaltyFormMetric = value; if(value!=='count') penaltyFormEscalate=false; render(); }
   else if(act==='toggle-penalty-escalate'){ penaltyFormEscalate = (value==='on'); render(); }
@@ -4299,7 +4383,7 @@ function handleAction(act, id, value, el){
     else { addPenalty(id, name2, '', penaltyFormScope, behaviorId2, offset, penaltyFormMetric, isCountPenalty && penaltyFormEscalate, escalateStep2); }
     showPenaltyForm = false;
     editingPenaltyId = null;
-    render();
+    popScreen();
   }
   else if(act==='delete-penalty'){ if(editingPenaltyId===value) editingPenaltyId=null; deletePenalty(id, value); render(); }
   else if(act==='execute-penalty'){ executePenalty(id, value); toast(t('penaltyExecutedToast')); render(); }
@@ -4326,16 +4410,16 @@ function handleAction(act, id, value, el){
     showExchangeRateForm = false;
     render();
   }
-  else if(act==='open-offer-form'){ showSpecialOfferForm=true; editingOfferId=null; render(); }
+  else if(act==='open-offer-form'){ showSpecialOfferForm=true; editingOfferId=null; pushScreen({type:'formPage', kind:'offer', childId:id}); }
   else if(act==='edit-offer-form'){
     var childO = childById(id);
     var itemO = childO && (childO.specialOffers||[]).find(function(o){ return o.id===value; });
     if(!itemO) return;
     showSpecialOfferForm = true;
     editingOfferId = itemO.id;
-    render();
+    pushScreen({type:'formPage', kind:'offer', childId:id});
   }
-  else if(act==='cancel-offer-form'){ showSpecialOfferForm=false; editingOfferId=null; render(); }
+  else if(act==='cancel-offer-form'){ showSpecialOfferForm=false; editingOfferId=null; popScreen(); }
   else if(act==='save-offer'){
     var oname = document.getElementById('mOfferName').value.trim();
     var ostart = document.getElementById('mOfferStart').value;
@@ -4347,7 +4431,7 @@ function handleAction(act, id, value, el){
     else { addSpecialOffer(id, ledgerCurrency, oname, ostart, oend, opts, omoney); }
     showSpecialOfferForm = false;
     editingOfferId = null;
-    render();
+    popScreen();
   }
   else if(act==='delete-offer'){ if(editingOfferId===value) editingOfferId=null; deleteSpecialOffer(id, value); render(); }
   else if(act==='draft-ledger-direction'){ manualLedgerDirection = value; render(); }
@@ -4511,7 +4595,8 @@ function handleAction(act, id, value, el){
     render();
   }
 
-  else if(act==='pick-exercise'){ selectedExerciseRefId = (selectedExerciseRefId===value) ? null : value; render(); }
+  else if(act==='pick-exercise'){ selectedExerciseRefId = (selectedExerciseRefId===value) ? null : value; exerciseFocusedFor = null; render(); }
+  else if(act==='close-exercise-picker'){ selectedExerciseRefId = null; exerciseFocusedFor = null; render(); }
   else if(act==='open-custom-exercise'){ showCustomExerciseForm=true; render(); }
   else if(act==='cancel-custom-exercise'){ showCustomExerciseForm=false; render(); }
   else if(act==='save-custom-exercise'){
@@ -4530,7 +4615,7 @@ function handleAction(act, id, value, el){
     var dur = parseFloat(document.getElementById('mExDuration').value);
     if(!dur || dur<=0){ toast(t('fillExerciseFieldsToast')); return; }
     addExerciseLog(id, selEx, dur);
-    selectedExerciseRefId = null;
+    selectedExerciseRefId = null; exerciseFocusedFor = null;
     toast(t('exerciseLoggedToast'));
     render();
   }
@@ -4577,7 +4662,7 @@ function handleAction(act, id, value, el){
     render();
   }
   else if(act==='open-add-food-goal'){
-    foodGoalDraft = {goalId:null, refId:'', dir:'min', target:'', mode:'points', points:'1', search:'', confirmDelete:false};
+    foodGoalDraft = {goalId:null, refId:'', dir:'min', target:'', mode:'points', points:'1', search:'', confirmDelete:false, step:'pick'};
     pushScreen({type:'foodGoalForm', childId:id});
   }
   else if(act==='edit-food-goal'){
@@ -4585,11 +4670,20 @@ function handleAction(act, id, value, el){
     var fgNr = fgc ? (fgc.nutritionRules || defaultNutritionRules()) : null;
     var fg = fgNr ? (fgNr.foodGoals || []).find(function(x){ return x.id===value; }) : null;
     if(fg){
-      foodGoalDraft = {goalId:fg.id, refId:fg.refId, dir:fg.dir||'min', target:String(fg.target), mode:fg.mode==='points'?'points':'display', points:String(fg.points||1), search:'', confirmDelete:false};
+      foodGoalDraft = {goalId:fg.id, refId:fg.refId, dir:fg.dir||'min', target:String(fg.target), mode:fg.mode==='points'?'points':'display', points:String(fg.points||1), search:'', confirmDelete:false, step:'config'};
       pushScreen({type:'foodGoalForm', childId:id});
     }
   }
-  else if(act==='pick-goal-food'){ syncFoodGoalDraft(); if(foodGoalDraft){ foodGoalDraft.refId = value; foodGoalDraft.confirmDelete = false; } render(); }
+  // 点选食物后直接进入"设置目标"这一步（同一个页面里换成设置视图，输入框就在眼前，不用再往下拖）
+  else if(act==='pick-goal-food'){ if(foodGoalDraft){ foodGoalDraft.refId = value; foodGoalDraft.confirmDelete = false; foodGoalDraft.step = 'config'; } scrollAppTop(); render(); }
+  else if(act==='foodgoal-change-food'){ syncFoodGoalDraft(); if(foodGoalDraft) foodGoalDraft.step = 'pick'; scrollAppTop(); render(); }
+  else if(act==='foodgoal-back'){
+    syncFoodGoalDraft();
+    var fgd = foodGoalDraft;
+    if(fgd && fgd.step === 'config' && !fgd.goalId){ fgd.step = 'pick'; scrollAppTop(); render(); }
+    else if(fgd && fgd.step === 'pick' && fgd.refId){ fgd.step = 'config'; scrollAppTop(); render(); }
+    else { foodGoalDraft = null; popScreen(); }
+  }
   else if(act==='foodgoal-dir'){ syncFoodGoalDraft(); if(foodGoalDraft) foodGoalDraft.dir = value; render(); }
   else if(act==='foodgoal-mode'){ syncFoodGoalDraft(); if(foodGoalDraft) foodGoalDraft.mode = value; render(); }
   else if(act==='save-food-goal'){
