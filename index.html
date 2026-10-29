@@ -375,7 +375,10 @@ zh: {
   addHeight:'新增身高', addWeight:'新增体重', record:'记录',
   noHeightYet:'还没有身高记录', noWeightYet:'还没有体重记录',
   currentPoints:'当前积分', thresholdSettings:'⚠️ 预警阈值设置',
-  pointItemsAll:'全部积分项', pointItemsReward:'加分项', pointItemsPenalty:'减分项', pointItemsThresholdBtn:'⚠️ 预警阈值', pointItemsAddRuleBtn:'添加规则',
+  growthNoticeTitle:'🌱 成长期已满', growthNoticeOk:'知道了', growthNoticeEncourage:'做得好，继续保持！',
+  growthNoticeItem:'「{{name}}」成长期（{{days}} 天）已满，期间没有再犯：上次扣 {{last}} 分，现在已降级，下次再犯扣 {{next}} 分。',
+  growthNoticeCleared:'「{{name}}」成长期（{{days}} 天）已满，期间没有再犯：减分已恢复为基准的 {{next}} 分，重新开始计算。',
+  pointItemsAll:'全部积分项', pointItemsChecklist:'打卡项', pointItemsReward:'加分项', pointItemsPenalty:'减分项', pointItemsThresholdBtn:'⚠️ 预警阈值', pointItemsAddRuleBtn:'添加规则',
   avatarEmojiLabel:'图标（用输入法的表情键盘选一个 emoji）', emojiInputPlaceholder:'点这里，用表情键盘选一个', behaviorIconLabel:'图标（可不填，用输入法的表情键盘选一个 emoji）',
   rewardSection:'加分 ✨', penaltySection:'扣分 ⚠️', checklistSection:'每日打卡 ✔️',
   childHomeTabCheckin:'打卡', childHomeTabReward:'加分', childHomeTabPenalty:'减分',
@@ -584,7 +587,10 @@ en: {
   addHeight:'Add height', addWeight:'Add weight', record:'Log',
   noHeightYet:'No height records yet', noWeightYet:'No weight records yet',
   currentPoints:'Current points', thresholdSettings:'⚠️ Alert thresholds',
-  pointItemsAll:'All point items', pointItemsReward:'Reward items', pointItemsPenalty:'Penalty items', pointItemsThresholdBtn:'⚠️ Alert thresholds', pointItemsAddRuleBtn:'Add rule',
+  growthNoticeTitle:'🌱 Growth period complete', growthNoticeOk:'Got it', growthNoticeEncourage:'Well done — keep it up!',
+  growthNoticeItem:'"{{name}}": the {{days}}-day growth period is complete with no repeat. Last deduction was {{last}} points; it has stepped down, so the next slip costs {{next}} points.',
+  growthNoticeCleared:'"{{name}}": the {{days}}-day growth period is complete with no repeat. The deduction is back to the base {{next}} points and starts fresh.',
+  pointItemsAll:'All point items', pointItemsChecklist:'Check-in items', pointItemsReward:'Reward items', pointItemsPenalty:'Penalty items', pointItemsThresholdBtn:'⚠️ Alert thresholds', pointItemsAddRuleBtn:'Add rule',
   avatarEmojiLabel:'Icon (pick any emoji with your keyboard)', emojiInputPlaceholder:'Tap here, then pick an emoji', behaviorIconLabel:'Icon (optional — pick any emoji with your keyboard)',
   rewardSection:'Reward points ✨', penaltySection:'Deductions ⚠️', checklistSection:'Daily checklist ✔️',
   childHomeTabCheckin:'Check-in', childHomeTabReward:'Earn', childHomeTabPenalty:'Lose',
@@ -768,8 +774,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.54';
-var APP_BUILD_DATE = '2026-10-28';
+var APP_VERSION = '3.13.56';
+var APP_BUILD_DATE = '2026-10-29';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1779,6 +1785,73 @@ function scheduleAutoRepay(delay){
   }, delay == null ? 3000 : delay);
 }
 
+/* ---------------- v3.13.56：成长期已满、减分降级的提醒弹窗 ---------------- */
+// 阶梯翻倍的减分项没有存状态，降级是"下次再犯时才倒推"的，所以以前成长期结束了没有任何提示。
+// 现在每次打开 App / 回到前台 / 过零点，都会检查：某条阶梯翻倍规则上次扣分比基准分高、
+// 并且已经过完至少一个成长期没再犯（也就是已经降级了）→ 弹一个提醒。
+// 家长端会看到所有孩子的，孩子端只看到自己的；每台设备各自弹一次，点「知道了」才算看过，
+// 同一档不再重复弹（降到下一档或者恢复基准分时会再弹一次；孩子又犯了就重新开始计算）。
+function escalationStatus(child, b){
+  if(!b.escalate || !(b.points < 0)) return null;
+  var base = Math.abs(b.points);
+  var growthDays = b.growthDays || 14;
+  var logs = data.pointLogs.filter(function(l){ return l.childId===child.id && l.behaviorId===b.id; });
+  if(!logs.length) return null;
+  logs.sort(function(a, c){ return parseLogDT(a) - parseLogDT(c); });
+  var last = logs[logs.length-1];
+  var lastR = Math.abs(last.points);
+  if(!(lastR > base)) return null; // 上次本来就是基准分，没有"升过级"，也就谈不上降级
+  var gapDays = (new Date() - parseLogDT(last)) / 86400000;
+  if(Math.floor(gapDays / growthDays) < 1) return null; // 还在成长期内
+  var nextR = Math.abs(nextEscalatedPoints(child, b));
+  return { base: base, growthDays: growthDays, lastR: lastR, nextR: nextR, cleared: nextR <= base, key: last.id + ':' + nextR };
+}
+function showGrowthNotice(items, keys, parentMode){
+  if(document.getElementById('growthNoticeOverlay')) return;
+  var rows = items.map(function(it){
+    var name = behaviorDisplayName(it.b);
+    var prefix = parentMode ? '<b>'+esc(it.child.name)+'</b>　' : '';
+    var msg = it.st.cleared ?
+      t('growthNoticeCleared', {name: esc(name), days: it.st.growthDays, next: fmtPts(it.st.nextR)}) :
+      t('growthNoticeItem', {name: esc(name), days: it.st.growthDays, last: fmtPts(it.st.lastR), next: fmtPts(it.st.nextR)});
+    return '<div style="font-size:14px;line-height:1.6;margin-bottom:10px;text-align:left;">'+prefix+msg+'</div>';
+  }).join('');
+  var ov = document.createElement('div');
+  ov.id = 'growthNoticeOverlay';
+  ov.className = 'range-picker-overlay';
+  ov.innerHTML = '<div class="range-picker">'+
+    '<div class="range-picker-title">'+t('growthNoticeTitle')+'</div>'+
+    '<div style="max-height:50vh;overflow-y:auto;">'+rows+'</div>'+
+    (parentMode ? '' : '<div style="font-size:14px;color:var(--muted);margin-bottom:10px;">'+t('growthNoticeEncourage')+'</div>')+
+    '<button type="button" class="btn-primary tap" id="growthNoticeOk">'+t('growthNoticeOk')+'</button>'+
+  '</div>';
+  document.body.appendChild(ov);
+  document.getElementById('growthNoticeOk').addEventListener('click', function(){
+    var seen = storageGet('growthSeen', {}) || {};
+    Object.keys(keys).forEach(function(k){ seen[k] = keys[k]; });
+    storageSet('growthSeen', seen);
+    if(ov.parentNode) ov.parentNode.removeChild(ov);
+  });
+}
+function runGrowthNotice(){
+  if(document.getElementById('growthNoticeOverlay')) return;
+  var parentMode = isParentMode();
+  var kids = parentMode ? (data.children || []) : (boundChild() ? [boundChild()] : []);
+  var seen = storageGet('growthSeen', {}) || {};
+  var items = [], keys = {};
+  kids.forEach(function(child){
+    (child.behaviors || []).forEach(function(b){
+      var st = escalationStatus(child, b);
+      if(!st) return;
+      var sk = child.id + '|' + b.id;
+      if(seen[sk] === st.key) return;
+      items.push({child: child, b: b, st: st});
+      keys[sk] = st.key;
+    });
+  });
+  if(items.length) showGrowthNotice(items, keys, parentMode);
+}
+
 /* ---------------- v3.13.54：一次性清空所有规则现有的图标 ---------------- */
 // 规则图标改为"自己用输入法填 emoji"，原来预设的图标全部取消。每个孩子只清一次（child.behaviorIconsCleared），
 // 清完之后用户自己填的 emoji 不会再被动。
@@ -1850,6 +1923,7 @@ function runDailyRules(){
   try{ runIconMigration(); }catch(e){ console.warn('icon migration failed', e); }
   try{ runAutoRepay(); }catch(e){ console.warn('auto repay failed', e); }
   try{ runNoLogRule(); }catch(e){ console.warn('no-log rule failed', e); }
+  try{ runGrowthNotice(); }catch(e){ console.warn('growth notice failed', e); }
 }
 
 /* ---------------- 初始积分 / 初始金额调整（支持家长自定义起始值） ---------------- */
@@ -3677,6 +3751,7 @@ function renderEditChildScreen(scr, isRoot){
     var bal = pointBalance(c.id);
     var childBehaviors = c.behaviors || [];
 
+    var checklistCnt = childBehaviors.filter(function(b){ return behaviorSign(b)==='checklist'; }).length;
     var rewardCnt = childBehaviors.filter(function(b){ return behaviorSign(b)==='reward'; }).length;
     var penaltyCnt = childBehaviors.filter(function(b){ return behaviorSign(b)==='penalty'; }).length;
     var itemBtn = function(key, label, n){
@@ -3689,10 +3764,10 @@ function renderEditChildScreen(scr, isRoot){
           '<div style="flex:1 1 50%;text-align:center;min-width:0;">'+
             '<div style="font-size:16px;color:var(--muted);font-weight:800;">'+t('currentPoints')+'</div>'+
             '<div style="font-family:var(--font-display);font-weight:800;font-size:36px;margin-top:10px;color:'+(bal>=0?'var(--sky-dark)':'var(--danger)')+';">'+fmtPts(bal)+'</div>'+
-            (parentMode ? '<button class="btn-ghost tap" style="width:auto;margin-top:10px;padding:7px 12px;font-size:13px;font-weight:700;min-height:auto;" data-act="open-points-adjust-form" data-id="'+c.id+'">'+t('adjustInitialPointsBtn')+'</button>' : '')+
+            (parentMode ? '<button class="btn-ghost tap" style="display:block;width:auto;margin:10px auto 0;padding:7px 12px;font-size:13px;font-weight:700;min-height:auto;" data-act="open-points-adjust-form" data-id="'+c.id+'">'+t('adjustInitialPointsBtn')+'</button>' : '')+
           '</div>'+
           '<div style="flex:1 1 50%;display:flex;flex-direction:column;gap:8px;min-width:0;">'+
-            itemBtn('all', t('pointItemsAll'), childBehaviors.length)+
+            itemBtn('checklist', t('pointItemsChecklist'), checklistCnt)+
             itemBtn('reward', t('pointItemsReward'), rewardCnt)+
             itemBtn('penalty', t('pointItemsPenalty'), penaltyCnt)+
           '</div>'+
@@ -3804,7 +3879,7 @@ function renderPointItemsScreen(scr){
   var parentMode = isParentMode();
   var filter = scr.filter || 'all';
   var list = child.behaviors || [];
-  var title = t({all:'pointItemsAll', reward:'pointItemsReward', penalty:'pointItemsPenalty'}[filter] || 'pointItemsAll');
+  var title = t({all:'pointItemsAll', checklist:'pointItemsChecklist', reward:'pointItemsReward', penalty:'pointItemsPenalty'}[filter] || 'pointItemsAll');
   var header = screenHeader(title);
   if(parentMode && behaviorForm) return header + renderBehaviorFormHtml(child);
 
@@ -3854,7 +3929,7 @@ function renderPointItemsScreen(scr){
 
   var topRow = parentMode ?
     '<div style="display:flex;gap:10px;margin-bottom:14px;">'+
-      '<button class="btn-ghost tap" style="flex:1;padding:12px 8px;font-size:15px;font-weight:700;min-height:auto;" data-act="open-manage-thresholds" data-id="'+child.id+'">'+t('pointItemsThresholdBtn')+'</button>'+
+      '<button class="btn-primary tap" style="flex:1;padding:12px 8px;font-size:15px;font-weight:700;min-height:auto;" data-act="open-manage-thresholds" data-id="'+child.id+'">'+t('pointItemsThresholdBtn')+'</button>'+
       '<button class="btn-primary tap" style="flex:1;padding:12px 8px;font-size:15px;font-weight:700;min-height:auto;" data-act="open-add-behavior-form" data-id="'+child.id+'">'+t('pointItemsAddRuleBtn')+'</button>'+
     '</div>' : '';
 
@@ -4749,7 +4824,7 @@ function handleAction(act, id, value, el){
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
 
   else if(act==='open-point-items' || act==='open-manage-behaviors'){ behaviorForm=null; confirmDeleteBehaviorId=null; manageBehaviorsSubFilter='all'; selectedRangeBehaviorId=null; pushScreen({type:'pointItems', childId:id, filter:(act==='open-point-items' && value) ? value : 'all'}); }
-  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:'', category:'', sign:(function(){ var sc=currentScreen(); return (sc && sc.filter==='penalty') ? 'penalty' : 'reward'; })(), pointsMode:'fixed', abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14, weekendItem:false}; render(); }
+  else if(act==='open-add-behavior-form'){ behaviorForm = {name:'', icon:'', category:'', sign:(function(){ var sc=currentScreen(); return (sc && sc.filter==='penalty') ? 'penalty' : 'reward'; })(), pointsMode:(function(){ var sc2=currentScreen(); return (sc2 && sc2.filter==='checklist') ? 'checklist' : 'fixed'; })(), abs:'', rangeMin:'', rangeMax:'', escalate:false, growthDays:14, weekendItem:false}; render(); }
   else if(act==='edit-behavior'){
     var scrB = currentScreen();
     var b = scrB ? behaviorById(scrB.childId, id) : null;
@@ -5082,6 +5157,7 @@ document.addEventListener('visibilitychange', function(){
   var away = appHiddenAt ? Date.now() - appHiddenAt : 0;
   appHiddenAt = 0;
   if(cloudSyncActive()) cloudSyncResume(away > 3000);
+  else if(away > 3000) scheduleAutoRepay(800); // 没开云同步时，回到前台也重新检查每日规则和成长期提醒
 });
 window.addEventListener('pageshow', function(e){
   if(e && e.persisted && cloudSyncActive()) cloudSyncResume(true);
