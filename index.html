@@ -543,7 +543,7 @@ zh: {
   catTransfer:'货币互转', catAdjustment:'初始调整', catRepay:'自动还款',
   redeemHistoryRepay:'自动还款',
   autoRepayBtn:'自动还款比例', autoRepayPercentLabel:'每天结算积分的百分之几用于还款（0＝关闭）',
-  autoRepayHint:'账户余额为负数时，每天结算的积分（当天净得分，扣分已抵消）会按这个比例自动换成零花钱还款。汇率跟着结算那一天走：当天有限时优惠就按优惠汇率，没有就按平时汇率。还款会自动生成一条兑换记录和一条记账流水；还到余额为 0 就自动停止。每天结算一次，在次日打开 App 时完成。开启后只从当天起算，不会追溯之前的积分。',
+  autoRepayHint:'账户余额为负数时，每天结算的积分（当天净得分，扣分已抵消）会按这个比例自动换成零花钱还款。汇率跟着结算那一天走：当天有限时优惠就按优惠汇率，没有就按平时汇率。还款会自动生成一条兑换记录和一条记账流水；换不成整数分钱的零头会累积到第二天一起算，还到余额为 0 就自动停止。每天结算一次，在次日打开 App 时完成。开启后只从当天起算，不会追溯之前的积分。',
   autoRepayInvalidToast:'请输入 0 到 100 之间的数字', autoRepaySavedToast:'自动还款设置已保存',
   autoRepayActiveBanner:'🧾 账户余额为负：每天结算积分的 {{percent}}% 会自动用于还款，还到 0 为止',
   autoRepayIdleBanner:'🧾 自动还款已开启（{{percent}}%）：账户余额为负时，每天结算积分的 {{percent}}% 会自动还款',
@@ -758,7 +758,7 @@ en: {
   catTransfer:'Currency transfer', catAdjustment:'Initial adjustment', catRepay:'Auto repayment',
   redeemHistoryRepay:'Auto repayment',
   autoRepayBtn:'Auto-repayment percentage', autoRepayPercentLabel:"% of each day's settled points used to repay (0 = off)",
-  autoRepayHint:"While the allowance balance is negative, this percentage of each day's settled points (that day's net score, deductions already offset) is automatically converted to allowance to repay it. The rate follows the day being settled: the special-offer rate if one was active that day, otherwise the standard rate. A redemption record and a ledger entry are created automatically, and repayment stops once the balance reaches 0. Settled once a day, when the app is opened the next day. Starts from the day you turn it on — earlier points are not counted.",
+  autoRepayHint:"While the allowance balance is negative, this percentage of each day's settled points (that day's net score, deductions already offset) is automatically converted to allowance to repay it. The rate follows the day being settled: the special-offer rate if one was active that day, otherwise the standard rate. A redemption record and a ledger entry are created automatically, any remainder too small to convert into whole cents carries over to the next day, and repayment stops once the balance reaches 0. Settled once a day, when the app is opened the next day. Starts from the day you turn it on — earlier points are not counted.",
   autoRepayInvalidToast:'Enter a number between 0 and 100', autoRepaySavedToast:'Auto-repayment saved',
   autoRepayActiveBanner:"🧾 Balance is negative: {{percent}}% of each day's settled points is automatically used to repay it, until it reaches 0",
   autoRepayIdleBanner:"🧾 Auto-repayment is on ({{percent}}%): when the balance is negative, {{percent}}% of each day's settled points repays it automatically",
@@ -780,7 +780,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.57';
+var APP_VERSION = '3.13.59';
 var APP_BUILD_DATE = '2026-11-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -976,7 +976,7 @@ function saveData(){ storageSet('data', data); }
 /* ---------------- 积分辅助 ---------------- */
 function pointBalance(childId){
   var sum = data.pointLogs.reduce(function(sum, log){ return log.childId === childId ? sum + log.points : sum; }, 0);
-  return Math.round(sum*10)/10;
+  return Math.round(sum*100)/100; // v3.13.58：精度从 0.1 提到 0.01，自动还款扣的积分可能带两位小数
 }
 function childById(childId){
   return data.children.find(function(c){ return c.id===childId; }) || null;
@@ -1670,7 +1670,7 @@ function autoRepayConfig(child){
   var p = Number(c.percent);
   if(isNaN(p) || p < 0) p = 0;
   if(p > 100) p = 100;
-  return { percent: p, startDate: c.startDate || '', settledThrough: c.settledThrough || '' };
+  return { percent: p, startDate: c.startDate || '', settledThrough: c.settledThrough || '', carry: Math.max(0, Number(c.carry) || 0) };
 }
 function dateStrAddDays(dateStr, n){
   var d = new Date(dateStr + 'T00:00:00');
@@ -1683,12 +1683,12 @@ function setAutoRepayPercent(childId, percent){
   var old = autoRepayConfig(child);
   percent = Math.round(percent);
   if(percent <= 0){
-    child.autoRepay = { percent: 0, startDate: '', settledThrough: '' };
+    child.autoRepay = { percent: 0, startDate: '', settledThrough: '', carry: 0 };
   } else if(old.percent <= 0){
     // 从关闭变成开启：只从今天起算，今天的积分明天结算
-    child.autoRepay = { percent: percent, startDate: todayStr(), settledThrough: dateStrAddDays(todayStr(), -1) };
+    child.autoRepay = { percent: percent, startDate: todayStr(), settledThrough: dateStrAddDays(todayStr(), -1), carry: 0 };
   } else {
-    child.autoRepay = { percent: percent, startDate: old.startDate, settledThrough: old.settledThrough };
+    child.autoRepay = { percent: percent, startDate: old.startDate, settledThrough: old.settledThrough, carry: old.carry };
   }
   persistEntity('children', child);
 }
@@ -1700,7 +1700,7 @@ function dayNetPoints(childId, dateStr){
     if(l.source === 'redemption' || l.source === 'adjustment') return;
     sum += (l.points || 0);
   });
-  return Math.max(0, Math.round(sum*10)/10);
+  return Math.max(0, Math.round(sum*100)/100); // v3.13.58：保留两位小数，不再先四舍五入到 0.1（会把当天得分多算或少算）
 }
 // 某一天、某个币种生效的汇率（日期可以是过去的某一天，因为是次日才结算）
 function repayRateOn(child, currency, dateStr){
@@ -1715,12 +1715,22 @@ function repayRateOn(child, currency, dateStr){
   return { points: r.points, money: r.money, special: null };
 }
 function floorTenth(x){ return Math.floor(x*10 + 1e-9) / 10; }
+function floorHundredth(x){ return Math.floor(x*100 + 1e-9) / 100; }
 // 结算某一天，返回这一天实际产生的还款 [{points, money, currency}]
-function autoRepaySettleDay(child, dateStr){
+// v3.13.58：重写"积分 ↔ 零花钱"的换算，保证自动扣掉的积分 100% 变成还款：
+// 以前是先把积分取整到 0.1、再把金额四舍五入到分，两边各舍各的，汇率不是正好"0.1 分＝1 分钱"时
+// （比如 7 分换 1 元，或者限时优惠的汇率）就会出现扣的积分比换到的钱多——多扣的那点积分白白没了。
+// 现在反过来算：先看这天额度能换多少个"整数分钱"，再算这些钱对应的积分——
+//   · 金额永远是整数分（两位小数），不引入第三位小数；
+//   · 扣的积分尽量正好等于这些钱按汇率的价值（精确到 0.01 分）；凑不出精确值时，向下取、只会少扣、绝不会多扣；
+//   · 额度里换不成整数分钱的零头不扣，累积到第二天和第二天的额度一起算（v3.13.59），所以长期下来实际还款贴近设定的比例；
+//   · 清最后一点欠款时同理，宁可多给孩子 0.01 分以内的零头，也不多扣。
+function autoRepaySettleDay(child, dateStr, carryIn){
   var cfg = autoRepayConfig(child);
   var results = [];
-  var pool = floorTenth(dayNetPoints(child.id, dateStr) * cfg.percent / 100);
-  pool = floorTenth(Math.min(pool, Math.max(0, pointBalance(child.id)))); // 不会把总积分扣成负数
+  // v3.13.59：额度＝当天净得分×比例，再加上前几天换不成整数分钱的零头（carryIn）
+  var pool = floorHundredth(dayNetPoints(child.id, dateStr) * cfg.percent / 100 + (carryIn || 0));
+  pool = floorHundredth(Math.min(pool, Math.max(0, pointBalance(child.id)))); // 不会把总积分扣成负数
   CURRENCIES.forEach(function(cur){
     if(pool <= 0) return;
     var pid = 'repay-' + child.id + '-' + dateStr + '-' + cur.code;
@@ -1730,34 +1740,55 @@ function autoRepaySettleDay(child, dateStr){
     if(existingPoint || existingLedger){
       // 另一台设备已经结算过这一天这个币种：把它用掉的积分从额度里扣掉，继续看下一个币种
       var usedBefore = existingPoint ? Math.abs(existingPoint.points) : (existingLedger.pointsSpent || 0);
-      pool = floorTenth(pool - usedBefore);
+      pool = floorHundredth(pool - usedBefore);
       return;
     }
     var bal = ledgerBalance(child.id, cur.code);
     if(bal >= 0) return;
     var rate = repayRateOn(child, cur.code, dateStr);
     if(!(rate.points > 0) || !(rate.money > 0)) return;
-    var deficit = Math.round(-bal * 100) / 100;
-    var need = Math.ceil(deficit / rate.money * rate.points * 10 - 1e-9) / 10; // 还清欠款需要的积分，向上取整到 0.1
-    var used = Math.min(pool, need);
-    var money = (used >= need) ? deficit : Math.round(used / rate.points * rate.money * 100) / 100;
-    if(!(used > 0) || !(money > 0)) return;
+    var deficitCents = Math.round(-bal * 100);
+    var ppc = rate.points / (rate.money * 100);               // 1 分钱对应多少积分
+    var mMax = Math.floor(pool / ppc + 1e-9);                  // 额度最多能换多少个整数分钱
+    var m = Math.min(mMax, deficitCents);
+    if(!(m > 0)) return;
+    var exactPts = function(cents){                            // 这些钱对应的积分，恰好是两位小数以内就返回，否则 null
+      var v = cents * ppc, r = Math.round(v * 100) / 100;
+      return Math.abs(v - r) < 1e-7 ? r : null;
+    };
+    var p = exactPts(m);
+    if(p === null){
+      if(m === deficitCents){
+        p = floorHundredth(m * ppc);                           // 清最后一点欠款：凑不出精确值，向下取（只会少扣）
+      } else {
+        for(var k = m - 1; k >= 1 && k >= m - 300; k--){       // 往下找一个能精确对应的整数分钱，零头留给孩子
+          var pk = exactPts(k);
+          if(pk !== null){ m = k; p = pk; break; }
+        }
+        if(p === null) p = floorHundredth(m * ppc);
+      }
+    }
+    if(!(p > 0) || !(m > 0)) return;
+    var money = m / 100;
     var now = Date.now();
     var time = (new Date()).toTimeString().slice(0,5);
     persistEntity('ledgerLogs', {
       id: lid, childId: child.id, source: rate.special ? t('autoRepayLedgerSourceSpecial', {date: dateStr, offer: rate.special.name}) : t('autoRepayLedgerSource', {date: dateStr}), amount: money, category: 'repay',
-      pointsSpent: used, ts: now, currency: cur.code, date: todayStr(), time: time
+      pointsSpent: p, ts: now, currency: cur.code, date: todayStr(), time: time
     });
     persistEntity('pointLogs', {
       id: pid, childId: child.id, behaviorId: null, source: 'redemption', redemptionKind: 'repay',
       name: t('autoRepayLogName', {date: dateStr, cur: currencyName(cur.code)}),
       name_en: 'Auto repayment (' + dateStr + ', ' + cur.name_en + ')',
-      icon: '🧾', points: -used, date: todayStr(), time: time, ts: now + 1
+      icon: '🧾', points: -p, date: todayStr(), time: time, ts: now + 1
     });
-    pool = floorTenth(pool - used);
-    results.push({ points: used, money: money, currency: cur.code });
+    pool = floorHundredth(pool - p);
+    results.push({ points: p, money: money, currency: cur.code });
   });
-  return results;
+  // 零头累积：还有币种欠着钱，说明额度是被"换不成整数分钱"卡住的，剩下的零头留到明天一起算；
+  // 欠款都还清了就清零——剩下的是用不完的额度，不是零头，不能留给以后的新欠款去扣。
+  var stillOwing = CURRENCIES.some(function(cur){ return ledgerBalance(child.id, cur.code) < 0; });
+  return { results: results, carry: stillOwing ? floorHundredth(Math.max(0, pool)) : 0 };
 }
 var autoRepayRunning = false;
 var autoRepayTimer = null;
@@ -1775,16 +1806,18 @@ function runAutoRepay(){
       if(cfg.percent <= 0) return;
       var last = cfg.settledThrough || dateStrAddDays(cfg.startDate || today, -1);
       if(last >= yesterday) return;
-      var d = dateStrAddDays(last, 1), guard = 0, childRepaid = false;
+      var d = dateStrAddDays(last, 1), guard = 0, childRepaid = false, carry = cfg.carry;
       while(d <= yesterday && guard < 60){ // 最多一次补 60 天，剩下的下次再补
-        autoRepaySettleDay(child, d).forEach(function(r){
+        var dayOut = autoRepaySettleDay(child, d, carry);
+        carry = dayOut.carry;
+        dayOut.results.forEach(function(r){
           sumPoints += r.points; moneyParts[r.currency] = (moneyParts[r.currency] || 0) + r.money;
           childRepaid = true; any = true;
         });
         last = d;
         d = dateStrAddDays(d, 1); guard++;
       }
-      child.autoRepay = { percent: cfg.percent, startDate: cfg.startDate, settledThrough: last };
+      child.autoRepay = { percent: cfg.percent, startDate: cfg.startDate, settledThrough: last, carry: carry };
       persistEntity('children', child);
       if(childRepaid) rearmThresholds(child.id);
     });
@@ -2453,8 +2486,10 @@ function renderRangePicker(child, b){
 }
 // 一位小数的积分显示：整数就不带小数点，比如 3 而不是 3.0；有小数才显示到小数点后一位
 function fmtPts(n){
-  n = Math.round(n*10)/10;
-  return (n % 1 === 0) ? String(n) : n.toFixed(1);
+  n = Math.round(n*100)/100; // v3.13.58：最多显示两位小数（去掉末尾的 0）
+  if(n % 1 === 0) return String(n);
+  var str = n.toFixed(2);
+  return str.charAt(str.length-1) === '0' ? str.slice(0, -1) : str;
 }
 // 数量输入统一走这个函数解析：既支持普通小数，也支持"2/3"这种分数写法
 // （用在"吃了多少个/多重"这类场景——手机数字键盘打不出分数线，直接把输入框
