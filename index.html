@@ -375,6 +375,9 @@ zh: {
   addHeight:'新增身高', addWeight:'新增体重', record:'记录',
   noHeightYet:'还没有身高记录', noWeightYet:'还没有体重记录',
   currentPoints:'当前积分', thresholdSettings:'⚠️ 预警阈值设置',
+  nutritionSettleSectionTitle:'营养达标结算', nutritionSettleHint:'健康页营养达标（含食物目标）的加分怎么结算：自动＝每天 24 点结算前一天（次日有设备打开 App 时完成）；手动＝需要在健康页点「结算今日营养积分」。',
+  nutritionSettleAuto:'自动（每天 24 点）', nutritionSettleManual:'手动', nutritionSettleAutoToast:'已改为自动结算（从昨天起算）', nutritionSettleManualToast:'已改为手动结算',
+  nutritionAutoHint:'每天 24 点自动结算前一天；也可以点「结算今日营养积分」提前结算今天。', nutritionManualHint:'当前是手动结算：需要点「结算今日营养积分」才会加分。',
   growthNoticeTitle:'🌱 成长期已满', growthNoticeOk:'知道了', growthNoticeEncourage:'做得好，继续保持！',
   growthNoticeItem:'「{{name}}」成长期（{{days}} 天）已满，期间没有再犯：上次扣 {{last}} 分，现在已降级，下次再犯扣 {{next}} 分。',
   growthNoticeCleared:'「{{name}}」成长期（{{days}} 天）已满，期间没有再犯：减分已恢复为基准的 {{next}} 分，重新开始计算。',
@@ -587,6 +590,9 @@ en: {
   addHeight:'Add height', addWeight:'Add weight', record:'Log',
   noHeightYet:'No height records yet', noWeightYet:'No weight records yet',
   currentPoints:'Current points', thresholdSettings:'⚠️ Alert thresholds',
+  nutritionSettleSectionTitle:'Nutrition settlement', nutritionSettleHint:'How Nutrition Goals points (including food goals) are settled: Auto = yesterday is settled at midnight (completed when a device opens the app the next day); Manual = tap "Settle today" on the Health page.',
+  nutritionSettleAuto:'Auto (midnight)', nutritionSettleManual:'Manual', nutritionSettleAutoToast:'Switched to auto settlement (from yesterday on)', nutritionSettleManualToast:'Switched to manual settlement',
+  nutritionAutoHint:'Yesterday is settled automatically at midnight; you can also tap "Settle today" to settle early.', nutritionManualHint:'Manual settlement is on: tap "Settle today" to award points.',
   growthNoticeTitle:'🌱 Growth period complete', growthNoticeOk:'Got it', growthNoticeEncourage:'Well done — keep it up!',
   growthNoticeItem:'"{{name}}": the {{days}}-day growth period is complete with no repeat. Last deduction was {{last}} points; it has stepped down, so the next slip costs {{next}} points.',
   growthNoticeCleared:'"{{name}}": the {{days}}-day growth period is complete with no repeat. The deduction is back to the base {{next}} points and starts fresh.',
@@ -774,8 +780,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.56';
-var APP_BUILD_DATE = '2026-10-29';
+var APP_VERSION = '3.13.57';
+var APP_BUILD_DATE = '2026-11-05';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -1232,8 +1238,11 @@ function macroSuggestion(cal){
 }
 
 /* ---------------- 健康打卡：三餐 / 运动记录 ---------------- */
+function mealLogsOn(childId, dateStr){
+  return data.mealLogs.filter(function(l){ return l.childId===childId && l.date===dateStr; });
+}
 function todayMealLogs(childId){
-  return data.mealLogs.filter(function(l){ return l.childId===childId && l.date===todayStr(); });
+  return mealLogsOn(childId, todayStr());
 }
 function todayExerciseLogs(childId){
   return data.exerciseLogs.filter(function(l){ return l.childId===childId && l.date===todayStr(); });
@@ -1317,9 +1326,9 @@ function nutritionTargets(child){
     fruit: nr.fruitGramsTarget != null ? nr.fruitGramsTarget : (nr.fruitServingsTarget ? nr.fruitServingsTarget*100 : 200)
   };
 }
-function todayNutritionTotals(childId){
+function todayNutritionTotals(childId, dateStr){
   var t = {calories:0, carb:0, protein:0, fat:0, veg:0, fruit:0};
-  todayMealLogs(childId).forEach(function(l){
+  mealLogsOn(childId, dateStr || todayStr()).forEach(function(l){
     t.calories += l.calories||0; t.carb += l.carb||0; t.protein += l.protein||0; t.fat += l.fat||0;
     // 蔬菜/水果按实际吃了多少克数累计（不是按次数）；如果这条记录不是按克计量的（比如按个数），退化为用 calories 无关，直接跳过累计克数
     if(l.category==='veg' && l.unit==='g') t.veg += (l.amount||0);
@@ -1327,9 +1336,10 @@ function todayNutritionTotals(childId){
   });
   return t;
 }
-function nutritionChecklist(child){
+// dateStr 不传＝今天；传了就按那一天的三餐记录算（自动结算前一天时用）
+function nutritionChecklist(child, dateStr){
   var targets = nutritionTargets(child);
-  var totals = todayNutritionTotals(child.id);
+  var totals = todayNutritionTotals(child.id, dateStr);
   var items = [];
   if(targets.calorie!=null) items.push({key:'calorie', icon:'🔥', name_zh:'热量不超标', name_en:'Calories within limit', ok: totals.calories <= targets.calorie, actual: totals.calories, target: targets.calorie, dir:'max'});
   if(targets.carb!=null) items.push({key:'carb', icon:'🍞', name_zh:'碳水不超标', name_en:'Carbs within limit', ok: totals.carb <= targets.carb, actual: Math.round(totals.carb*10)/10, target: targets.carb, dir:'max'});
@@ -1341,7 +1351,7 @@ function nutritionChecklist(child){
   // 按三餐里选的那种食物（refId）累计当天吃的量，单位跟食物本身一致（克/个）。
   var nrf = child.nutritionRules || defaultNutritionRules();
   (nrf.foodGoals || []).forEach(function(g){
-    var actual = todayFoodAmount(child.id, g);
+    var actual = todayFoodAmount(child.id, g, dateStr);
     var isMax = g.dir === 'max';
     var unitTxt = g.unit === 'g' ? 'g' : '个';
     items.push({
@@ -1355,37 +1365,46 @@ function nutritionChecklist(child){
   return items;
 }
 // 今天这个孩子吃了多少某种目标食物（只累计单位一致的记录）
-function todayFoodAmount(childId, goal){
+function todayFoodAmount(childId, goal, dateStr){
   var sum = 0;
-  todayMealLogs(childId).forEach(function(l){
+  mealLogsOn(childId, dateStr || todayStr()).forEach(function(l){
     if(l.refId && l.refId === goal.refId && (l.unit || 'count') === goal.unit) sum += (l.amount || 0);
   });
   return Math.round(sum * 10) / 10;
 }
-function settleNutritionToday(childId){
+// 结算某一天的营养达标积分（手动按钮和每日自动结算共用）。
+// v3.13.57：积分记录的 id 改成确定的（孩子+日期+项目），所以手动结算和自动结算、多台设备同时结算，
+// 写出来的都是同一批记录，不会重复加分；重复结算只会增删有变化的那几条（比如补记了一顿饭之后）。
+// 每项的分值是"只加不扣"：填了正数，达标当天就加这么多分；没达标或超标都不扣分、不加分。留空（存成0）＝这一项不参与加分。
+function settleNutritionForDate(childId, dateStr, timeStr){
   var child = childById(childId);
   if(!child) return;
   var nr = child.nutritionRules || defaultNutritionRules();
-  var today = todayStr();
-  // 先清掉今天已经结算过的营养积分记录，保证可以重复点击重新结算（比如补记了一顿饭之后）
-  data.pointLogs.filter(function(l){ return l.childId===childId && l.date===today && l.source==='nutrition'; })
-    .forEach(function(l){ persistDelete('pointLogs', l.id); });
-
-  // 每项的分值现在是"只加不扣"：填了正数，达标当天就加这么多分；没达标或超标都不扣分、不加分。
-  // 留空（存成0）＝这一项完全不参与加分。
-  var items = nutritionChecklist(child);
-  items.forEach(function(it){
+  var time = timeStr || (new Date()).toTimeString().slice(0,5);
+  var desired = {};
+  nutritionChecklist(child, dateStr).forEach(function(it){
     var pts = it.isFood ? (it.goal.mode === 'points' ? (Number(it.goal.points) || 0) : 0) : (nr.points[it.key] || 0);
-    if(!pts) return;
-    if(!it.ok) return;
-    var log = {
-      id: uid(), childId: childId, behaviorId: null, source: 'nutrition',
+    if(!pts || !it.ok) return;
+    var id = 'nutri-' + childId + '-' + dateStr + '-' + it.key;
+    desired[id] = {
+      id: id, childId: childId, behaviorId: null, source: 'nutrition',
       name: it.name_zh, name_en: it.name_en, icon: it.icon, points: pts,
-      date: today, time: (new Date()).toTimeString().slice(0,5)
+      date: dateStr, time: time
     };
-    persistEntity('pointLogs', log);
+  });
+  // 这一天已有、但不在新结果里的营养积分（某项不再达标了，或者旧版本用随机 id 生成的）→ 删掉
+  data.pointLogs.filter(function(l){ return l.childId===childId && l.date===dateStr && l.source==='nutrition'; })
+    .forEach(function(l){ if(!desired[l.id]) persistDelete('pointLogs', l.id); });
+  Object.keys(desired).forEach(function(id){
+    var ex = data.pointLogs.find(function(l){ return l.id === id; });
+    var d = desired[id];
+    if(ex && ex.points === d.points && ex.name === d.name) return; // 没变化就不重写，避免多台设备互相覆盖
+    persistEntity('pointLogs', d);
   });
   rearmThresholds(childId);
+}
+function settleNutritionToday(childId){
+  settleNutritionForDate(childId, todayStr());
 }
 
 /* ---------------- 奖惩兑换：积分系统的"出口" ---------------- */
@@ -1852,6 +1871,41 @@ function runGrowthNotice(){
   if(items.length) showGrowthNotice(items, keys, parentMode);
 }
 
+/* ---------------- v3.13.57：营养达标每日 24 点自动结算 ---------------- */
+// 设置里可以选「自动 / 手动」，默认自动（family.nutritionAutoSettle 不是 false 就当自动）。
+// 自动：一天结束后（次日有任意一台设备打开 App、或 App 一直开着过了零点时）把前一天的营养达标（含食物目标）结算掉，
+// 积分记录的日期记在那一天（晚上 23:59）。结算完才轮到自动还款、扣分规则，所以当天的营养分会算进自动还款的"当天净得分"。
+// - 不追溯：第一次见到某个孩子、或者重新打开自动/营养积分时，只从昨天起算。
+// - 前一天一条三餐都没记的话不结算（不然"一口没吃"会让所有"不超标"项目白拿分；这种日子由"没记录扣 1 分"规则处理）。
+// - 孩子的营养积分没启用时不结算，也不会攒下旧日子（重新启用后不会补算以前的）。
+function nutritionAutoEnabled(){
+  return !(data.family && data.family.nutritionAutoSettle === false);
+}
+function runNutritionAutoSettle(){
+  if(!nutritionAutoEnabled()) return;
+  var today = todayStr();
+  var yesterday = dateStrAddDays(today, -1);
+  var changed = false;
+  (data.children || []).slice().forEach(function(child){
+    var nr = child.nutritionRules;
+    var marker = child.nutritionSettle && child.nutritionSettle.settledThrough;
+    if(!nr || !nr.enabled){
+      if(marker !== yesterday){ child.nutritionSettle = { settledThrough: yesterday }; persistEntity('children', child); }
+      return;
+    }
+    if(!marker){ child.nutritionSettle = { settledThrough: yesterday }; persistEntity('children', child); return; }
+    if(marker >= yesterday) return;
+    var d = dateStrAddDays(marker, 1), guard = 0, last = marker;
+    while(d <= yesterday && guard < 60){
+      if(mealLogsOn(child.id, d).length){ settleNutritionForDate(child.id, d, '23:59'); changed = true; }
+      last = d; d = dateStrAddDays(d, 1); guard++;
+    }
+    child.nutritionSettle = { settledThrough: last };
+    persistEntity('children', child);
+  });
+  if(changed) safeRender();
+}
+
 /* ---------------- v3.13.54：一次性清空所有规则现有的图标 ---------------- */
 // 规则图标改为"自己用输入法填 emoji"，原来预设的图标全部取消。每个孩子只清一次（child.behaviorIconsCleared），
 // 清完之后用户自己填的 emoji 不会再被动。
@@ -1921,6 +1975,7 @@ function runNoLogRule(){
 }
 function runDailyRules(){
   try{ runIconMigration(); }catch(e){ console.warn('icon migration failed', e); }
+  try{ runNutritionAutoSettle(); }catch(e){ console.warn('nutrition auto settle failed', e); }
   try{ runAutoRepay(); }catch(e){ console.warn('auto repay failed', e); }
   try{ runNoLogRule(); }catch(e){ console.warn('no-log rule failed', e); }
   try{ runGrowthNotice(); }catch(e){ console.warn('growth notice failed', e); }
@@ -2727,6 +2782,8 @@ function renderNutritionCard(c, parentMode){
       '<span class="nutri-badge '+(it.ok?'ok':'bad')+'">'+(it.ok?t('metLabel'):t('notMetLabel'))+'</span></div></div>';
   }).join('');
   html += '<div style="margin-top:8px;">'+rows+'</div>';
+
+  html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;">'+t(nutritionAutoEnabled() ? 'nutritionAutoHint' : 'nutritionManualHint')+'</div>';
 
   if(items.filter(function(it){ return !it.isFood; }).length < 6){
     html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;">'+t('needHeightWeightForNutritionHint')+'</div>';
@@ -4031,6 +4088,10 @@ function renderSettingsScreen(){
         '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('checklistWeekendBonusLabel')+'</label><input type="number" step="0.1" id="mChecklistWeekendBonus" value="'+esc((data.family&&data.family.checklistWeekendBonus!=null)?data.family.checklistWeekendBonus:2)+'"></div>'+
       '</div>';
 
+    body += '<div class="settings-row"><div class="label">'+t('nutritionSettleSectionTitle')+'</div></div>'+
+      '<div style="font-size:13px;color:var(--muted);margin:-4px 0 12px;line-height:1.5;">'+t('nutritionSettleHint')+'</div>'+
+      '<div style="margin-bottom:18px;">'+segmentedHtml('set-nutrition-settle-mode', '_', nutritionAutoEnabled() ? 'auto' : 'manual', [['auto', t('nutritionSettleAuto')], ['manual', t('nutritionSettleManual')]])+'</div>';
+
     body += '<div class="settings-row"><div class="label">'+t('dataSectionTitle')+'</div></div>'+
       '<div style="display:flex;gap:10px;margin-top:10px;">'+
         '<button class="btn-ghost tap" data-act="export-backup">⬇ '+t('exportBackup')+'</button>'+
@@ -4084,6 +4145,11 @@ function bindEvents(){
   }
 
   // 食物数量浮窗：同样点背景关掉
+  // v3.13.57：给所有文字输入框显式声明 autocomplete="off"。Safari 会根据字段名/标签猜它是"姓名"之类，
+  // 在键盘上方弹出「AutoFill Contact」栏，占掉输入法候选栏的位置；声明之后不再猜。
+  document.querySelectorAll('input:not([type]), input[type="text"], input[type="search"], textarea').forEach(function(el){
+    if(!el.hasAttribute('autocomplete')) el.setAttribute('autocomplete', 'off');
+  });
   document.querySelectorAll('input[data-emoji-only]').forEach(function(inp){
     inp.addEventListener('focus', function(){ setTimeout(function(){ try{ inp.select(); }catch(e){} }, 0); });
     inp.addEventListener('input', function(){
@@ -4820,6 +4886,20 @@ function handleAction(act, id, value, el){
     foodGoalDraft = null;
     toast(t('foodGoalDeletedToast'));
     popScreen();
+  }
+  else if(act==='set-nutrition-settle-mode'){
+    if(!data.family) return;
+    var wantAuto = (value === 'auto');
+    if(wantAuto === nutritionAutoEnabled()) return;
+    data.family.nutritionAutoSettle = wantAuto;
+    if(wantAuto){
+      // 从手动切回自动：只从昨天起算，不补算手动期间没结算的日子
+      var yst = dateStrAddDays(todayStr(), -1);
+      (data.children || []).forEach(function(ch){ ch.nutritionSettle = { settledThrough: yst }; persistEntity('children', ch); });
+    }
+    persistFamily();
+    toast(t(wantAuto ? 'nutritionSettleAutoToast' : 'nutritionSettleManualToast'));
+    render();
   }
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
 
