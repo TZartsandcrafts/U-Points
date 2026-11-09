@@ -780,8 +780,8 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.60';
-var APP_BUILD_DATE = '2026-11-07';
+var APP_VERSION = '3.13.61';
+var APP_BUILD_DATE = '2026-11-08';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
 var state = {
@@ -945,6 +945,7 @@ function loadData(){
     if(!d.thresholds) d.thresholds = [];
     if(!d.mealLogs) d.mealLogs = [];
     if(!d.exerciseLogs) d.exerciseLogs = [];
+    if(!d.dailyState) d.dailyState = [];
     if(!d.customFoods) d.customFoods = [];
     if(!d.customExercises) d.customExercises = [];
     if(!d.ledgerLogs) d.ledgerLogs = [];
@@ -968,7 +969,7 @@ function loadData(){
     });
     return d;
   }
-  return { family:null, parents:[], children:[], pointLogs:[], thresholds:[], mealLogs:[], exerciseLogs:[], customFoods:[], customExercises:[], ledgerLogs:[], setupDone:false };
+  return { family:null, parents:[], children:[], pointLogs:[], thresholds:[], mealLogs:[], exerciseLogs:[], customFoods:[], customExercises:[], ledgerLogs:[], dailyState:[], setupDone:false };
 }
 var data = loadData();
 function saveData(){ storageSet('data', data); }
@@ -1051,7 +1052,7 @@ function persistEntity(collectionName, entity){
   touch(entity);
   upsertLocal(collectionName, entity);
   saveData();
-  if(cloudSyncActive()) pushEntity(collectionName, entity);
+  if(cloudSyncActive()) return pushEntity(collectionName, entity); // v3.13.61：返回写入结果（Promise<true/false>），每日结算要等标记真正写上去
 }
 function persistDelete(collectionName, id){
   data[collectionName] = data[collectionName].filter(function(x){ return x.id!==id; });
@@ -1684,9 +1685,11 @@ function setAutoRepayPercent(childId, percent){
   percent = Math.round(percent);
   if(percent <= 0){
     child.autoRepay = { percent: 0, startDate: '', settledThrough: '', carry: 0 };
+    if(dailyStateOf(childId)) saveDailyState(childId, { repayCarry: 0 }); // v3.13.61：零头存在 dailyState 里
   } else if(old.percent <= 0){
     // 从关闭变成开启：只从今天起算，今天的积分明天结算
     child.autoRepay = { percent: percent, startDate: todayStr(), settledThrough: dateStrAddDays(todayStr(), -1), carry: 0 };
+    if(dailyStateOf(childId)) saveDailyState(childId, { repayCarry: 0 });
   } else {
     child.autoRepay = { percent: percent, startDate: old.startDate, settledThrough: old.settledThrough, carry: old.carry };
   }
@@ -1774,13 +1777,13 @@ function autoRepaySettleDay(child, dateStr, carryIn){
     var time = '00:00'; // v3.13.60：统一记在结算日的 00:00
     persistEntity('ledgerLogs', {
       id: lid, childId: child.id, source: rate.special ? t('autoRepayLedgerSourceSpecial', {date: dateStr, offer: rate.special.name}) : t('autoRepayLedgerSource', {date: dateStr}), amount: money, category: 'repay',
-      pointsSpent: p, ts: now, currency: cur.code, date: todayStr(), time: time
+      pointsSpent: p, ts: now, currency: cur.code, date: dateStrAddDays(dateStr, 1), time: time
     });
     persistEntity('pointLogs', {
       id: pid, childId: child.id, behaviorId: null, source: 'redemption', redemptionKind: 'repay',
       name: t('autoRepayLogName', {date: dateStr, cur: currencyName(cur.code)}),
       name_en: 'Auto repayment (' + dateStr + ', ' + cur.name_en + ')',
-      icon: '🧾', points: -p, date: todayStr(), time: time, ts: now + 1
+      icon: '🧾', points: -p, date: dateStrAddDays(dateStr, 1), time: time, ts: now + 1
     });
     pool = floorHundredth(pool - p);
     results.push({ points: p, money: money, currency: cur.code });
@@ -1790,46 +1793,10 @@ function autoRepaySettleDay(child, dateStr, carryIn){
   var stillOwing = CURRENCIES.some(function(cur){ return ledgerBalance(child.id, cur.code) < 0; });
   return { results: results, carry: stillOwing ? floorHundredth(Math.max(0, pool)) : 0 };
 }
-var autoRepayRunning = false;
+
 var autoRepayTimer = null;
 var autoRepayLastDay = '';
 // 补结算所有"已经过完、还没结算"的日子（昨天及以前）。可以随时反复调用，没有要结算的就什么都不做。
-function runAutoRepay(){
-  if(autoRepayRunning) return;
-  autoRepayRunning = true;
-  try{
-    var today = todayStr();
-    var yesterday = dateStrAddDays(today, -1);
-    var sumPoints = 0, moneyParts = {}, any = false;
-    (data.children || []).slice().forEach(function(child){
-      var cfg = autoRepayConfig(child);
-      if(cfg.percent <= 0) return;
-      var last = cfg.settledThrough || dateStrAddDays(cfg.startDate || today, -1);
-      if(last >= yesterday) return;
-      var d = dateStrAddDays(last, 1), guard = 0, childRepaid = false, carry = cfg.carry;
-      while(d <= yesterday && guard < 60){ // 最多一次补 60 天，剩下的下次再补
-        var dayOut = autoRepaySettleDay(child, d, carry);
-        carry = dayOut.carry;
-        dayOut.results.forEach(function(r){
-          sumPoints += r.points; moneyParts[r.currency] = (moneyParts[r.currency] || 0) + r.money;
-          childRepaid = true; any = true;
-        });
-        last = d;
-        d = dateStrAddDays(d, 1); guard++;
-      }
-      child.autoRepay = { percent: cfg.percent, startDate: cfg.startDate, settledThrough: last, carry: carry };
-      persistEntity('children', child);
-      if(childRepaid) rearmThresholds(child.id);
-    });
-    if(any){
-      var moneyText = Object.keys(moneyParts).map(function(code){ return currencySymbol(code) + fmtMoney(moneyParts[code]); }).join(' + ');
-      toast(t('autoRepayToast', {points: fmtPts(sumPoints), money: moneyText}));
-      safeRender();
-    }
-  } finally {
-    autoRepayRunning = false;
-  }
-}
 function scheduleAutoRepay(delay){
   clearTimeout(autoRepayTimer);
   autoRepayTimer = setTimeout(function(){
@@ -1929,31 +1896,6 @@ function runGrowthNotice(){
 function nutritionAutoEnabled(){
   return !(data.family && data.family.nutritionAutoSettle === false);
 }
-function runNutritionAutoSettle(){
-  if(!nutritionAutoEnabled()) return;
-  var today = todayStr();
-  var yesterday = dateStrAddDays(today, -1);
-  var changed = false;
-  (data.children || []).slice().forEach(function(child){
-    var nr = child.nutritionRules;
-    var marker = child.nutritionSettle && child.nutritionSettle.settledThrough;
-    if(!nr || !nr.enabled){
-      if(marker !== yesterday){ child.nutritionSettle = { settledThrough: yesterday }; persistEntity('children', child); }
-      return;
-    }
-    if(!marker){ child.nutritionSettle = { settledThrough: yesterday }; persistEntity('children', child); return; }
-    if(marker >= yesterday) return;
-    var d = dateStrAddDays(marker, 1), guard = 0, last = marker;
-    while(d <= yesterday && guard < 60){
-      if(mealLogsOn(child.id, d).length){ settleNutritionForDate(child.id, d, '23:59'); changed = true; }
-      last = d; d = dateStrAddDays(d, 1); guard++;
-    }
-    child.nutritionSettle = { settledThrough: last };
-    persistEntity('children', child);
-  });
-  if(changed) safeRender();
-}
-
 /* ---------------- v3.13.54：一次性清空所有规则现有的图标 ---------------- */
 // 规则图标改为"自己用输入法填 emoji"，原来预设的图标全部取消。每个孩子只清一次（child.behaviorIconsCleared），
 // 清完之后用户自己填的 emoji 不会再被动。
@@ -1989,58 +1931,146 @@ function revokeFalseNoLogPenalties(){
   });
   return revoked;
 }
-var noLogRuleRunning = false;
-function runNoLogRule(){
-  if(noLogRuleRunning) return;
-  noLogRuleRunning = true;
-  try{
-    var revokedN = revokeFalseNoLogPenalties();
-    if(revokedN > 0){ toast(t('noLogRevokedToast', {n: revokedN})); safeRender(); }
-    var today = todayStr();
-    var yesterday = dateStrAddDays(today, -1);
-    var penalized = 0;
-    (data.children || []).slice().forEach(function(child){
-      var marker = child.noLogRule && child.noLogRule.settledThrough;
-      if(!marker){
-        // 第一次见到这个孩子：从昨天开始记，今天的记录明天检查，不追溯
-        child.noLogRule = { settledThrough: yesterday };
-        persistEntity('children', child);
-        return;
+/* ---------------- v3.13.61：每日结算统一流水线 + "认领"防重 ---------------- */
+// 以前营养结算、自动还款、没记录扣分各有一个"已结算到哪天"的标记，都存在孩子的档案里。问题有两个：
+//  ① 两台设备几乎同时运行时，会各算各的，同一天被算两遍（固定 id 保证不会变成两笔钱，但后写的会覆盖先写的，
+//     两边数据有一点差别时金额/零头可能对不上）；② 标记和规则、奖励混在同一个文档里，设备写回孩子档案时可能
+//     覆盖别处刚改的内容，或者把标记写回旧值。
+// 现在：
+//  · 每个孩子一个单独的小文档 dailyState：{settledThrough 已结算到哪天, repayCarry 自动还款的零头}，不再混在孩子档案里；
+//  · 每天每个孩子的结算先"认领"：用 Firestore 事务在 dailyClaims 里抢一条 孩子_日期 的认领记录，抢到的设备去算，
+//    别的设备看到"已完成"就拉取结果、看到"正在算"就等一会儿再来；认领的设备如果中途挂了，超过 2 分钟别的设备可以接手
+//    （安全，因为所有记录的 id 都是固定的，重算只会得到同样的结果）；
+//  · 一天里先后做三件事：营养达标结算 → 自动还款 → 没记录扣分，结算完才推进标记、才把认领标成"已完成"。
+// 没开云同步（只在本机用）时认领直接通过，其余流程不变。
+var DEVICE_ID = (function(){ var id = storageGet('deviceId', null); if(!id){ id = uid(); storageSet('deviceId', id); } return id; })();
+var CLAIM_STALE_MS = 120000;
+function dailyStateOf(childId){ return data.dailyState.find(function(x){ return x.id === childId; }) || null; }
+function saveDailyState(childId, patch){
+  var cur = dailyStateOf(childId) || { id: childId, childId: childId };
+  var next = Object.assign({}, cur, patch);
+  return persistEntity('dailyState', next); // 云同步开着时返回写入结果 Promise
+}
+// 第一次见到这个孩子：从旧版本留在孩子档案里的三个标记里取最靠后的那个接着走（取最靠后，是为了不把已经处理过的日子——
+// 尤其是已经被撤销或手动删掉的扣分——重新处理一遍）；什么标记都没有就从昨天开始，不追溯
+function initialSettledThrough(child){
+  var cand = [child.noLogRule && child.noLogRule.settledThrough, child.nutritionSettle && child.nutritionSettle.settledThrough, child.autoRepay && child.autoRepay.settledThrough].filter(Boolean).sort();
+  return cand.length ? cand[cand.length-1] : dateStrAddDays(todayStr(), -1);
+}
+function claimDay(childId, day){
+  if(!cloudSyncActive() || !CLOUD.db.runTransaction) return Promise.resolve('granted');
+  var ref = collRef('dailyClaims').doc(childId + '_' + day);
+  return CLOUD.db.runTransaction(function(tx){
+    return tx.get(ref).then(function(doc){
+      var now = Date.now();
+      if(doc.exists){
+        var d = doc.data();
+        if(d.status === 'done') return 'done';
+        if(d.claimedBy !== DEVICE_ID && now - (d.claimedAt || 0) < CLAIM_STALE_MS) return 'busy';
       }
-      if(marker >= yesterday) return;
-      var d = dateStrAddDays(marker, 1), guard = 0, last = marker, n = 0;
-      while(d <= yesterday && guard < 60){
-        if(!dayHasMealRecord(child.id, d)){
-          var id = 'nolog-' + child.id + '-' + d;
-          if(!data.pointLogs.some(function(l){ return l.id === id; })){
-            persistEntity('pointLogs', {
-              id: id, childId: child.id, behaviorId: null, source: 'rule',
-              name: t('noLogRuleName', {date: d}), name_en: 'No meals logged the day before (' + d + ')',
-              icon: '📝', points: -1, date: today, time: '00:00', ts: Date.now() // 统一记在结算日的 00:00，不用运行那一刻的钟点
-            });
-            n++;
-          }
-        }
-        last = d; d = dateStrAddDays(d, 1); guard++;
-      }
-      child.noLogRule = { settledThrough: last };
-      persistEntity('children', child);
-      if(n > 0){ penalized += n; rearmThresholds(child.id); }
+      tx.set(ref, { childId: childId, date: day, status: 'running', claimedBy: DEVICE_ID, claimedAt: now });
+      return 'granted';
     });
-    if(penalized > 0){
-      setTimeout(function(){ toast(t('noLogRuleToast')); }, 2600); // 错开，免得盖住同时出现的自动还款提示
-      safeRender();
-    }
-  } finally {
-    noLogRuleRunning = false;
+  });
+}
+function finishDay(childId, day){
+  if(!cloudSyncActive()) return Promise.resolve();
+  return collRef('dailyClaims').doc(childId + '_' + day).set({ status: 'done', doneBy: DEVICE_ID, doneAt: Date.now() }, { merge: true }).catch(function(e){ console.warn('finish claim failed', e); });
+}
+// 结算某个孩子的某一天（同步执行，三件事按固定顺序）
+function settleOneDay(childId, day, carry){
+  var child = childById(childId);
+  var res = { repaid: [], penalized: false, nutrition: false, carry: carry };
+  if(!child) return res;
+  var nr = child.nutritionRules;
+  if(nutritionAutoEnabled() && nr && nr.enabled && mealLogsOn(childId, day).length){
+    settleNutritionForDate(childId, day, '23:59'); // 营养结算先于自动还款，这天的营养分才会算进"当天净得分"
+    res.nutrition = true;
   }
+  var cfg = autoRepayConfig(child);
+  if(cfg.percent > 0 && cfg.startDate && day >= cfg.startDate){
+    var out = autoRepaySettleDay(child, day, carry);
+    res.carry = out.carry; res.repaid = out.results;
+    if(out.results.length) rearmThresholds(childId);
+  } else if(!(cfg.percent > 0)){
+    res.carry = 0;
+  }
+  if(!dayHasMealRecord(childId, day)){
+    var pid = 'nolog-' + childId + '-' + day;
+    if(!data.pointLogs.some(function(l){ return l.id === pid; })){
+      persistEntity('pointLogs', {
+        id: pid, childId: childId, behaviorId: null, source: 'rule',
+        name: t('noLogRuleName', {date: day}), name_en: 'No meals logged the day before (' + day + ')',
+        icon: '📝', points: -1, date: dateStrAddDays(day, 1), time: '00:00', ts: Date.now() // 记在结算日（次日）的 00:00，与运行时刻无关
+      });
+      res.penalized = true; rearmThresholds(childId);
+    }
+  }
+  return res;
+}
+function settleChildDays(childId, summary, depth){
+  var child = childById(childId);
+  if(!child) return Promise.resolve();
+  var yesterday = dateStrAddDays(todayStr(), -1);
+  var st = dailyStateOf(childId);
+  if(!st){
+    saveDailyState(childId, { settledThrough: initialSettledThrough(child), repayCarry: Math.max(0, Number(child.autoRepay && child.autoRepay.carry) || 0) });
+    st = dailyStateOf(childId);
+  }
+  if(!st.settledThrough || st.settledThrough >= yesterday) return Promise.resolve();
+  var step = function(day, count){
+    if(day > yesterday || count >= 60) return Promise.resolve(); // 一次最多补 60 天，剩下的下次再补
+    return claimDay(childId, day).then(function(r){
+      if(r === 'busy'){ summary.busy = true; return; }
+      if(r === 'done'){
+        // 另一台设备已经把这一天算完了：拉取它的结果（记录和新的标记），再从新的标记接着往后
+        if(depth >= 6) return;
+        return fetchServerSnapshot().then(function(){ return settleChildDays(childId, summary, depth + 1); });
+      }
+      var cur = dailyStateOf(childId);
+      var carry = Math.max(0, Number(cur && cur.repayCarry) || 0);
+      var res = settleOneDay(childId, day, carry);
+      res.repaid.forEach(function(x){ summary.repaidPts += x.points; summary.repaidMoney[x.currency] = (summary.repaidMoney[x.currency] || 0) + x.money; });
+      if(res.penalized) summary.penalized++;
+      if(res.nutrition) summary.nutrition++;
+      return Promise.resolve(saveDailyState(childId, { settledThrough: day, repayCarry: res.carry })).then(function(ok){
+        if(ok === false) return; // 标记没能写到服务器（断网）：不把认领标成"已完成"，等下次或别的设备接手
+        return finishDay(childId, day).then(function(){ return step(dateStrAddDays(day, 1), count + 1); });
+      });
+    });
+  };
+  return step(dateStrAddDays(st.settledThrough, 1), 0);
+}
+var dailySettlementRunning = false;
+function runDailySettlement(){
+  if(dailySettlementRunning) return Promise.resolve();
+  dailySettlementRunning = true;
+  var summary = { repaidPts: 0, repaidMoney: {}, penalized: 0, nutrition: 0, busy: false };
+  var chain = Promise.resolve();
+  (data.children || []).slice().forEach(function(c){ chain = chain.then(function(){ return settleChildDays(c.id, summary, 0); }); });
+  return chain.catch(function(e){
+    console.warn('daily settlement failed', e);
+    summary.busy = true; // 出错的话稍后重试
+  }).then(function(){
+    dailySettlementRunning = false;
+    if(summary.repaidPts > 0){
+      var moneyText = Object.keys(summary.repaidMoney).map(function(code){ return currencySymbol(code) + fmtMoney(summary.repaidMoney[code]); }).join(' + ');
+      toast(t('autoRepayToast', {points: fmtPts(summary.repaidPts), money: moneyText}));
+    }
+    if(summary.penalized > 0) setTimeout(function(){ toast(t('noLogRuleToast')); }, 2600); // 错开，免得盖住同时出现的自动还款提示
+    if(summary.repaidPts > 0 || summary.penalized > 0 || summary.nutrition > 0) safeRender();
+    if(summary.busy) scheduleAutoRepay(20000); // 另一台设备正在算，或者这次没算完：稍后再来
+  });
 }
 function runDailyRules(){
   try{ runIconMigration(); }catch(e){ console.warn('icon migration failed', e); }
-  try{ runNutritionAutoSettle(); }catch(e){ console.warn('nutrition auto settle failed', e); }
-  try{ runAutoRepay(); }catch(e){ console.warn('auto repay failed', e); }
-  try{ runNoLogRule(); }catch(e){ console.warn('no-log rule failed', e); }
-  try{ runGrowthNotice(); }catch(e){ console.warn('growth notice failed', e); }
+  try{
+    var revokedN = revokeFalseNoLogPenalties();
+    if(revokedN > 0){ toast(t('noLogRevokedToast', {n: revokedN})); safeRender(); }
+  }catch(e){ console.warn('revoke failed', e); }
+  runDailySettlement().then(function(){
+    try{ runGrowthNotice(); }catch(e){ console.warn('growth notice failed', e); }
+  });
 }
 
 /* ---------------- 初始积分 / 初始金额调整（支持家长自定义起始值） ---------------- */
@@ -2084,7 +2114,7 @@ var FIREBASE_CONFIG = {
 };
 var FIREBASE_SDK_VERSION = '10.13.0';
 var CLOUD = { app:null, auth:null, db:null, uid:null, sdkLoadPromise:null, unsubs:{}, pushMap: storageGet('cloudSyncPushMap', {}), settingsApplied:false };
-var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds','mealLogs','exerciseLogs','customFoods','customExercises','ledgerLogs'];
+var SYNC_COLLECTIONS = ['parents','children','pointLogs','thresholds','mealLogs','exerciseLogs','customFoods','customExercises','ledgerLogs','dailyState'];
 
 function cloudSyncActive(){ return state.cloudSync.enabled && !!state.cloudSync.roomCode && CLOUD.db; }
 function savePushMap(){ storageSet('cloudSyncPushMap', CLOUD.pushMap); }
@@ -2257,15 +2287,17 @@ function applyRemoteEntity(collectionName, remote){
 function pushEntity(collectionName, entity, isRetry){
   if(!cloudSyncActive()) return;
   CLOUD.pushMap[collectionName] = CLOUD.pushMap[collectionName] || {};
-  if(CLOUD.pushMap[collectionName][entity.id] === entity.updatedAt) return; // 已推送过这个版本，跳过（防回声）
-  collRef(collectionName).doc(entity.id).set(entity, {merge:true}).then(function(){
+  if(CLOUD.pushMap[collectionName][entity.id] === entity.updatedAt) return Promise.resolve(true); // 已推送过这个版本，跳过（防回声）
+  return collRef(collectionName).doc(entity.id).set(entity, {merge:true}).then(function(){
     CLOUD.pushMap[collectionName][entity.id] = entity.updatedAt;
     savePushMap();
+    return true;
   }).catch(function(e){
     console.error('push failed', collectionName, e);
     // 失败重试一次（间隔5秒）：不用非要等到"切后台再回来"或者"浏览器判定网络恢复"这两个
     // 时机才补发，很多时候只是网络抖了一下，很快自己就好了，重试一次能悄悄补上大部分情况
     if(!isRetry) setTimeout(function(){ pushEntity(collectionName, entity, true); }, 5000);
+    return false;
   });
 }
 function pushTombstone(collectionName, id, isRetry){
@@ -4982,11 +5014,6 @@ function handleAction(act, id, value, el){
     var wantAuto = (value === 'auto');
     if(wantAuto === nutritionAutoEnabled()) return;
     data.family.nutritionAutoSettle = wantAuto;
-    if(wantAuto){
-      // 从手动切回自动：只从昨天起算，不补算手动期间没结算的日子
-      var yst = dateStrAddDays(todayStr(), -1);
-      (data.children || []).forEach(function(ch){ ch.nutritionSettle = { settledThrough: yst }; persistEntity('children', ch); });
-    }
     persistFamily();
     toast(t(wantAuto ? 'nutritionSettleAutoToast' : 'nutritionSettleManualToast'));
     render();
@@ -5066,6 +5093,7 @@ function finishSetup(){
     thresholds: [],
     mealLogs: [],
     exerciseLogs: [],
+    dailyState: [],
     customFoods: [],
     customExercises: [],
     ledgerLogs: [],
@@ -5249,6 +5277,7 @@ function handleImportFile(e){
       if(!data.thresholds) data.thresholds = [];
       if(!data.mealLogs) data.mealLogs = [];
       if(!data.exerciseLogs) data.exerciseLogs = [];
+      if(!data.dailyState) data.dailyState = [];
       if(!data.customFoods) data.customFoods = [];
       if(!data.customExercises) data.customExercises = [];
       if(!data.ledgerLogs) data.ledgerLogs = [];
