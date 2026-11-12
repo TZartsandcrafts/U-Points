@@ -2,6 +2,12 @@
 // 简单的"离线优先"缓存：把 index.html 本体缓存下来，
 // 这样即使没有网络，重新打开 PWA 也能正常显示（数据仍在 localStorage 里，不受影响）。
 //
+// v3.13.63 更新：自动还款的额度改成"这一天结束时的总积分×比例"（逻辑都在 index.html 里，这里只升缓存版本号）。
+//
+// v3.13.62 更新：按「同域名多 App 存储隔离检查清单」修复——activate 里原来是"删掉所有不是当前版本的缓存"，
+// 会把同一个域名下其它 App（食法典、书录、植物志）的缓存一起删掉；现在只清理自己的 u-points-cache- 开头的旧版本缓存，
+// 读缓存时也只在自己的缓存里找。另外 index.html 里新增浮动分数输入框、主数据改存 IndexedDB（逻辑都在 index.html 里）。
+//
 // v3.13.61 更新：每日结算改成统一流水线 + 认领防重，标记单独存 dailyState（逻辑都在 index.html 里，这里只升缓存版本号）。
 //
 // v3.13.60 更新：每日规则等数据和服务器对齐之后才运行、误扣自愈、扣分/还款记录统一记 00:00（逻辑都在
@@ -52,7 +58,8 @@
 // 删除——流水列表里的✕删除按钮仍然只在家长身份下才会出现，App 里本来就没有
 // "改"这条流水的功能，家长也一样不能改，只能删了重记。汇率设置、限时优惠、货币
 // 互转、调整初始金额这几项账户管理功能，仍然只有家长能看到。
-var CACHE_NAME = 'u-points-cache-v3.13.61';
+var CACHE_PREFIX = 'u-points-cache-';
+var CACHE_NAME = CACHE_PREFIX + 'v3.13.63';
 var APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function(event){
@@ -68,7 +75,8 @@ self.addEventListener('activate', function(event){
   event.waitUntil(
     caches.keys().then(function(keys){
       return Promise.all(
-        keys.filter(function(k){ return k !== CACHE_NAME; })
+        // 只删自己前缀、且不是当前版本的缓存；别的 App 的缓存（不同前缀）一律不碰
+        keys.filter(function(k){ return k.indexOf(CACHE_PREFIX) === 0 && k !== CACHE_NAME; })
             .map(function(k){ return caches.delete(k); })
       );
     })
@@ -94,8 +102,10 @@ self.addEventListener('fetch', function(event){
       }
       return res;
     }).catch(function(){
-      return caches.match(req).then(function(cached){
-        return cached || caches.match('./index.html');
+      // 只在自己的缓存里找（caches.match 不指定 cacheName 会翻遍整个域名下所有 App 的缓存）
+      var opts = { cacheName: CACHE_NAME };
+      return caches.match(req, opts).then(function(cached){
+        return cached || caches.match('./index.html', opts);
       });
     })
   );
