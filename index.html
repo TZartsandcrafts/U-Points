@@ -621,6 +621,9 @@ zh: {
   mealsSubTab:'三餐', exerciseSubTab:'运动',
   breakfastLabel:'早餐', lunchLabel:'午餐', dinnerLabel:'晚餐', snackLabel:'加餐',
   mealTypeFieldLabel:'这是哪一顿',
+  quickMealBtn:'⚡ 快捷录入（直接填热量和营养）', quickMealTitle:'快捷录入', quickMealNameLabel:'名称（可不填）', quickMealNamePlaceholder:'例如：学校午餐',
+  quickMealCalLabel:'热量 (kcal)', quickMealDefaultName:'快捷录入', quickMealFillToast:'请填写热量',
+  quickMealHint:'直接记下这一顿的热量和营养，不换算数量。碳水、蛋白质、脂肪可以不填（按 0 算）。',
   addCustomFood:'+ 自定义食物', addCustomExercise:'+ 自定义运动',
   foodNameLabel:'食物名称（不用带数量，比如写"西红柿"就行）', foodNamePlaceholder:'例如：西红柿', foodCaloriesLabel:'热量(kcal)',
   exerciseNameLabel:'运动名称', exerciseNamePlaceholder:'例如：轮滑', exerciseRateLabel:'每分钟消耗(kcal，估算)',
@@ -722,6 +725,20 @@ zh: {
   autoRepayIdleBanner:'🧾 自动还款已开启（{{percent}}%）：账户余额为负时，每天结束时总积分的 {{percent}}% 会自动还款',
   autoRepayLogName:'自动还款（{{date}} 结算 · {{cur}}）', autoRepayLedgerSource:'积分自动还款（{{date}} 结算）', autoRepayLedgerSourceSpecial:'积分自动还款（{{date}} 结算 · {{offer}} 优惠价）',
   autoRepayToast:'自动还款：用 {{points}} 积分还了 {{money}}',
+  dailyRulesSectionTitle:'每日规则：自动 / 手动',
+  dailyRulesHint:'下面三条规则默认每天自动执行（次日有设备打开 App 时补做）。改成「手动」后，从改选当天起这条规则不再自动执行，而是把需要处理的日期记到「待处理」清单里，由你逐天确认或跳过；改选之前的日期仍然自动处理，不受影响。全家统一设置。',
+  dailyRuleNutritionName:'营养达标结算', dailyRuleNutritionDesc:'健康页营养达标（含食物目标）的加分，每天结算前一天。',
+  dailyRuleRepayName:'积分自动还款', dailyRuleRepayDesc:'账户余额为负时，按设置的比例把积分自动换成零花钱还款（比例在孩子的记账页设置）。',
+  dailyRuleNologName:'前一天没有三餐记录扣 1 分', dailyRuleNologDesc:'前一天一条三餐记录都没有，次日扣 1 分。',
+  dailyRuleAuto:'自动', dailyRuleManual:'手动',
+  dailyRuleAutoToast:'已改为自动', dailyRuleManualToast:'已改为手动：改选当天起这条规则不再自动执行，请到「待处理」清单里确认',
+  pendingRowTitle:'待处理的每日规则', pendingScreenTitle:'待处理的每日规则',
+  pendingHint:'手动模式下，需要处理的日期会出现在这里。「执行」＝按规则处理这一天（结果和自动执行完全一样），「跳过」＝这一天不处理，直接从清单里移除。',
+  pendingEmpty:'没有待处理的日期 🎉', pendingRunBtn:'执行', pendingSkipBtn:'跳过', pendingRunAll:'全部执行', pendingSkipAll:'全部跳过',
+  pendingDay_nutrition:'{{date}} 的营养达标结算', pendingDay_repay:'{{date}} 的积分自动还款', pendingDay_nolog:'{{date}} 没有三餐记录，将扣 1 分',
+  pendingRunToast:'已执行', pendingSkipToast:'已跳过', pendingNoneToast:'这一天没有需要还款的（账户余额不是负数，或额度不够 1 分钱）',
+  pendingNaToast:'这一天已经不需要处理（比如已补记三餐），已从清单移除',
+  pendingNotifyToast:'有 {{n}} 条每日规则待处理，请到设置里确认',
   adjustInitialMoneyBtn:'调整初始金额', initialMoneyLabel:'初始金额', initialMoneyLogSource:'初始金额调整',
   adjustInitialPointsBtn:'调整初始积分', initialPointsLabel:'初始积分', initialPointsLogName:'初始积分调整',
 },
@@ -837,6 +854,9 @@ en: {
   mealsSubTab:'Meals', exerciseSubTab:'Exercise',
   breakfastLabel:'Breakfast', lunchLabel:'Lunch', dinnerLabel:'Dinner', snackLabel:'Snack',
   mealTypeFieldLabel:'Which meal is this',
+  quickMealBtn:'⚡ Quick entry (type calories & macros)', quickMealTitle:'Quick entry', quickMealNameLabel:'Name (optional)', quickMealNamePlaceholder:'e.g. School lunch',
+  quickMealCalLabel:'Calories (kcal)', quickMealDefaultName:'Quick entry', quickMealFillToast:'Please enter the calories',
+  quickMealHint:'Log this meal\'s calories and macros directly, no amount conversion. Carbs, protein and fat can be left blank (counted as 0).',
   addCustomFood:'+ Custom food', addCustomExercise:'+ Custom exercise',
   foodNameLabel:"Food name (no need to include amount, e.g. just \"Tomato\")", foodNamePlaceholder:'e.g. Tomato', foodCaloriesLabel:'Calories (kcal)',
   exerciseNameLabel:'Exercise name', exerciseNamePlaceholder:'e.g. Roller skating', exerciseRateLabel:'kcal per minute (estimate)',
@@ -938,6 +958,20 @@ en: {
   autoRepayIdleBanner:"🧾 Auto-repayment is on ({{percent}}%): when the balance is negative, {{percent}}% of the total points at the end of each day repays it automatically",
   autoRepayLogName:'Auto repayment ({{date}} · {{cur}})', autoRepayLedgerSource:'Auto repayment from points ({{date}})', autoRepayLedgerSourceSpecial:'Auto repayment from points ({{date}} · {{offer}} rate)',
   autoRepayToast:'Auto repayment: {{points}} points repaid {{money}}',
+  dailyRulesSectionTitle:'Daily rules: auto / manual',
+  dailyRulesHint:'The three rules below run automatically every day by default (caught up when a device opens the app the next day). Switch one to Manual and, from the day you switch, it no longer runs by itself: the days that need handling are listed under Pending for you to confirm or skip one by one. Days before the switch are still handled automatically. Applies to the whole family.',
+  dailyRuleNutritionName:'Nutrition settlement', dailyRuleNutritionDesc:'Points for Nutrition Goals (including food goals), settled for the previous day.',
+  dailyRuleRepayName:'Auto repayment', dailyRuleRepayDesc:'While the balance is negative, points are converted to allowance at the set percentage to repay it (set on the child\'s Ledger tab).',
+  dailyRuleNologName:'No meals logged the day before: -1', dailyRuleNologDesc:'If no meals were logged at all the day before, -1 point the next day.',
+  dailyRuleAuto:'Auto', dailyRuleManual:'Manual',
+  dailyRuleAutoToast:'Switched to auto', dailyRuleManualToast:'Switched to manual: from today this rule no longer runs by itself. Confirm days under Pending',
+  pendingRowTitle:'Pending daily rules', pendingScreenTitle:'Pending daily rules',
+  pendingHint:'In manual mode, days that need handling appear here. Run = apply the rule to that day (same result as automatic), Skip = leave that day unhandled and remove it from the list.',
+  pendingEmpty:'Nothing pending 🎉', pendingRunBtn:'Run', pendingSkipBtn:'Skip', pendingRunAll:'Run all', pendingSkipAll:'Skip all',
+  pendingDay_nutrition:'Nutrition settlement for {{date}}', pendingDay_repay:'Auto repayment for {{date}}', pendingDay_nolog:'No meals logged on {{date}}: -1 point',
+  pendingRunToast:'Done', pendingSkipToast:'Skipped', pendingNoneToast:'Nothing to repay for that day (balance is not negative, or the amount is under 1 cent)',
+  pendingNaToast:'That day no longer needs handling (e.g. meals were logged later); removed from the list',
+  pendingNotifyToast:'{{n}} daily rule(s) pending, please confirm in Settings',
   adjustInitialMoneyBtn:'Adjust initial balance', initialMoneyLabel:'Initial balance', initialMoneyLogSource:'Initial balance adjustment',
   adjustInitialPointsBtn:'Adjust initial points', initialPointsLabel:'Initial points', initialPointsLogName:'Initial points adjustment',
 }
@@ -954,7 +988,7 @@ function t(key, vars){
 }
 
 /* ---------------- 版本号（每次更新后手动+1，设置页显示，方便确认多设备是否已同步到最新版） ---------------- */
-var APP_VERSION = '3.13.63';
+var APP_VERSION = '3.13.65';
 var APP_BUILD_DATE = '2026-11-12';
 
 /* ---------------- 本地设备设置（不参与云同步：每台设备各自独立） ---------------- */
@@ -1450,6 +1484,55 @@ function updateMealLog(logId, mealType, food, amount, amountDisplay){
   return log;
 }
 function deleteMealLog(logId){ persistDelete('mealLogs', logId); }
+/* ---------------- v3.13.65：三餐「快捷录入」 ---------------- */
+// 手动直接填某一顿的热量和碳水/蛋白质/脂肪，不关联食物库、没有数量（amount 为空），记录带 quick 标记。
+// 其它地方（当天热量合计、月历、营养达标里的热量/碳水/蛋白质判断）都按热量和三大营养素字段统计，所以自动算进去；
+// 食物目标、水果/鸡蛋/牛奶这类按食物 refId 统计的项目不会算到它（它不属于任何一种食物）。
+function parseQuickNum(v, decimals){
+  var n = parseFloat(String(v == null ? '' : v).replace(/[，,。]/g, '.'));
+  if(!isFinite(n) || n < 0) return NaN;
+  var m = Math.pow(10, decimals);
+  return Math.round(n * m) / m;
+}
+function quickMealFields(mealType, name, cal, carb, protein, fat){
+  var nm = String(name || '').trim();
+  return {
+    mealType: mealType, name: nm || t('quickMealDefaultName'), name_en: nm ? '' : 'Quick entry', icon: '⚡',
+    refId: null, unit: 'count', amount: null, amountDisplay: '', category: 'other', quick: true,
+    calories: cal, carb: carb || 0, protein: protein || 0, fat: fat || 0
+  };
+}
+function addQuickMealLog(childId, mealType, name, cal, carb, protein, fat, dateStr){
+  var log = Object.assign({
+    id: uid(), childId: childId, ts: Date.now(),
+    date: dateStr || todayStr(), time: (new Date()).toTimeString().slice(0,5)
+  }, quickMealFields(mealType, name, cal, carb, protein, fat));
+  persistEntity('mealLogs', log);
+  return log;
+}
+// 修改已有的快捷记录：日期和时间保持不变
+function updateQuickMealLog(logId, mealType, name, cal, carb, protein, fat){
+  var log = data.mealLogs.find(function(l){ return l.id === logId; });
+  if(!log) return null;
+  Object.assign(log, quickMealFields(mealType, name, cal, carb, protein, fat));
+  persistEntity('mealLogs', log);
+  return log;
+}
+// 列表里这条快捷记录的营养素小字：只列不是 0 的
+function quickMacroLabel(l){
+  var parts = [];
+  [['carbGLabel', l.carb], ['proteinGLabel', l.protein], ['fatGLabel', l.fat]].forEach(function(x){
+    if(x[1]) parts.push(t(x[0]).replace(/\s*\(g\)/, '') + ' ' + x[1]);
+  });
+  return parts.length ? ' · ' + parts.join(' · ') : '';
+}
+function syncQuickMealDraft(){
+  if(!quickMealDraft) return;
+  [['name','mQuickName'],['cal','mQuickCal'],['carb','mQuickCarb'],['protein','mQuickProtein'],['fat','mQuickFat']].forEach(function(x){
+    var el = document.getElementById(x[1]);
+    if(el) quickMealDraft[x[0]] = el.value;
+  });
+}
 // 孩子端只能改当天及以后的三餐记录，之前的日子只读（防止事后随便改历史记录）；
 // 家长端不受此限制，任何日期都能改
 function canEditMealDate(dateStr, parentMode){
@@ -2069,7 +2152,31 @@ function runGrowthNotice(){
 // - 前一天一条三餐都没记的话不结算（不然"一口没吃"会让所有"不超标"项目白拿分；这种日子由"没记录扣 1 分"规则处理）。
 // - 孩子的营养积分没启用时不结算，也不会攒下旧日子（重新启用后不会补算以前的）。
 function nutritionAutoEnabled(){
-  return !(data.family && data.family.nutritionAutoSettle === false);
+  return dailyRuleAuto('nutrition');
+}
+/* ---------------- v3.13.64：每日规则统一的「自动 / 手动」 ---------------- */
+// 三条每日规则：nutrition 营养达标结算、repay 积分自动还款、nolog 前一天没有三餐记录扣 1 分。全家统一设置，默认自动。
+// 设置存在 family 里：nutritionAutoSettle / repayAutoSettle / noLogAutoSettle（false＝手动），
+// manualSince[规则]＝改成手动的那一天（日期字符串）。只有"日期 ≥ 改手动那天"的日子才走手动，之前的日子永远自动处理；
+// 老版本留下的"营养手动"没有 manualSince，按"所有日子都手动"处理（和以前一样）。
+// 手动时，每日结算流水线遇到需要处理的日子，不执行，而是记进这个孩子 dailyState.pending[规则]（日期数组），
+// 在设置 →「待处理的每日规则」里由家长逐天执行或跳过；执行的结果和自动执行完全一样（记录 id 固定，不会重复）。
+var DAILY_RULES = ['nutrition', 'repay', 'nolog'];
+function dailyRuleFlagKey(rule){ return rule === 'nutrition' ? 'nutritionAutoSettle' : (rule === 'repay' ? 'repayAutoSettle' : 'noLogAutoSettle'); }
+function dailyRuleAuto(rule){ return !(data.family && data.family[dailyRuleFlagKey(rule)] === false); }
+function ruleManualOn(rule, day){
+  if(dailyRuleAuto(rule)) return false;
+  var since = ((data.family && data.family.manualSince) || {})[rule];
+  return !since || day >= since;
+}
+function pendingOf(childId, rule){
+  var st = dailyStateOf(childId);
+  return ((st && st.pending && st.pending[rule]) || []).slice().sort();
+}
+function pendingTotal(){
+  var n = 0;
+  (data.children || []).forEach(function(c){ DAILY_RULES.forEach(function(r){ n += pendingOf(c.id, r).length; }); });
+  return n;
 }
 /* ---------------- v3.13.54：一次性清空所有规则现有的图标 ---------------- */
 // 规则图标改为"自己用输入法填 emoji"，原来预设的图标全部取消。每个孩子只清一次（child.behaviorIconsCleared），
@@ -2094,13 +2201,28 @@ function runIconMigration(){
 function dayHasMealRecord(childId, dateStr){
   return data.mealLogs.some(function(l){ return l.childId===childId && l.date===dateStr; });
 }
+// 记一条"前一天没记录三餐"扣分（id 固定：孩子+日期，重复调用不会重复扣）。manual＝家长在待处理清单里手动执行的，
+// 带 manual 标记，"撤销误扣"不会去动它。返回这次有没有新扣。
+function applyNoLogPenalty(childId, day, manual){
+  var pid = 'nolog-' + childId + '-' + day;
+  if(data.pointLogs.some(function(l){ return l.id === pid; })) return false;
+  var log = {
+    id: pid, childId: childId, behaviorId: null, source: 'rule',
+    name: t('noLogRuleName', {date: day}), name_en: 'No meals logged the day before (' + day + ')',
+    icon: '📝', points: -1, date: dateStrAddDays(day, 1), time: '00:00', ts: Date.now() // 记在结算日（次日）的 00:00，与运行时刻无关
+  };
+  if(manual) log.manual = true;
+  persistEntity('pointLogs', log);
+  rearmThresholds(childId);
+  return true;
+}
 // 撤销误扣：如果某天的"没记录三餐"扣分记录创建之前，这一天其实已经有人记过三餐（三餐记录的创建时间 ts 比扣分更早），
 // 说明扣分时用的是过期数据（设备还没同步到），这条扣分是错的，自动撤销。事后才补记的三餐（创建时间比扣分晚）不撤销。
 function revokeFalseNoLogPenalties(){
   var revoked = 0;
   data.pointLogs.slice().forEach(function(l){
     var m = /^nolog-(.+)-(\d{4}-\d{2}-\d{2})$/.exec(l.id || '');
-    if(!m || !l.ts) return;
+    if(!m || !l.ts || l.manual) return; // 家长手动执行的扣分不撤销
     var proof = data.mealLogs.some(function(x){ return x.childId === m[1] && x.date === m[2] && x.ts && x.ts < l.ts; });
     if(proof){ persistDelete('pointLogs', l.id); rearmThresholds(m[1]); revoked++; }
   });
@@ -2155,33 +2277,72 @@ function finishDay(childId, day){
 // 结算某个孩子的某一天（同步执行，三件事按固定顺序）
 function settleOneDay(childId, day, carry){
   var child = childById(childId);
-  var res = { repaid: [], penalized: false, nutrition: false, carry: carry };
+  var res = { repaid: [], penalized: false, nutrition: false, carry: carry, deferred: [] };
   if(!child) return res;
   var nr = child.nutritionRules;
-  if(nutritionAutoEnabled() && nr && nr.enabled && mealLogsOn(childId, day).length){
-    settleNutritionForDate(childId, day, '23:59'); // 营养结算先于自动还款，这天的营养分才会算进"当天净得分"
-    res.nutrition = true;
+  if(nr && nr.enabled && mealLogsOn(childId, day).length){
+    if(ruleManualOn('nutrition', day)){ res.deferred.push('nutrition'); } // v3.13.64：手动模式 → 记进待处理清单，不执行
+    else {
+      settleNutritionForDate(childId, day, '23:59'); // 营养结算先于自动还款（自动还款只看总积分，但先结算更直观）
+      res.nutrition = true;
+    }
   }
   var cfg = autoRepayConfig(child);
   if(cfg.percent > 0 && cfg.startDate && day >= cfg.startDate){
-    var out = autoRepaySettleDay(child, day, carry);
-    res.carry = out.carry; res.repaid = out.results;
-    if(out.results.length) rearmThresholds(childId);
+    if(ruleManualOn('repay', day)){ res.deferred.push('repay'); }
+    else {
+      var out = autoRepaySettleDay(child, day, carry);
+      res.carry = out.carry; res.repaid = out.results;
+      if(out.results.length) rearmThresholds(childId);
+    }
   } else if(!(cfg.percent > 0)){
     res.carry = 0;
   }
   if(!dayHasMealRecord(childId, day)){
-    var pid = 'nolog-' + childId + '-' + day;
-    if(!data.pointLogs.some(function(l){ return l.id === pid; })){
-      persistEntity('pointLogs', {
-        id: pid, childId: childId, behaviorId: null, source: 'rule',
-        name: t('noLogRuleName', {date: day}), name_en: 'No meals logged the day before (' + day + ')',
-        icon: '📝', points: -1, date: dateStrAddDays(day, 1), time: '00:00', ts: Date.now() // 记在结算日（次日）的 00:00，与运行时刻无关
-      });
-      res.penalized = true; rearmThresholds(childId);
+    if(ruleManualOn('nolog', day)){
+      if(!data.pointLogs.some(function(l){ return l.id === 'nolog-' + childId + '-' + day; })) res.deferred.push('nolog');
+    } else if(applyNoLogPenalty(childId, day, false)){
+      res.penalized = true;
     }
   }
   return res;
+}
+// v3.13.64：家长在「待处理的每日规则」里对某个孩子、某条规则的若干天执行（doRun＝true）或跳过（false）。
+// 执行＝和自动执行一模一样的结算；不管执行还是跳过，处理完的日期都从待处理清单里移除。返回统计，用来给出提示。
+function handlePendingDays(childId, rule, days, doRun){
+  var child = childById(childId);
+  var stats = { done: 0, na: 0, none: 0, repaidPts: 0, repaidMoney: {} };
+  if(!child) return stats;
+  var st = dailyStateOf(childId) || {};
+  var carry = Math.max(0, Number(st.repayCarry) || 0);
+  days.slice().sort().forEach(function(day){
+    if(!doRun) return;
+    if(rule === 'nutrition'){
+      var nr = child.nutritionRules;
+      if(nr && nr.enabled && mealLogsOn(childId, day).length){ settleNutritionForDate(childId, day, '23:59'); stats.done++; }
+      else stats.na++;
+    } else if(rule === 'repay'){
+      var cfg = autoRepayConfig(child);
+      if(cfg.percent > 0 && cfg.startDate && day >= cfg.startDate){
+        var out = autoRepaySettleDay(child, day, carry);
+        carry = out.carry;
+        if(out.results.length){
+          stats.done++;
+          out.results.forEach(function(x){ stats.repaidPts += x.points; stats.repaidMoney[x.currency] = (stats.repaidMoney[x.currency] || 0) + x.money; });
+          rearmThresholds(childId);
+        } else stats.none++;
+      } else stats.na++;
+    } else {
+      if(dayHasMealRecord(childId, day)) stats.na++;
+      else { applyNoLogPenalty(childId, day, true); stats.done++; }
+    }
+  });
+  var pend = Object.assign({}, (dailyStateOf(childId) || {}).pending || {});
+  pend[rule] = (pend[rule] || []).filter(function(d){ return days.indexOf(d) < 0; });
+  var patch = { pending: pend };
+  if(rule === 'repay' && doRun) patch.repayCarry = carry;
+  saveDailyState(childId, patch);
+  return stats;
 }
 function settleChildDays(childId, summary, depth){
   var child = childById(childId);
@@ -2208,7 +2369,20 @@ function settleChildDays(childId, summary, depth){
       res.repaid.forEach(function(x){ summary.repaidPts += x.points; summary.repaidMoney[x.currency] = (summary.repaidMoney[x.currency] || 0) + x.money; });
       if(res.penalized) summary.penalized++;
       if(res.nutrition) summary.nutrition++;
-      return Promise.resolve(saveDailyState(childId, { settledThrough: day, repayCarry: res.carry })).then(function(ok){
+      var patchDay = { settledThrough: day, repayCarry: res.carry };
+      if(res.deferred.length){
+        // 手动模式的规则：把这一天记进待处理清单（最多留最近 90 天）
+        var pend = Object.assign({}, (cur && cur.pending) || {});
+        res.deferred.forEach(function(r){
+          var arr = (pend[r] || []).slice();
+          if(arr.indexOf(day) < 0) arr.push(day);
+          arr.sort();
+          pend[r] = arr.slice(-90);
+        });
+        patchDay.pending = pend;
+        summary.deferred += res.deferred.length;
+      }
+      return Promise.resolve(saveDailyState(childId, patchDay)).then(function(ok){
         if(ok === false) return; // 标记没能写到服务器（断网）：不把认领标成"已完成"，等下次或别的设备接手
         return finishDay(childId, day).then(function(){ return step(dateStrAddDays(day, 1), count + 1); });
       });
@@ -2220,7 +2394,7 @@ var dailySettlementRunning = false;
 function runDailySettlement(){
   if(dailySettlementRunning) return Promise.resolve();
   dailySettlementRunning = true;
-  var summary = { repaidPts: 0, repaidMoney: {}, penalized: 0, nutrition: 0, busy: false };
+  var summary = { repaidPts: 0, repaidMoney: {}, penalized: 0, nutrition: 0, deferred: 0, busy: false };
   var chain = Promise.resolve();
   (data.children || []).slice().forEach(function(c){ chain = chain.then(function(){ return settleChildDays(c.id, summary, 0); }); });
   return chain.catch(function(e){
@@ -2233,7 +2407,8 @@ function runDailySettlement(){
       toast(t('autoRepayToast', {points: fmtPts(summary.repaidPts), money: moneyText}));
     }
     if(summary.penalized > 0) setTimeout(function(){ toast(t('noLogRuleToast')); }, 2600); // 错开，免得盖住同时出现的自动还款提示
-    if(summary.repaidPts > 0 || summary.penalized > 0 || summary.nutrition > 0) safeRender();
+    if(summary.deferred > 0) setTimeout(function(){ toast(t('pendingNotifyToast', {n: summary.deferred})); }, 5200); // 再错开一档
+    if(summary.repaidPts > 0 || summary.penalized > 0 || summary.nutrition > 0 || summary.deferred > 0) safeRender();
     if(summary.busy) scheduleAutoRepay(20000); // 另一台设备正在算，或者这次没算完：稍后再来
   });
 }
@@ -2624,6 +2799,9 @@ var mealsCalendarState = {}; // 三餐月历：按孩子 id 各自记住当前�
 var showMealsCalendar = true; // 三餐月历默认展开
 var mealsViewTab = 'breakfast'; // 三餐月历下方：当前查看选中日期的哪一餐
 var editingMealLogId = null; // 正在修改哪一条已记录的三餐（点已有记录进来编辑；null=新增）
+// v3.13.65：三餐「快捷录入」浮窗（直接填热量和三大营养素，不选食物、不换算数量）；quickMealDraft.logId 有值时是修改已有的快捷记录
+var showQuickMeal = false;
+var quickMealDraft = null; // {logId, name, cal, carb, protein, fat}
 var exerciseSearch = ''; // 运动库：搜索关键词
 var exerciseShowAll = false; // 运动库：是否展开显示全部（默认只显示最常做的前8个）
 var redeemSubTab = 'rewards'; // 奖惩兑换子页签：rewards | penalties | history
@@ -3213,6 +3391,31 @@ function renderManageCustomFoodsList(){
   return '<div style="margin-bottom:14px;">'+rows+'</div>';
 }
 
+// v3.13.65：快捷录入浮窗（样式和"输入数量"浮窗一致）：餐次 + 名称（可不填）+ 热量 + 碳水/蛋白质/脂肪
+function renderQuickMealPicker(child){
+  var d = quickMealDraft;
+  var mealTypeOpts = [['breakfast',t('breakfastLabel')],['lunch',t('lunchLabel')],['dinner',t('dinnerLabel')],['snack',t('snackLabel')]];
+  function numField(label, id, val){
+    return '<div><span style="font-size:12px;color:var(--muted);">'+label+'</span>'+
+      '<input type="text" inputmode="decimal" data-decimal1="1" id="'+id+'" placeholder="0" value="'+esc(val)+'" autocomplete="off"></div>';
+  }
+  return '<div class="range-picker-overlay" id="quickMealOverlay">'+
+    '<div class="range-picker">'+
+      '<button type="button" class="range-picker-close tap" data-act="close-quick-meal">×</button>'+
+      '<div class="range-picker-title">⚡ '+t('quickMealTitle')+'</div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+t('mealTypeFieldLabel')+'</label>'+segmentedHtml('set-meal-type', child.id, mealTypeDraft, mealTypeOpts)+'</div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+t('quickMealNameLabel')+'</label><input type="text" id="mQuickName" placeholder="'+esc(t('quickMealNamePlaceholder'))+'" value="'+esc(d.name)+'" autocomplete="off"></div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>'+t('quickMealCalLabel')+'</label>'+
+        '<input type="text" inputmode="decimal" data-decimal1="1" id="mQuickCal" placeholder="300" value="'+esc(d.cal)+'" autocomplete="off"></div>'+
+      '<div class="field" style="margin-bottom:8px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'+
+        numField(t('carbGLabel'), 'mQuickCarb', d.carb)+numField(t('proteinGLabel'), 'mQuickProtein', d.protein)+numField(t('fatGLabel'), 'mQuickFat', d.fat)+
+      '</div></div>'+
+      '<div style="font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5;">'+t('quickMealHint')+'</div>'+
+      '<button type="button" class="btn-primary tap" data-act="log-quick-meal" data-id="'+child.id+'" style="background:var(--food);box-shadow:0 6px 14px rgba(242,169,59,.35);">'+(d.logId?t('updateMealBtn'):t('logMealBtn'))+'</button>'+
+    '</div>'+
+  '</div>';
+}
+
 // 选食物之后的"输入数量"改成弹窗，点哪个食物都是同一个居中浮窗，不用再滚到列表最下面去找输入框；
 // 早中晚/加餐的选择也放进这个浮窗里；editingLog 有值时是"修改已有记录"（数量/餐次预填成原来的值，
 // 保存时更新这条记录而不是新建一条，日期保持不变）
@@ -3265,6 +3468,7 @@ function renderMealsSubTab(c, parentMode){
       '<button class="btn-primary tap" data-act="save-custom-food" data-id="'+c.id+'">'+(editingFood?t('update'):t('save'))+'</button></div>'+
     '</div>';
   } else {
+    html += '<button class="dashed-btn tap" style="width:100%;margin-bottom:10px;" data-act="open-quick-meal">'+t('quickMealBtn')+'</button>';
     html += '<div style="display:flex;gap:10px;margin-bottom:18px;">'+
       '<button class="dashed-btn tap" style="flex:1;" data-act="open-custom-food">'+t('addCustomFood')+'</button>'+
       ((data.customFoods||[]).length ? '<button class="dashed-btn tap" style="flex:1;" data-act="toggle-manage-custom-foods">'+(showManageCustomFoods?t('hideManageCustomFoods'):t('manageCustomFoods'))+'</button>' : '')+
@@ -3279,6 +3483,7 @@ function renderMealsSubTab(c, parentMode){
   if(selFood){
     html += renderFoodQtyPicker(c, selFood, editingLog);
   }
+  if(showQuickMeal && quickMealDraft) html += renderQuickMealPicker(c);
 
 
   // 月历：决定"现在浏览/记录的是哪一天"，默认展开，也可以收起
@@ -3307,6 +3512,7 @@ function renderMealsSubTab(c, parentMode){
     html += group.map(function(l){
       var nm2 = (state.lang==='en' && l.name_en) ? l.name_en : l.name;
       var amtLabel = l.amount!=null ? (' · '+(l.amountDisplay||fmtQtyStr(l.amount))+(l.unit==='g'?'g':t('unitCount'))) : '';
+      if(l.quick) amtLabel = quickMacroLabel(l); // 快捷录入没有数量，改显示营养素
       return '<div class="log-row"><div class="left"><span>'+esc(l.icon)+'</span><span>'+esc(nm2)+'</span><span class="meta">'+l.time+amtLabel+'</span></div>'+
         '<div style="display:flex;align-items:center;gap:8px;"><span class="point-pill pos" style="background:var(--food-light);color:var(--food-text);">'+l.calories+'</span>'+
         (dayEditable ? ('<button class="small-icon-btn" data-act="edit-meal-log" data-id="'+l.id+'">✏️</button><button class="small-icon-btn" data-act="delete-meal-log" data-id="'+l.id+'">✕</button>') : '')+'</div></div>';
@@ -3947,6 +4153,7 @@ function renderDashboard(){
 /* ---------------- 整页视图（设置/孩子档案/行为规则/阈值/添加家长孩子）---------------- */
 function renderScreen(scr){
   if(scr.type === 'settings') return renderSettingsScreen();
+  if(scr.type === 'pendingRules') return renderPendingRulesScreen();
   if(scr.type === 'addParent') return renderAddParentScreen();
   if(scr.type === 'addChild') return renderAddChildScreen();
   if(scr.type === 'editChild') return renderEditChildScreen(scr);
@@ -4389,9 +4596,14 @@ function renderSettingsScreen(){
         '<div class="field" style="flex:1;margin-bottom:0;"><label>'+t('checklistWeekendBonusLabel')+'</label><input type="number" step="0.1" id="mChecklistWeekendBonus" value="'+esc((data.family&&data.family.checklistWeekendBonus!=null)?data.family.checklistWeekendBonus:2)+'"></div>'+
       '</div>';
 
-    body += '<div class="settings-row"><div class="label">'+t('nutritionSettleSectionTitle')+'</div></div>'+
-      '<div style="font-size:13px;color:var(--muted);margin:-4px 0 12px;line-height:1.5;">'+t('nutritionSettleHint')+'</div>'+
-      '<div style="margin-bottom:18px;">'+segmentedHtml('set-nutrition-settle-mode', '_', nutritionAutoEnabled() ? 'auto' : 'manual', [['auto', t('nutritionSettleAuto')], ['manual', t('nutritionSettleManual')]])+'</div>';
+    body += '<div class="settings-row"><div class="label">'+t('dailyRulesSectionTitle')+'</div></div>'+
+      '<div style="font-size:13px;color:var(--muted);margin:-4px 0 12px;line-height:1.5;">'+t('dailyRulesHint')+'</div>';
+    [['nutrition','dailyRuleNutritionName','dailyRuleNutritionDesc'], ['repay','dailyRuleRepayName','dailyRuleRepayDesc'], ['nolog','dailyRuleNologName','dailyRuleNologDesc']].forEach(function(r){
+      body += '<div style="margin-bottom:16px;"><div style="font-weight:700;margin-bottom:2px;">'+t(r[1])+'</div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5;">'+t(r[2])+'</div>'+
+        segmentedHtml('set-daily-rule-mode', r[0], dailyRuleAuto(r[0]) ? 'auto' : 'manual', [['auto', t('dailyRuleAuto')], ['manual', t('dailyRuleManual')]])+'</div>';
+    });
+    body += '<button class="btn-ghost tap" style="width:100%;margin-bottom:18px;" data-act="open-pending-rules">'+t('pendingRowTitle')+' ('+pendingTotal()+') ›</button>';
 
     body += '<div class="settings-row"><div class="label">'+t('dataSectionTitle')+'</div></div>'+
       '<div style="display:flex;gap:10px;margin-top:10px;">'+
@@ -4404,6 +4616,36 @@ function renderSettingsScreen(){
   body += '<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:20px;line-height:1.6;">'+t('footerNote1')+'<br>'+t('footerNote2')+'</div>';
   body += '<div class="version-tag">'+t('versionLabel')+' '+APP_VERSION+' · '+APP_BUILD_DATE+'</div>';
   return screenHeader(t('settingsTitle')) + body;
+}
+
+/* ---------------- v3.13.64：待处理的每日规则（整页） ---------------- */
+function renderPendingRulesScreen(){
+  var ruleNames = { nutrition: t('dailyRuleNutritionName'), repay: t('dailyRuleRepayName'), nolog: t('dailyRuleNologName') };
+  var body = '<div style="font-size:13px;color:var(--muted);margin:4px 0 14px;line-height:1.5;">'+t('pendingHint')+'</div>';
+  var any = false;
+  (data.children || []).forEach(function(c){
+    var sec = '';
+    DAILY_RULES.forEach(function(rule){
+      var days = pendingOf(c.id, rule);
+      if(!days.length) return;
+      any = true;
+      sec += '<div style="margin:14px 0 8px;font-weight:700;">'+esc(ruleNames[rule])+'</div>'+
+        '<div style="display:flex;gap:10px;margin-bottom:8px;">'+
+          '<button class="btn-ghost tap" data-act="pending-skip-all" data-id="'+c.id+'" data-value="'+rule+'">'+t('pendingSkipAll')+'</button>'+
+          '<button class="btn-primary tap" data-act="pending-run-all" data-id="'+c.id+'" data-value="'+rule+'">'+t('pendingRunAll')+'</button>'+
+        '</div>';
+      days.forEach(function(day){
+        sec += '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);">'+
+          '<div style="flex:1;font-size:14px;line-height:1.4;">'+esc(t('pendingDay_'+rule, {date: day}))+'</div>'+
+          '<button class="btn-ghost tap" style="padding:8px 14px;" data-act="pending-skip" data-id="'+c.id+'" data-value="'+rule+'|'+day+'">'+t('pendingSkipBtn')+'</button>'+
+          '<button class="btn-primary tap" style="padding:8px 14px;" data-act="pending-run" data-id="'+c.id+'" data-value="'+rule+'|'+day+'">'+t('pendingRunBtn')+'</button>'+
+        '</div>';
+      });
+    });
+    if(sec) body += '<div class="settings-row" style="margin-top:18px;"><div class="label">'+esc(c.name || '')+'</div></div>'+sec;
+  });
+  if(!any) body += '<div style="text-align:center;color:var(--muted);padding:48px 0;">'+t('pendingEmpty')+'</div>';
+  return screenHeader(t('pendingScreenTitle')) + body;
 }
 
 /* ---------------- 事件绑定 ---------------- */
@@ -4498,6 +4740,12 @@ function bindEvents(){
       updateExPreview();
       if(exerciseFocusedFor !== selectedExerciseRefId){ exerciseFocusedFor = selectedExerciseRefId; try{ exDurInput.focus(); }catch(e){} }
     }
+  }
+  var qmOverlay = document.getElementById('quickMealOverlay');
+  if(qmOverlay){
+    qmOverlay.addEventListener('click', function(e){
+      if(e.target === qmOverlay){ showQuickMeal = false; quickMealDraft = null; render(); }
+    });
   }
   var fqOverlay = document.getElementById('foodQtyOverlay');
   if(fqOverlay){
@@ -4990,11 +5238,46 @@ function handleAction(act, id, value, el){
     render();
   }
 
-  else if(act==='set-meal-type'){ mealTypeDraft = value; render(); }
+  else if(act==='set-meal-type'){ if(showQuickMeal) syncQuickMealDraft(); mealTypeDraft = value; render(); } // 快捷录入浮窗开着时，先把已经填的内容存进草稿，免得重绘后丢失
+  else if(act==='open-quick-meal'){
+    showQuickMeal = true; quickMealDraft = {logId:null, name:'', cal:'', carb:'', protein:'', fat:''};
+    mealTypeDraft = mealsViewTab; selectedFoodRefId = null; editingMealLogId = null; showCustomFoodForm = false;
+    render();
+  }
+  else if(act==='close-quick-meal'){ showQuickMeal = false; quickMealDraft = null; render(); }
+  else if(act==='log-quick-meal'){
+    syncQuickMealDraft();
+    var qd = quickMealDraft;
+    if(!qd) return;
+    var qCal = parseQuickNum(qd.cal, 0);
+    if(String(qd.cal).trim() === '' || isNaN(qCal)){ toast(t('quickMealFillToast')); return; }
+    var qCarb = parseQuickNum(qd.carb, 1) || 0, qPro = parseQuickNum(qd.protein, 1) || 0, qFat = parseQuickNum(qd.fat, 1) || 0;
+    if(qd.logId){
+      var qOld = data.mealLogs.find(function(l){ return l.id === qd.logId; });
+      if(qOld && !canEditMealDate(qOld.date, isParentMode())){ toast(t('mealPastDateLockedToast')); showQuickMeal=false; quickMealDraft=null; render(); return; }
+      updateQuickMealLog(qd.logId, mealTypeDraft, qd.name, qCal, qCarb, qPro, qFat);
+    } else {
+      var qDate = getMealsCalState(id).sel;
+      if(!canEditMealDate(qDate, isParentMode())){ toast(t('mealPastDateLockedToast')); return; }
+      addQuickMealLog(id, mealTypeDraft, qd.name, qCal, qCarb, qPro, qFat, qDate);
+    }
+    showQuickMeal = false; quickMealDraft = null;
+    toast(t('mealLoggedToast'));
+    render();
+  }
   else if(act==='pick-food'){ selectedFoodRefId = (selectedFoodRefId===value) ? null : value; editingMealLogId = null; render(); }
   else if(act==='close-food-qty-picker'){ selectedFoodRefId = null; editingMealLogId = null; render(); }
   else if(act==='edit-meal-log'){
     var editLog = data.mealLogs.find(function(l){ return l.id===id; });
+    if(editLog && editLog.quick){
+      // 快捷录入的记录：重新打开快捷录入浮窗，预填原来的值
+      if(!canEditMealDate(editLog.date, isParentMode())){ toast(t('mealPastDateLockedToast')); return; }
+      var isDefaultName = (editLog.name === t('quickMealDefaultName') && !editLog.name_en) || editLog.name_en === 'Quick entry';
+      quickMealDraft = {logId: editLog.id, name: isDefaultName ? '' : editLog.name, cal: String(editLog.calories),
+        carb: editLog.carb ? String(editLog.carb) : '', protein: editLog.protein ? String(editLog.protein) : '', fat: editLog.fat ? String(editLog.fat) : ''};
+      showQuickMeal = true; mealTypeDraft = editLog.mealType; selectedFoodRefId = null; editingMealLogId = null;
+      render(); return;
+    }
     var refFood = editLog ? foodLibraryAll().find(function(x){ return x.refId===editLog.refId; }) : null;
     if(!editLog || !refFood){ toast(t('mealFoodGoneToast')); return; }
     if(!canEditMealDate(editLog.date, isParentMode())){ toast(t('mealPastDateLockedToast')); return; }
@@ -5214,13 +5497,38 @@ function handleAction(act, id, value, el){
     toast(t('foodGoalDeletedToast'));
     popScreen();
   }
-  else if(act==='set-nutrition-settle-mode'){
-    if(!data.family) return;
+  else if(act==='set-daily-rule-mode'){
+    if(!data.family || DAILY_RULES.indexOf(id) < 0) return;
     var wantAuto = (value === 'auto');
-    if(wantAuto === nutritionAutoEnabled()) return;
-    data.family.nutritionAutoSettle = wantAuto;
+    if(wantAuto === dailyRuleAuto(id)) return;
+    data.family[dailyRuleFlagKey(id)] = wantAuto;
+    if(!wantAuto){
+      // 改成手动：从今天起才算手动；之前的日子照常自动处理，所以马上触发一次结算，把昨天及以前还没算的先按自动算完
+      data.family.manualSince = Object.assign({}, data.family.manualSince || {});
+      data.family.manualSince[id] = todayStr();
+    }
     persistFamily();
-    toast(t(wantAuto ? 'nutritionSettleAutoToast' : 'nutritionSettleManualToast'));
+    toast(t(wantAuto ? 'dailyRuleAutoToast' : 'dailyRuleManualToast'));
+    if(!wantAuto) runDailyRulesWhenFresh();
+    render();
+  }
+  else if(act==='open-pending-rules'){ pushScreen({type:'pendingRules'}); }
+  else if(act==='pending-run' || act==='pending-skip' || act==='pending-run-all' || act==='pending-skip-all'){
+    var pdChild = childById(id);
+    if(!pdChild) return;
+    var pdRule, pdDays;
+    if(act.slice(-4) === '-all'){ pdRule = value; pdDays = pendingOf(id, pdRule); }
+    else { var pdParts = String(value).split('|'); pdRule = pdParts[0]; pdDays = [pdParts[1]]; }
+    if(DAILY_RULES.indexOf(pdRule) < 0 || !pdDays.length) return;
+    var pdRun = (act.indexOf('pending-run') === 0);
+    var pdStats = handlePendingDays(id, pdRule, pdDays, pdRun);
+    if(!pdRun) toast(t('pendingSkipToast'));
+    else if(pdStats.repaidPts > 0){
+      toast(t('autoRepayToast', {points: fmtPts(pdStats.repaidPts), money: Object.keys(pdStats.repaidMoney).map(function(code){ return currencySymbol(code) + fmtMoney(pdStats.repaidMoney[code]); }).join(' + ')}));
+    }
+    else if(pdStats.done > 0) toast(t('pendingRunToast'));
+    else if(pdStats.none > 0 && pdStats.na === 0) toast(t('pendingNoneToast'));
+    else toast(t('pendingNaToast'));
     render();
   }
   else if(act==='settle-nutrition'){ settleNutritionToday(id); toast(t('nutritionSettledToast')); render(); }
